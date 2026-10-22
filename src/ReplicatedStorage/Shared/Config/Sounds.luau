@@ -126,5 +126,9 @@ return {
 		Beach = { 1837324500, 95854242246323, 102866809292046 },         -- the beach, beach gym, posing stage, skate park
 		-- the streets, plaza and shops (21 Oct: + APM Hit The Street, City Lights (A) from Roblox's licensed library; swap freely)
 		Town = { 1840007392, 1840558258, 1840517437 },
+		-- (prompt 51) inside the PUMP SHOP: the name of another area = its list, carried on without a restart (quieter: AreaVolume)
+		PumpShop = "Town",
 	},
+	-- (prompt 51) the music's volume in an area, times Music.volume (missing = 1): softer inside the shop than on the street
+	AreaVolume = { PumpShop = 0.55 },
 }

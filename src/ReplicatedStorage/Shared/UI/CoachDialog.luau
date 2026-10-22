@@ -15,15 +15,18 @@
 --   CoachDialog.BottomClear(root) -> px          mockup px kept free at the bottom of a Kit.Root: the hotbar, the stamina
 --                                                bar (the dialog and the GO TO button sit above them)
 --   CoachDialog.Gap                              px between the dialog and the GO TO button above it
+-- (owner, 23 Oct) The portrait is a dressed copy of Dex from Shared/UI/CoachPortrait (his muscle stages always on), never
+-- the live NPC (far away he shows the plain body or isn't there). The first time the box shows it waits up to 1 s for that
+-- copy rather than show a plain body. The words never cut: they wrap, the box grows to fit, and if a line still doesn't fit
+-- on a screen (TextFits) the box grows a line more.
 local Players = game:GetService("Players")
-local CollectionService = game:GetService("CollectionService")
 local TextService = game:GetService("TextService")
 
 local Theme = require(script.Parent.Theme)
 local Kit = require(script.Parent.Kit)
-local Pieces = require(script.Parent.Pieces)
 local Audio = require(script.Parent.Parent.Audio)
 local Quests = require(script.Parent.Parent.Config.Quests)
+local CoachPortrait = require(script.Parent.CoachPortrait)
 
 local New, Colors = Theme.New, Theme.Colors
 
@@ -39,47 +42,26 @@ local TEXT_SIZE = 14
 local LINE_HEIGHT = 1.2
 local FOOT = 14           -- "Tap to continue"
 
--- the Coach's face: a copy of the Coach NPC in the portrait (no scripts, prompts or labels)
-local function fillPortrait(portrait: ViewportFrame)
-	task.spawn(function()
-		local coach = CollectionService:GetTagged("Coach")[1]
-		local waited = 0
-		while not coach and waited < 15 do
-			task.wait(0.5)
-			waited += 0.5
-			coach = CollectionService:GetTagged("Coach")[1]
-		end
-		-- (owner, 15 Oct: Dex's body is rebuilt by the server after he loads; copy him once his face head and his muscle
-		-- meshes are there, so the portrait shows the new Dex, not the plain body)
-		waited = 0
-		while coach and (not coach:FindFirstChild("ClassicHead") or not coach:FindFirstChild("MuscleMeshes")) and waited < 30 do
-			task.wait(0.5)
-			waited += 0.5
-		end
-		if coach then task.wait(1) end
-		local head = coach and coach:FindFirstChild("Head")
-		if not head then
-			Pieces.Image("trainer_exp", { Size = UDim2.fromScale(1, 1), Parent = portrait })
-			return
-		end
-		local ok = pcall(function()
-			coach.Archivable = true
-			for _, d in ipairs(coach:GetDescendants()) do d.Archivable = true end
-			local copy = coach:Clone()
-			for _, d in ipairs(copy:GetDescendants()) do
-				if d:IsA("Script") or d:IsA("LocalScript") or d:IsA("ProximityPrompt") or d:IsA("BillboardGui") or d:IsA("Sound") then d:Destroy() end
-			end
-			local world = New("WorldModel", { Parent = portrait })
-			copy.Parent = world
-			local copyHead = copy:FindFirstChild("Head") :: BasePart
-			local camera = New("Camera", { FieldOfView = 30, Parent = portrait })
-			local face = copyHead.CFrame
-			-- head and his huge shoulders (owner, 15 Oct: the new Dex is far wider, so the camera sits further back)
-			camera.CFrame = CFrame.lookAt(face.Position + face.LookVector * 9 + Vector3.new(0, 0.6, 0), face.Position - Vector3.new(0, 0.9, 0))
-			portrait.CurrentCamera = camera
-		end)
-		if not ok then Pieces.Image("trainer_exp", { Size = UDim2.fromScale(1, 1), Parent = portrait }) end
+-- the Coach's face: a dressed copy of Dex (Shared/UI/CoachPortrait) in the portrait; false while that copy isn't ready
+local function fillPortrait(portrait: ViewportFrame): boolean
+	if portrait:FindFirstChildOfClass("WorldModel") then return true end
+	local copy = CoachPortrait.Clone()
+	if not copy then return false end
+	local ok = pcall(function()
+		local world = New("WorldModel", { Parent = portrait })
+		copy.Parent = world
+		local copyHead = copy:FindFirstChild("Head") :: BasePart
+		local camera = New("Camera", { FieldOfView = 30, Parent = portrait })
+		local face = copyHead.CFrame
+		-- head and his huge shoulders (owner, 15 Oct: the new Dex is far wider, so the camera sits further back)
+		camera.CFrame = CFrame.lookAt(face.Position + face.LookVector * 9 + Vector3.new(0, 0.6, 0), face.Position - Vector3.new(0, 0.9, 0))
+		portrait.CurrentCamera = camera
 	end)
+	if not ok then
+		local world = portrait:FindFirstChildOfClass("WorldModel")
+		if world then world:Destroy() end
+	end
+	return ok
 end
 
 -- the gold "+50" coin pill: the gold ChunkyButton's face and thick darker edge, a coin and the amount in stroked white
@@ -143,12 +125,20 @@ function CoachDialog.new(parent: Instance, reward: number?)
 	local text = Kit.Text({ Name = "Text", Text = "", Font = "Strong", TextSize = TEXT_SIZE, TextWrapped = true, LineHeight = LINE_HEIGHT,
 		Position = UDim2.fromOffset(TEXT_LEFT, PAD + NAME_ROW + 4), Size = UDim2.new(1, -TEXT_LEFT - PAD, 0, 40),
 		TextXAlignment = Enum.TextXAlignment.Left, TextYAlignment = Enum.TextYAlignment.Top, Parent = face })
+	text.TextTruncate = Enum.TextTruncate.None -- (Kit.Text cuts with "..." by default: these words wrap, never cut)
 	local foot = Kit.Text({ Name = "Continue", Text = "", Font = "Body", TextSize = 11, TextColor3 = Colors.Muted, AnchorPoint = Vector2.new(1, 1),
 		Position = UDim2.new(1, -PAD, 1, -10), Size = UDim2.fromOffset(180, FOOT), TextXAlignment = Enum.TextXAlignment.Right, Parent = face })
-	fillPortrait(portrait)
+	if not fillPortrait(portrait) then
+		local connection
+		connection = CoachPortrait.Ready.Event:Connect(function()
+			if fillPortrait(portrait) then connection:Disconnect() end
+		end)
+	end
 
 	local api = { frame = dialog }
 	local pages, index, onDone = nil, 0, nil
+	local extraLines = 0 -- lines added because the words didn't fit on this screen (TextFits)
+	local revealing = false
 
 	function api.SetReward(coins: number?)
 		pill.Visible = coins ~= nil and coins > 0
@@ -162,7 +152,7 @@ function CoachDialog.new(parent: Instance, reward: number?)
 
 	-- the box fits the words: the name row, the words, 6 px, "Tap to continue", the padding; never shorter than the portrait
 	local function fit(words: string)
-		local h = wordsHeight(text, words)
+		local h = wordsHeight(text, words) + math.ceil(extraLines * TEXT_SIZE * LINE_HEIGHT)
 		text.Size = UDim2.new(1, -TEXT_LEFT - PAD, 0, h)
 		local inner = math.max(PAD + NAME_ROW + 4 + h + 6 + FOOT + 10, PAD + PORTRAIT + PAD)
 		dialog.Size = UDim2.fromOffset(CoachDialog.Width, inner + CoachDialog.Lip)
@@ -181,12 +171,34 @@ function CoachDialog.new(parent: Instance, reward: number?)
 		end
 		text.Text = pages[index]
 		foot.Text = string.format("Tap to continue (%d/%d)", index, #pages)
+		extraLines = 0
 		fit(pages[index])
-		if not dialog.Visible then
-			dialog.Visible = true
-			Theme.Fade(dialog, true, 0.2)
+		if not dialog.Visible and not revealing then
+			local function reveal()
+				dialog.Visible = true
+				Theme.Fade(dialog, true, 0.2)
+			end
+			if fillPortrait(portrait) then
+				reveal()
+			else
+				-- (Dex's dressed copy isn't ready yet, e.g. right after joining: wait for it, 1 s at most)
+				revealing = true
+				task.spawn(function()
+					CoachPortrait.WaitReady(1)
+					fillPortrait(portrait)
+					revealing = false
+					if pages and not dialog.Visible then reveal() end
+				end)
+			end
 		end
 	end
+	-- a line that still doesn't fit on this screen (the scale rounds the font): one more line, a few at most
+	text:GetPropertyChangedSignal("TextFits"):Connect(function()
+		if pages and index <= #pages and not text.TextFits and extraLines < 3 then
+			extraLines += 1
+			fit(pages[index])
+		end
+	end)
 	function api.Show(newPages, done)
 		pages, index, onDone = newPages, 1, done
 		showPage()

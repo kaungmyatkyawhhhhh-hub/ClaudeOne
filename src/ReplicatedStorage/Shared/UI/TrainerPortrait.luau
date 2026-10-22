@@ -6,6 +6,8 @@
 --           silhouette (a black shape: Secret before you own him), golden (a gold light), background (Color3; nil = clear)
 --   TrainerPortrait.Icon(id, opts) / TrainerPortrait.Art(id, opts) -> ImageLabel: (prompt 25) the rendered pictures
 --     (Config/Trainers icon / art; the Secret silhouette), or this 3D portrait when a trainer has none
+-- (owner, 23 Oct) The 3D portrait wears his muscle stage meshes (Shared/MuscleRig, static, from his MuscleG: as MuscleClient
+-- dresses the trainers in the world), so it never shows the plain body; the rig goes with the frame (Destroying).
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 
 local Shared = script.Parent.Parent
@@ -13,6 +15,24 @@ local PoseApply = require(Shared.PoseApply)
 local BodyShape = require(Shared.BodyShape)
 
 local TrainerPortrait = {}
+
+-- his muscles on the copy in the frame (not on a silhouette: that's a black shape)
+local function dress(model: Model, frame: ViewportFrame)
+	if not model:GetAttribute("MuscleG") then return end
+	local MuscleRig = require(Shared.MuscleRig)
+	local style = MuscleRig.StyleFrom(model, model)
+	local torso, leg = model:FindFirstChild("UpperTorso"), model:FindFirstChild("LeftUpperLeg")
+	if torso and torso:IsA("BasePart") and torso.Color ~= style.skin then style.top = torso.Color end
+	if leg and leg:IsA("BasePart") then style.shorts = leg.Color end
+	local rig = MuscleRig.new(model, {
+		static = true, keepBody = true, style = style,
+		marble = model:GetAttribute("MuscleMarble") == true,
+		marbleColor = model:GetAttribute("MarbleColor"),
+		marbleVariant = model:GetAttribute("MarbleVariant"),
+	})
+	rig:Snap(MuscleRig.Decode(model:GetAttribute("MuscleG")))
+	frame.Destroying:Connect(function() rig:Destroy() end)
+end
 
 local templates = nil
 local function template(id)
@@ -69,6 +89,7 @@ function TrainerPortrait.New(id: string, opts)
 				BodyShape.SolveJoints(model)
 			end
 			model.Parent = frame
+			if not opts.silhouette then pcall(dress, model, frame) end
 			-- the camera: in front of him, looking at his middle (full body) or chest up (bust)
 			local cf, size = model:GetBoundingBox()
 			local height = size.Y

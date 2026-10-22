@@ -223,7 +223,14 @@ local trackIndex = 0 -- the playing track in the playlist
 -- The tracks for an area (Config.Sounds.AreaMusic), or the whole Music list.
 local function tracksFor(name)
 	local areas = Sounds.AreaMusic
-	return (areas and name and areas[name]) or Sounds.Music.ids
+	local list = areas and name and areas[name]
+	if type(list) == "string" then list = areas[list] end -- (prompt 51) another area's list (PumpShop = "Town")
+	return list or Sounds.Music.ids
+end
+-- (prompt 51) the music's volume in an area (Config.Sounds.AreaVolume)
+local function volumeFor(name)
+	local factor = Sounds.AreaVolume and name and Sounds.AreaVolume[name]
+	return Sounds.Music.volume * (factor or 1)
 end
 
 -- The loading screen's and main menu's track (Config.Sounds.MenuMusic): ReplicatedFirst.LoadingScreen starts it as
@@ -280,7 +287,11 @@ function Audio.SetArea(name)
 	area = name
 	if not musicPlayer then return end
 	local tracks = tracksFor(name)
-	if tracks == playlist then return end
+	if tracks == playlist then
+		-- the same list (e.g. into the PUMP SHOP from the town): it plays on, only its volume changes
+		TweenService:Create(musicPlayer, TweenInfo.new(1), { Volume = volumeFor(name) }):Play()
+		return
+	end
 	playlist = tracks
 	local fade = TweenService:Create(musicPlayer, TweenInfo.new(0.8), { Volume = 0 })
 	fade:Play()
@@ -290,7 +301,7 @@ function Audio.SetArea(name)
 		musicPlayer.SoundId = "rbxassetid://" .. tracks[1]
 		musicPlayer.TimePosition = 0
 		musicPlayer:Play()
-		TweenService:Create(musicPlayer, TweenInfo.new(1.2), { Volume = Sounds.Music.volume }):Play()
+		TweenService:Create(musicPlayer, TweenInfo.new(1.2), { Volume = volumeFor(name) }):Play()
 	end)
 end
 

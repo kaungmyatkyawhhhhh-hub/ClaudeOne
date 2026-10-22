@@ -7,6 +7,8 @@
 --     follows you, clamped to MAX_YAW left / right and MAX_PITCH up / down; out of range it eases back over ~0.5 s
 --   * a quick nod when you come within NOD studs; a pointing "listen up" with his right arm when you talk to him
 --   * culled: further than FAR studs from the camera or off screen, he isn't posed (he keeps his last pose)
+-- (prompt 51) the PUMP SHOP's shopkeeper (tag "PumpShopClerk", PumpShopService) gets the same lean, idle and look; he
+-- points when you open the shop at his counter (its ShopPrompt).
 local Players = game:GetService("Players")
 local RunService = game:GetService("RunService")
 local CollectionService = game:GetService("CollectionService")
@@ -24,7 +26,8 @@ local FAR = 100                 -- studs from the camera: not posed further away
 local NOD_TIME, POINT_TIME = 0.6, 1.8
 local rad, Angles = math.rad, CFrame.Angles
 
-local coach = nil -- { model, root, joints, yaw, pitch, near, nodAt, pointAt, nextFlex, flexAt, flexKind, phase }
+local TAGS = { "Coach", "PumpShopClerk" }
+local npcs = {} -- [model] = { model, root, joints, yaw, pitch, near, nodAt, pointAt, nextFlex, flexAt, flexKind, phase }
 
 local function joint(model, part, name)
 	local p = model:FindFirstChild(part)
@@ -44,21 +47,27 @@ local function findJoints(model)
 end
 
 local function track(model)
-	if not model:IsA("Model") then return end
+	if not model:IsA("Model") or npcs[model] then return end
 	local root = model:FindFirstChild("HumanoidRootPart") or model:WaitForChild("HumanoidRootPart", 10)
 	if not root then return end
-	coach = {
+	npcs[model] = {
 		model = model, root = root, joints = {},
 		yaw = 0, pitch = 0, near = false, nodAt = -math.huge, pointAt = -math.huge, flexAt = -math.huge,
 		nextFlex = os.clock() + 8 + math.random() * 4, flexKind = 1, phase = math.random() * 10,
 	}
 end
-for _, model in ipairs(CollectionService:GetTagged("Coach")) do task.spawn(track, model) end
-CollectionService:GetInstanceAddedSignal("Coach"):Connect(function(model) task.spawn(track, model) end)
+for _, tag in ipairs(TAGS) do
+	for _, model in ipairs(CollectionService:GetTagged(tag)) do task.spawn(track, model) end
+	CollectionService:GetInstanceAddedSignal(tag):Connect(function(model) task.spawn(track, model) end)
+	CollectionService:GetInstanceRemovedSignal(tag):Connect(function(model) npcs[model] = nil end)
+end
 
--- talking to him: the pointing gesture
+-- talking to him (or opening the PUMP SHOP at the shopkeeper's counter): the pointing gesture
 ProximityPromptService.PromptTriggered:Connect(function(prompt)
-	if coach and prompt:IsDescendantOf(coach.model) then coach.pointAt = os.clock() end
+	local atCounter = prompt.Name == "ShopPrompt" and prompt.Parent ~= nil and CollectionService:HasTag(prompt.Parent, "PumpShopCounter")
+	for model, c in pairs(npcs) do
+		if prompt:IsDescendantOf(model) or (atCounter and CollectionService:HasTag(model, "PumpShopClerk")) then c.pointAt = os.clock() end
+	end
 end)
 
 local function smoothstep(x: number): number
@@ -76,11 +85,8 @@ local function set(m: any, cf: CFrame)
 	if m then m.Transform = cf end
 end
 
-RunService.Stepped:Connect(function(_, dt)
-	local c = coach
-	if not c or not c.model.Parent then return end
-	local camera = Workspace.CurrentCamera
-	if not camera then return end
+local function pose(c, dt: number, camera: Camera)
+	if not c.model.Parent then return end
 	local rootPos = c.root.Position
 	-- culled: far away or off screen
 	if (camera.CFrame.Position - rootPos).Magnitude > FAR then return end
@@ -153,4 +159,12 @@ RunService.Stepped:Connect(function(_, dt)
 	-- the weight shift in the legs
 	set(J.RH, Angles(0, 0, rad(1.5 * shift)))
 	set(J.LH, Angles(0, 0, rad(1.5 * shift)))
+end
+
+RunService.Stepped:Connect(function(_, dt)
+	local camera = Workspace.CurrentCamera
+	if not camera then return end
+	for model, c in pairs(npcs) do
+		if model.Parent then pose(c, dt, camera) else npcs[model] = nil end
+	end
 end)

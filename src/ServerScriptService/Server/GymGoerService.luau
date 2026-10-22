@@ -479,6 +479,33 @@ local function makeGiant(npc, spec)
 	end
 end
 
+-- (owner, 23 Oct) the dialog portrait's own copy of Dex: ReplicatedStorage.CoachPortrait, plain (every client dresses it with
+-- his muscle stages: Shared/UI/CoachPortrait). The portraits used to copy the live NPC, which far away shows the plain body
+-- (MuscleClient LOD) or isn't streamed in. At his full size, his pivot at the origin facing -Z, anchored, no tags / prompts /
+-- labels / scripts (so nothing looking for the Coach finds the copy).
+local function publishPortrait(npc)
+	local old = ReplicatedStorage:FindFirstChild("CoachPortrait")
+	if old then old:Destroy() end
+	npc.Archivable = true
+	for _, d in ipairs(npc:GetDescendants()) do d.Archivable = true end
+	local copy = npc:Clone()
+	for _, d in ipairs(copy:GetDescendants()) do
+		if d:IsA("LuaSourceContainer") or d:IsA("ProximityPrompt") or d:IsA("BillboardGui") or d:IsA("Sound") then
+			d:Destroy()
+		else
+			if d:IsA("BasePart") then
+				d.Anchored = true
+				d.CanCollide, d.CanQuery, d.CanTouch = false, false, false
+			end
+			for _, tag in ipairs(CollectionService:GetTags(d)) do CollectionService:RemoveTag(d, tag) end
+		end
+	end
+	for _, tag in ipairs(CollectionService:GetTags(copy)) do CollectionService:RemoveTag(copy, tag) end
+	copy.Name = "CoachPortrait"
+	copy:PivotTo(CFrame.new())
+	copy.Parent = ReplicatedStorage
+end
+
 -- Coach Dex: the giant's body at his own height, anchored behind his counter (Quests.CoachSpot); no animation track:
 -- every client poses him (CoachDexClient: leaning, breathing, looking at you, nod, point)
 local function makeCoach(npc)
@@ -502,6 +529,8 @@ local function makeCoach(npc)
 	local hit = workspace:Raycast(spot.Position + Vector3.new(0, 6, 0), Vector3.new(0, -14, 0), params)
 	local floorY = if hit then hit.Position.Y else spot.Position.Y
 	if lowest < math.huge then npc:PivotTo(npc:GetPivot() + Vector3.new(0, floorY - lowest, 0)) end
+	local ok, err = pcall(publishPortrait, npc)
+	if not ok then warn("[GymGoerService] Coach portrait copy:", err) end
 end
 
 local function dressNpc(npc, gym)

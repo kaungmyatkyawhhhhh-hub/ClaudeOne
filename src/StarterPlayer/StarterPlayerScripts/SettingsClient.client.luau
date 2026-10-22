@@ -178,7 +178,8 @@ task.spawn(function()
 	Audio.StartMusic()
 	-- area music: the pro gym is the room east of the starter gym (x 44.5..154 with its east hall, z -90..-4; the starter gym
 	-- with its hall is x -45..44.5 up to z 13.5, see the Gyms builder), the powerlifting gym the warehouse west of it (x -175..-65,
-	-- z -97..-3, tools/builders/PowerliftingGym), the beach is north of Beach Road (z > 162), the town everywhere else
+	-- z -97..-3, tools/builders/PowerliftingGym), the beach is north of Beach Road (z > 162), the town everywhere else; (prompt 51)
+	-- inside the PUMP SHOP's ground floor (x -99..-63, z 98..140) the town's music, quieter
 	while true do
 		local character = player.Character
 		local root = character and character:FindFirstChild("HumanoidRootPart")
@@ -187,6 +188,8 @@ task.spawn(function()
 			local area = "Town"
 			if p.Y > 60 then
 				area = "Starter" -- (the genetics stage high above the town)
+			elseif p.X > -99 and p.X < -63 and p.Z > 98 and p.Z < 140 and p.Y < 16 then
+				area = "PumpShop"
 			elseif p.X > 44.5 and p.X < 154 and p.Z > -90 and p.Z < -4 then
 				area = "Pro"
 			elseif p.X > -175 and p.X < -65 and p.Z > -97 and p.Z < -3 then

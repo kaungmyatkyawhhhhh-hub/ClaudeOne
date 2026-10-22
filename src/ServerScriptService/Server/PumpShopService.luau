@@ -31,8 +31,11 @@ local Remotes = ReplicatedStorage.Remotes
 local PumpShopService = {}
 
 local REACH = 14 -- studs from a shop's counter where buying is allowed
--- the PUMP SHOP's clerk behind its one counter (an original character, in the shop's graphite and gold)
-local CLERK = { name = "Mo", skin = "#C68642" }
+-- the PUMP SHOP's shopkeeper behind its one counter (prompt 51: an original character, big and friendly, in a black shop
+-- shirt with gold trim and a black cap with a gold peak, so he's clearly not Coach Dex; he leans on the counter and looks at
+-- you like Dex does: CoachDexClient, tag "PumpShopClerk")
+local CLERK = { name = "Mo", skin = "#C68642", shirt = "#1B1B1F", pants = "#2B2B30", scale = { height = 1.4, width = 1.35, depth = 1.25, head = 1.1 } }
+local GOLD = Color3.fromHex("#F6C75A")
 local remote: RemoteEvent
 local lastTeleport = {} -- [player] = os.clock()
 local lastCoachTeleport = {} -- [player] = os.clock()
@@ -223,6 +226,39 @@ function PumpShopService.OpenFor(player, shopId, section)
 	send(player, "Open", { shop = shopId, section = wanted })
 end
 
+-- the shop shirt's gold band and name badge, the cap: small parts welded on (they follow the posed joints)
+local function dressClerk(model: Model)
+	local function add(name, size, cframe, color, holder: BasePart, shape)
+		local p = Instance.new("Part")
+		p.Name = name
+		p.Size = size
+		p.CFrame = cframe
+		p.Color = color
+		p.Material = Enum.Material.SmoothPlastic
+		if shape then p.Shape = shape end
+		p.Anchored = false
+		p.Massless = true
+		p.CanCollide, p.CanQuery, p.CanTouch, p.CastShadow = false, false, false, false
+		local weld = Instance.new("WeldConstraint")
+		weld.Part0, weld.Part1 = holder, p
+		weld.Parent = p
+		p.Parent = model
+	end
+	local torso = model:FindFirstChild("UpperTorso")
+	if torso and torso:IsA("BasePart") then
+		local s = torso.Size
+		add("ShirtBand", Vector3.new(s.X * 1.02, s.Y * 0.08, s.Z * 1.06), torso.CFrame * CFrame.new(0, -s.Y * 0.05, 0), GOLD, torso)
+		add("Badge", Vector3.new(s.X * 0.16, s.Y * 0.1, 0.05), torso.CFrame * CFrame.new(-s.X * 0.22, s.Y * 0.25, -s.Z * 0.5), GOLD, torso)
+	end
+	local head = model:FindFirstChild("Head")
+	if head and head:IsA("BasePart") then
+		local s = head.Size
+		add("Cap", Vector3.new(s.Y * 0.3, s.X * 1.04, s.X * 1.04), head.CFrame * CFrame.new(0, s.Y * 0.4, 0) * CFrame.Angles(0, 0, math.rad(90)),
+			Color3.fromHex("#1B1B1F"), head, Enum.PartType.Cylinder)
+		add("CapPeak", Vector3.new(s.X * 0.8, 0.08, s.Z * 0.45), head.CFrame * CFrame.new(0, s.Y * 0.3, -s.Z * 0.62), GOLD, head)
+	end
+end
+
 local function addPrompt(part: Instance, shopId: string, objectText: string)
 	if not part:IsA("BasePart") then return end
 	local prompt = part:FindFirstChild("ShopPrompt")
@@ -273,8 +309,9 @@ function PumpShopService.Start()
 			if spot.Name == "ClerkSpot" and spot:IsA("BasePart") then
 				local ok, err = pcall(function()
 					local feet = spot.Position + Vector3.new(0, spot.Size.Y / 2, 0)
-					local model = NpcService.Build({ name = CLERK.name, skin = CLERK.skin, shirt = "#1E1E22", pants = "#2B2B30", animated = true, tag = "PumpShopClerk" },
-						CFrame.lookAt(feet, feet + spot.CFrame.LookVector))
+					local model = NpcService.Build({ name = CLERK.name, skin = CLERK.skin, shirt = CLERK.shirt, pants = CLERK.pants, scale = CLERK.scale,
+						animated = true, tag = "PumpShopClerk" }, CFrame.lookAt(feet, feet + spot.CFrame.LookVector))
+					dressClerk(model)
 					model.Parent = shop
 				end)
 				if not ok then warn("[PumpShopService] clerk:", err) end
