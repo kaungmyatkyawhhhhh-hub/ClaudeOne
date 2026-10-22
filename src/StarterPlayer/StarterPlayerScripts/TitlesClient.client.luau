@@ -315,8 +315,10 @@ for index, aura in ipairs(Auras.List) do
 		Position = UDim2.new(0.5, 0, 1, -6), Size = UDim2.new(1, -10, 0, 17), Visible = false, ZIndex = 3, Parent = tile })
 	AURA.tiles[aura.id] = { tile = tile, api = api, aura = aura, ring = ring, spark = spark, question = question, overlay = Discovery.Overlay(tile) }
 	tile.Activated:Connect(function()
+		local changed = AURA.picked ~= aura.id
 		AURA.picked = aura.id
 		refresh()
+		if changed then Kit.DetailIn(AURA.detail) end -- (prompt 54; the bounce + sound: Kit.RewardTile)
 	end)
 end
 -- the sparks go round (only while the tab is open)

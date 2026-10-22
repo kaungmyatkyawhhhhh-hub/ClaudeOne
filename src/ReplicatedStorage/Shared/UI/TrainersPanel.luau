@@ -117,7 +117,7 @@ function TrainersPanel.Build(parent: Instance)
 			Parent = grid })
 		tile.button.Activated:Connect(function()
 			if not tile.copy then return end
-			Audio.PlayUI("Click")
+			Kit.SelectFeedback(tile.button) -- (prompt 54: bounce + select sound)
 			pickedUid = tile.copy.u
 			panel.refresh()
 		end)

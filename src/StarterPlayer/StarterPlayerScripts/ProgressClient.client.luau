@@ -70,27 +70,55 @@ end
 -- (prompt 31) "NEXT: TANNED" wears the next alter's theme (Config.AlterThemes, prompt 22): a dark base in its colour, its
 -- accent edge, a thin strip of its background art along the bottom, the name in its title gradient; the progress "55%"
 -- in white top-right and "TAP FOR WHAT TO TRAIN" small and gray. It changes by itself for each next alter.
-local alterStrip = New("ImageLabel", { Name = "AlterStrip", BackgroundColor3 = Color3.new(1, 1, 1), BackgroundTransparency = 1, ScaleType = Enum.ScaleType.Crop,
-	AnchorPoint = Vector2.new(0.5, 1), Position = UDim2.new(0.5, 0, 1, -3), Size = UDim2.new(1, -10, 0, 6), ZIndex = tile.ZIndex + 2, Visible = false, Parent = tile },
-	{ New("UICorner", { CornerRadius = UDim.new(1, 0) }) })
+-- (owner, 23 Oct) the art covers the WHOLE card behind everything (Crop, clipped to the rounded corners by a CanvasGroup),
+-- under a dark gradient (55% black on the left behind the words, 25% on the right); it drifts slowly sideways (~20 s
+-- loop; still with Reduced Motion on). (`alterStrip` is that whole-card layer; the name stays from the thin strip it was.)
+local alterStrip = New("CanvasGroup", { Name = "AlterArt", BackgroundTransparency = 1, AnchorPoint = Vector2.new(0.5, 0.5), Position = UDim2.fromScale(0.5, 0.5),
+	Size = UDim2.new(1, -3, 1, -3), ZIndex = tile.ZIndex, Visible = false, Parent = tile }, { New("UICorner", { CornerRadius = UDim.new(0, 9) }) })
+local alterArt = New("ImageLabel", { Name = "Art", BackgroundColor3 = Color3.new(1, 1, 1), BackgroundTransparency = 1, ScaleType = Enum.ScaleType.Crop,
+	AnchorPoint = Vector2.new(0.5, 0.5), Position = UDim2.fromScale(0.5, 0.5), Size = UDim2.fromScale(1.16, 1), Parent = alterStrip })
+New("Frame", { Name = "Shade", BackgroundColor3 = Color3.new(0, 0, 0), BorderSizePixel = 0, Size = UDim2.fromScale(1, 1), ZIndex = 2, Parent = alterStrip }, {
+	New("UIGradient", { Transparency = NumberSequence.new(0.45, 0.75) }),
+})
+task.spawn(function()
+	local t0 = os.clock()
+	while alterStrip.Parent do
+		if alterStrip.Visible and holder.Parent and not Theme.ReducedMotion() then
+			alterArt.Position = UDim2.fromScale(0.5 + 0.07 * math.sin((os.clock() - t0) * 2 * math.pi / 20), 0.5)
+		else
+			alterArt.Position = UDim2.fromScale(0.5, 0.5)
+		end
+		task.wait(1 / 20)
+	end
+end)
 local alterPct = Kit.Text({ Name = "Pct", Text = "", Font = "Number", TextSize = 15, TextColor3 = Colors.Text, AnchorPoint = Vector2.new(1, 0),
 	Position = UDim2.new(1, -8, 0, 4), Size = UDim2.fromOffset(46, 22), TextXAlignment = Enum.TextXAlignment.Right, Visible = false, Parent = tile })
 alterPct:SetAttribute("KeepColor", true)
 local titleGradient = New("UIGradient", { Name = "AlterTitle", Rotation = 90, Enabled = false, Parent = tileText })
+-- (prompt 54) the next alter's bicep icon on the card's left
+local AlterIcon = require(Shared.UI.AlterIcon)
+for _, words in ipairs({ tileText, tileLabel, bigText, alterPct }) do words.ZIndex = tile.ZIndex + 4 end
+local alterIcon = AlterIcon.New({ AnchorPoint = Vector2.new(0, 0.5), Position = UDim2.new(0, 5, 0.5, -2), Size = UDim2.fromOffset(32, 32), ZIndex = tile.ZIndex + 3,
+	Visible = false, Parent = tile })
 local function setAlterLook(theme, percent: number?)
 	local on = theme ~= nil
 	titleGradient.Enabled = on
 	alterStrip.Visible = on
 	alterPct.Visible = on
-	tileText.Size = UDim2.new(1, if on then -62 else -16, 0, 22)
+	alterIcon.Visible = on
+	if on then AlterIcon.Set(alterIcon, theme.number) end
+	tileText.Position = UDim2.fromOffset(if on then 40 else 8, 4)
+	tileLabel.Position = UDim2.fromOffset(if on then 36 else 0, tileLabel.Position.Y.Offset)
+	tileLabel.Size = UDim2.new(1, if on then -36 else 0, 0, tileLabel.Size.Y.Offset)
+	tileText.Size = UDim2.new(1, if on then -92 else -16, 0, 22)
 	tileText.TextXAlignment = if on then Enum.TextXAlignment.Left else Enum.TextXAlignment.Center
 	if not on then return end
 	-- (owner, 23 Oct, chrome reset) the card stays dark graphite with the screen's one gold outline (was the alter's own
 	-- base colour and accent edge); the name keeps its alter gradient, the strip its art
 	if theme.bg then
-		alterStrip.Image, alterStrip.BackgroundTransparency = theme.bg, 1
+		alterArt.Image, alterArt.BackgroundTransparency = theme.bg, 1
 	else
-		alterStrip.Image, alterStrip.BackgroundTransparency, alterStrip.BackgroundColor3 = "", 0, theme.accent
+		alterArt.Image, alterArt.BackgroundTransparency, alterArt.BackgroundColor3 = "", 0, theme.accent:Lerp(theme.base, 0.4)
 	end
 	tileText.TextColor3 = Color3.new(1, 1, 1)
 	titleGradient.Color = ColorSequence.new(theme.title[1], theme.title[2])
@@ -562,6 +590,7 @@ local function refresh()
 	end
 end
 UIBus.TutorialChanged.Event:Connect(function() refresh() end)
+UIBus.OpenNeeds.Event:Connect(function() openNeeds() end) -- (prompt 54: Coach Dex's ALTERS tab, WHAT TO TRAIN)
 
 tile.Activated:Connect(function()
 	if alterMode and not ready and Alters.Progress(ClientData.Get(), Muscles.Groups, Machines.TrainableMuscles(ClientData.Get().growthSpurts)).locked then

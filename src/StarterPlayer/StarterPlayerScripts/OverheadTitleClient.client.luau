@@ -83,9 +83,52 @@ local function updateBadge(other)
 	badge.Pill.Text.Text = "ALTER " .. n
 end
 
+-- (prompt 54, 23 Oct) The lines over a head never overlap: a stack with a fixed gap, from just above the head (so a big
+-- 7'0" head lifts it too), bottom to top: the ALTER pill, the title, the crew tag. Each line takes its own height (my own
+-- are smaller); a hidden or missing line takes no room. Re-stacked whenever a line comes, goes, resizes or shows / hides.
+local STACK = { Above = 1.8, Gap = 0.12, Order = { "AlterBadge", "TitleTag", "CrewTag" } }
+local function restack(head: Instance)
+	if not head:IsA("BasePart") then return end
+	local y = head.Size.Y / 2 + STACK.Above
+	for _, name in ipairs(STACK.Order) do
+		local tag = head:FindFirstChild(name)
+		if tag and tag:IsA("BillboardGui") and tag.Enabled then
+			local h = tag.Size.Y.Scale
+			tag.StudsOffset = Vector3.new(0, y + h / 2, 0)
+			y += h + STACK.Gap
+		end
+	end
+end
+local function watchHead(head: Instance)
+	if head:GetAttribute("StackWatch") then return end
+	head:SetAttribute("StackWatch", true)
+	local function hook(child: Instance)
+		if child:IsA("BillboardGui") and table.find(STACK.Order, child.Name) then
+			child:GetPropertyChangedSignal("Size"):Connect(function() restack(head) end)
+			child:GetPropertyChangedSignal("Enabled"):Connect(function() restack(head) end)
+			task.defer(restack, head)
+		end
+	end
+	head.ChildAdded:Connect(hook)
+	head.ChildRemoved:Connect(function(child)
+		if table.find(STACK.Order, child.Name) then restack(head) end
+	end)
+	if head:IsA("BasePart") then head:GetPropertyChangedSignal("Size"):Connect(function() restack(head) end) end
+	for _, child in ipairs(head:GetChildren()) do hook(child) end
+	restack(head)
+end
+
 local function watchCharacter(character)
 	character.DescendantAdded:Connect(styleTag)
 	for _, d in ipairs(character:GetDescendants()) do styleTag(d) end
+	task.spawn(function()
+		local head = character:WaitForChild("Head", 10)
+		if head then watchHead(head) end
+	end)
+	-- (the muscle body swaps the head part: watch the new one)
+	character.ChildAdded:Connect(function(child)
+		if child.Name == "Head" then watchHead(child) end
+	end)
 end
 local function watchPlayer(other)
 	other.CharacterAdded:Connect(function(character)

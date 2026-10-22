@@ -300,8 +300,9 @@ for index, entry in ipairs(items) do
 	cards[entry.item.key] = { card = card, tile = tile, art = tile.art, entry = entry }
 	tile.name.Text = string.upper(entry.item.name)
 	card.Activated:Connect(function()
-		Audio.PlayUI("Click")
+		-- (prompt 54: the tile's bounce + select sound come from Kit.RewardTile; the hero tile slides in)
 		select(entry)
+		Kit.DetailIn(hero)
 	end)
 end
 local picked = nil

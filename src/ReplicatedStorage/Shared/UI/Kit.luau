@@ -232,6 +232,9 @@ function Kit.Fit(label: TextLabel, maxSize: number, minSize: number?, lines: num
 		-- (the window's scale changes the absolute size, not the mockup box: refit only when the box itself changes)
 		local last = Vector2.zero
 		label:GetPropertyChangedSignal("AbsoluteSize"):Connect(function()
+			-- (prompt 54) a label that sizes itself to its text changes size with every fit: refitting on that looped
+			-- forever (the Physique's MAX GROWTH SPURT REACHED flickered); it refits only when its text changes
+			if label.AutomaticSize ~= Enum.AutomaticSize.None then return end
 			local box = mockupBox(label)
 			if (box - last).Magnitude > 0.5 then last = box fit() end
 		end)
@@ -429,6 +432,41 @@ end
 -- Returns tile (a button), api: { art, name, sub, pill, pillText, check, SetColor(c), SetState(state, text?), SetPill(text, color?) }
 -- States: "normal", "equipped" (gold glow + gold check), "owned" (dimmed ~50%, a small green OWNED pill + check),
 -- "locked" (dark, the art a black silhouette with a rim in the colour, the requirement as a dark pill).
+-- (prompt 54, 23 Oct) Picking an item tile: a quick bounce (1 -> 0.92 -> 1.06 -> 1, ~0.25 s, back-out) and a soft "select"
+-- click (Config.Sounds Select: low, ±5% pitch); detail (optional) slides and fades in (0.15 s). The bounce rides on the
+-- tile's own UIScale if it has one (a gui uses one UIScale), else its own "SelectScale".
+local selectRuns = setmetatable({}, { __mode = "k" })
+function Kit.SelectFeedback(gui: GuiObject, detail: GuiObject?, quiet: boolean?)
+	if not quiet then require(script.Parent.Parent.Audio).PlayUI("Select") end
+	local scale = gui:FindFirstChildOfClass("UIScale") or New("UIScale", { Name = "SelectScale", Parent = gui })
+	local token = (selectRuns[gui] or 0) + 1
+	selectRuns[gui] = token
+	local base = scale:GetAttribute("SelectBase") or scale.Scale
+	scale:SetAttribute("SelectBase", base)
+	task.spawn(function()
+		local steps = { { 0.92, 0.06, Enum.EasingStyle.Quad }, { 1.06, 0.09, Enum.EasingStyle.Quad }, { 1, 0.1, Enum.EasingStyle.Back } }
+		for _, step in ipairs(steps) do
+			if selectRuns[gui] ~= token then return end
+			Theme.Tween(scale, { Scale = base * step[1] }, step[2], step[3])
+			task.wait(step[2])
+		end
+		if selectRuns[gui] == token then scale:SetAttribute("SelectBase", nil) end
+	end)
+	if detail then Kit.DetailIn(detail) end
+end
+-- a detail panel's new content: a short slide (8 px from the right) and fade in, 0.15 s
+function Kit.DetailIn(detail: GuiObject)
+	local home = detail:GetAttribute("HomePosition")
+	if typeof(home) ~= "UDim2" then
+		home = detail.Position
+		detail:SetAttribute("HomePosition", home)
+	end
+	detail.Position = home + UDim2.fromOffset(8, 0)
+	Theme.Tween(detail, { Position = home }, 0.15, Enum.EasingStyle.Quad)
+	Theme.Fade(detail, false, 0)
+	Theme.Fade(detail, true, 0.15)
+end
+
 function Kit.RewardTile(color: Color3, props: { [string]: any }?)
 	props = props or {}
 	props.BackgroundColor3 = Color3.new(1, 1, 1)
@@ -468,6 +506,7 @@ function Kit.RewardTile(color: Color3, props: { [string]: any }?)
 	})
 	local pillText = Kit.Text({ Name = "Text", Text = "", Font = "Chunky", TextSize = 14, Size = UDim2.fromScale(1, 1), ZIndex = 4, Parent = pill })
 	Kit.Fit(pillText, 14, 10)
+	tile.Activated:Connect(function() Kit.SelectFeedback(tile) end) -- (prompt 54)
 	local check = New("Frame", { Name = "Check", AnchorPoint = Vector2.new(1, 0), Position = UDim2.new(1, -5, 0, 5), Size = UDim2.fromOffset(18, 18),
 		BackgroundColor3 = Colors.Green, Visible = false, ZIndex = 5, Parent = tile }, {
 		New("UICorner", { CornerRadius = UDim.new(1, 0) }),
@@ -802,6 +841,8 @@ function Kit.Tabs(tabs, onSelect: (string) -> (), props: { [string]: any }?)
 				if UIBus.ShowLocked then UIBus.ShowLocked(item.lock) end
 				return
 			end
+			-- (prompt 54) a lighter tick for a tab
+			if selected ~= tab.id then require(script.Parent.Parent.Audio).PlayUI("TabTick") end
 			select(tab.id)
 			onSelect(tab.id)
 		end)

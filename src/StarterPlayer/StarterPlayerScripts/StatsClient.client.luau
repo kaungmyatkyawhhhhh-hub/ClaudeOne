@@ -308,9 +308,15 @@ function refreshScreen()
 		local words = spurtButton:FindFirstChild("Label", true)
 		if words then
 			words.TextColor3 = if maxed then Colors.Gold else Colors.Text
+			-- (prompt 54, 23 Oct: it flickered between big and small every frame: Kit.Fit on this self-sizing label refitted
+			-- each time its own width changed) at the cap: a fixed size that fits the pill on phones, set once
 			if maxed and not words:GetAttribute("Fitted") then
 				words:SetAttribute("Fitted", true)
-				Kit.Fit(words, words.TextSize, 9) -- (the chunky words are wider: shrink to fit the pill)
+				words.AutomaticSize = Enum.AutomaticSize.None
+				words.Size = UDim2.new(1, -12, 1, 0)
+				words.TextScaled = false
+				words.TextWrapped = true
+				words.TextSize = 12
 			end
 		end
 		sizeLabel.Parent.Visible = not shown

@@ -50,7 +50,10 @@ Quests.Lines = {
 Quests.CoachName = "Coach Dex"
 -- Where Coach Dex stands (behind the front desk, facing the room) and how he looks (built in Studio by
 -- tools/builders/NPCs.luau; tag "Coach", prompt "TalkPrompt").
-Quests.CoachSpot = CFrame.lookAt(Vector3.new(26.9, 0.15, -12.56), Vector3.new(0, 0.15, -12.56)) -- (15 Oct: close enough to lean on the counter) -- behind the front desk (bigger gym, 8 Oct night)
+-- (prompt 54, 23 Oct: the owner moved the front desk; it runs along X at (24.94, -8.11), the gym in front of it to -Z) Coach
+-- Dex stands centred behind it, facing out into the gym, close enough to lean on the counter with both forearms. His shop
+-- prompt, name tag, GO TO / GuidePath target and the tutorial's "Coach" target all follow the Coach model.
+Quests.CoachSpot = CFrame.lookAt(Vector3.new(24.94, 0.15, -5.6), Vector3.new(24.94, 0.15, -40))
 Quests.CoachLook = { name = Quests.CoachName, skin = "#8D5524", shirt = "#F4F1EA", pants = "#1E1E22", tag = "Coach",
 	prompt = { action = "Talk", object = Quests.CoachName, distance = 10 } }
 

@@ -146,4 +146,23 @@ function AlterThemes.Get(n: number)
 	return setmetatable({ number = n, finale = n % 5 == 0 }, { __index = theme })
 end
 
+-- (prompt 54, 23 Oct) THE alter icon everywhere: a cartoon flexed bicep (Downloads\gym_arc_alter_bicep_icons, uploaded
+-- 23 Oct with the owner's OK). Alters without their own picture use the light grey base tinted with their accent. Never
+-- body pictures for alters. AlterThemes.Icon(id) -> image, tint (nil = shown as it is).
+AlterThemes.Icons = {
+	Natural = "rbxassetid://130526825586547",
+	Pumped = "rbxassetid://137729197869293",
+	Shredded = "rbxassetid://71992766167225",
+	Tanned = "rbxassetid://128096768249425",
+	Vascular = "rbxassetid://120797137969021",
+	Peak = "rbxassetid://123133557518612",
+	Gold = "rbxassetid://109478944715600", -- bicep_golden
+}
+AlterThemes.IconBase = "rbxassetid://82746046688271" -- bicep_base_tint (light grey)
+function AlterThemes.Icon(id: string, n: number): (string, Color3?)
+	local own = AlterThemes.Icons[id]
+	if own then return own, nil end
+	return AlterThemes.IconBase, AlterThemes.Get(math.max(n, 1)).accent
+end
+
 return AlterThemes

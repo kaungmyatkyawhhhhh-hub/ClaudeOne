@@ -17,6 +17,7 @@ local Shared = script.Parent.Parent
 local Theme = require(script.Parent.Theme)
 local Kit = require(script.Parent.Kit)
 local AlterThemes = require(Shared.Config.AlterThemes)
+local AlterIcon = require(script.Parent.AlterIcon)
 local AlterFX = require(Shared.VFX.AlterFX)
 local Audio = require(Shared.Audio)
 
@@ -127,11 +128,13 @@ local function build()
 		Size = UDim2.fromScale(1, 1), ZIndex = 10 }, laterButton)
 	Theme.BindPress(alterButton)
 	Theme.BindPress(laterButton)
+	-- (prompt 54) the alter's bicep icon (Shared/UI/AlterIcon), top left of the panel
+	local icon = AlterIcon.New({ Name = "AlterIcon", Position = UDim2.fromOffset(14, 10), Size = UDim2.fromOffset(62, 62), ZIndex = 7, Parent = panel })
 
 	built = { gui = gui, dim = dim, vignette = vignette, fx = fx, bars = bars, group = group, pop = pop, panel = panel, border = border, glow = glow,
 		art = art, wash = wash, washGradient = washGradient, overlay = overlay, nameBox = nameBox, nameScale = nameScale, shadow = shadow, name = name, nameGradient = nameGradient, shine = shine,
 		shineGradient = shineGradient, wipe = wipe, sub = sub, alterButton = alterButton, alterGradient = alterGradient, alterStroke = alterStroke,
-		alterScale = alterScale, alterText = alterText, alterGlow = alterGlow, laterButton = laterButton, kicker = kicker }
+		alterScale = alterScale, alterText = alterText, alterGlow = alterGlow, laterButton = laterButton, kicker = kicker, icon = icon }
 
 	alterButton.Activated:Connect(function()
 		if not open then return end
@@ -256,6 +259,7 @@ function AlterPopup.Show(n: number, info, cbs)
 		ColorSequenceKeypoint.new(0.55, theme.base), ColorSequenceKeypoint.new(1, theme.base:Lerp(Color3.new(0, 0, 0), 0.3)) })
 	b.border.Color = theme.accent
 	b.glow.ImageColor3 = theme.accent
+	AlterIcon.Set(b.icon, n)
 	b.nameGradient.Color = ColorSequence.new(theme.title[1], theme.title[2])
 	local display = string.upper(info.name or "")
 	b.name.Text, b.shadow.Text, b.shine.Text = display, display, display

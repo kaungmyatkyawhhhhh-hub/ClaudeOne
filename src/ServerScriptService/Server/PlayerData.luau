@@ -88,8 +88,31 @@ local function withRetries(fn)
 	return false, lastError
 end
 
+-- (owner, 23 Oct) Strength on the player list (leaderstats), so everyone sees everyone's: the same number as the player's
+-- own STRENGTH label (Muscles.TotalExp, every muscle's EXP added up). Kept up to date whenever the muscles change.
+local function setStrength(player, data)
+	if not data or type(data.muscles) ~= "table" or not player.Parent then return end
+	local stats = player:FindFirstChild("leaderstats")
+	if not stats then
+		stats = Instance.new("Folder")
+		stats.Name = "leaderstats"
+		stats.Parent = player
+	end
+	local value = stats:FindFirstChild("Strength")
+	if not value then
+		value = Instance.new("IntValue")
+		value.Name = "Strength"
+		value.Parent = stats
+	end
+	value.Value = math.floor(Muscles.TotalExp(data.muscles))
+end
+
 local function replicate(player, path, value)
 	Remotes.DataChanged:FireClient(player, path, deepCopy(value))
+	if path[1] == "muscles" then
+		local profile = profiles[player]
+		if profile then setStrength(player, profile.data) end
+	end
 end
 
 local function snapshot(data)
@@ -400,6 +423,7 @@ local function onPlayerAdded(player)
 	profiles[player] = { data = data, canSave = canSave, ownsLock = ownsLock }
 	PlayerData.RefreshMaxStamina(player)
 	player:SetAttribute("DataLoaded", true)
+	setStrength(player, data)
 	loadedEvent:Fire(player, data)
 end
 

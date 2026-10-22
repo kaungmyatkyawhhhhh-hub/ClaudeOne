@@ -88,7 +88,19 @@ local function create(name, parent, opts)
 	return sound
 end
 
+-- (prompt 54) a tile tap plays "Select" (Kit.SelectFeedback); the plain "Click" the same tap asks for is dropped, so a
+-- tap is one sound
+Audio.LastSelect = -math.huge
 function Audio.Play2D(name, opts)
+	if name == "Select" then Audio.LastSelect = os.clock() end
+	if name == "Click" then
+		local asked = os.clock()
+		task.defer(function()
+			if Audio.LastSelect >= asked - 0.03 then return end
+			create(name, SoundService, opts)
+		end)
+		return nil
+	end
 	return create(name, SoundService, opts)
 end
 Audio.PlayUI = Audio.Play2D

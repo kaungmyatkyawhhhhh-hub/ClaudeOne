@@ -372,6 +372,13 @@ task.spawn(function()
 	end
 end)
 
+-- (prompt 54, 23 Oct) the ALTERS tab works like the Inventory's Looks > Alters (Shared/UI/AltersPanel, shop mode): the
+-- tiles on the left (the path, bicep icons, ??? undiscovered), the picked one in a detail panel on the right with ALTER
+-- NOW / WHAT TO TRAIN / OWNED + MY SKINS. It opens on the next alter.
+local AltersPanel = require(Shared.UI.AltersPanel)
+local altersPanel = AltersPanel.Build(modal.body, { mode = "shop", columns = 3, onClose = function() modal.close() end })
+local altersWasShown = false
+
 function refresh()
 	for _, child in ipairs(grid:GetChildren()) do
 		if child:IsA("GuiObject") then child:Destroy() end
@@ -380,6 +387,16 @@ function refresh()
 	table.clear(spinning)
 	local open = sectionOpen(tab)
 	lockNote.Visible = not open
+	local altersShown = open and tab == "Alters"
+	altersPanel.frame.Visible = altersShown
+	if altersShown then
+		grid.Visible = false
+		strip.Visible = false
+		if not altersWasShown then altersPanel.selectNext() else altersPanel.refresh() end
+		altersWasShown = true
+		return
+	end
+	altersWasShown = false
 	grid.Visible = open
 	if not open then
 		lockNote.Text = if tab == "Alters" then "BODY ALTERS OPEN AT 7'0\". KEEP GROWING!" else "GEAR OPENS AT GROWTH SPURT 2. KEEP TRAINING!"
@@ -479,9 +496,11 @@ function refresh()
 		scale.Scale = if picked[tab] == entry.key then 1 else 0.96
 		tile:SetAttribute("Picked", picked[tab] == entry.key)
 		tile.Activated:Connect(function()
-			Audio.PlayUI("Click")
+			-- (prompt 54) the grid is rebuilt: the new tile does the bounce (quiet: Kit.RewardTile's hook played the sound)
 			picked[tab] = entry.key
 			refresh()
+			local now = tilesByKey[entry.key]
+			if now then Kit.SelectFeedback(now, strip, true) end
 		end)
 	end
 	local current = nil

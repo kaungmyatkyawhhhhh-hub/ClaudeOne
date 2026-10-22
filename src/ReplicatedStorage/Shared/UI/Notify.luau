@@ -147,8 +147,11 @@ local function card(entry)
 		Kit.Text({ Name = "Title", LayoutOrder = 1, Text = entry.title, Font = "Title", KeepItalic = true, Stroke = false, Upper = true, TextSize = 14, TextWrapped = true,
 			Size = UDim2.fromOffset(TITLE_ROOM, 38), TextXAlignment = Enum.TextXAlignment.Left, TextTruncate = Enum.TextTruncate.AtEnd, Parent = texts })
 	else
-		Kit.Text({ Name = "Title", LayoutOrder = 1, Text = entry.title, Font = "Title", KeepItalic = true, Stroke = false, Upper = true, TextSize = if entry.sub then 16 else 15, Size = UDim2.fromOffset(0, 20),
-			AutomaticSize = Enum.AutomaticSize.X, TextTruncate = Enum.TextTruncate.AtEnd, Parent = texts })
+		-- (no "..." on a one-liner: the heavy italic's auto width comes out a hair short and cut short words; a long one
+		-- wraps above instead)
+		local title = Kit.Text({ Name = "Title", LayoutOrder = 1, Text = entry.title, Font = "Title", KeepItalic = true, Stroke = false, Upper = true, TextSize = if entry.sub then 16 else 15, Size = UDim2.fromOffset(0, 20),
+			AutomaticSize = Enum.AutomaticSize.X, TextTruncate = Enum.TextTruncate.None, Parent = texts })
+		New("UIPadding", { PaddingRight = UDim.new(0, 4), Parent = title })
 	end
 	if entry.sub and entry.sub ~= "" then
 		Kit.Text({ Name = "Sub", LayoutOrder = 2, Text = entry.sub, Font = "Strong", TextSize = 11, TextColor3 = SUB, Size = UDim2.fromOffset(0, 15),

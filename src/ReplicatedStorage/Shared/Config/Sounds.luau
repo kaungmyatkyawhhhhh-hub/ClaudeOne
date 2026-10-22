@@ -54,6 +54,9 @@ return {
 
 	-- Interface (2D, quieter than gameplay)
 	Click = { ids = { 9114212934 }, volume = 0.1, pitch = 0.05, group = "UI" },                  -- Button click: every button press
+	-- (prompt 54) picking an item tile and switching tabs: the same soft click, quieter, ±5% pitch so it never gets old
+	Select = { ids = { 9114212934 }, volume = 0.08, pitch = 0.05, group = "UI", basePitch = 0.92 }, -- Button click, lower: an item tile picked
+	TabTick = { ids = { 9114212934 }, volume = 0.05, pitch = 0.05, group = "UI", basePitch = 1.25 }, -- Button click, higher and lighter: a tab
 	Whoosh = { ids = { 9125715121 }, volume = 0.1, pitch = 0.05, group = "UI", maxLength = 0.6 }, -- Robe Swish, cloth flap: menus and panels opening
 
 	-- Genetics reveal (2D)

@@ -87,7 +87,8 @@ local function rarityOf(trainer) return Trainers.RarityById[trainer.rarity] end
 -- The window
 ------------------------------------------------------------------------
 local menuButton = SideMenu.Add("Trainers", "Trainers", Icons.Clipboard, 7.5)
-local tab = "Agency"
+local tab = "My"
+local showTab -- (below)
 local myPanel -- (below: MY TRAINERS)
 local agencyFrame -- (below: the AGENCY tab's content)
 local bindKeys, keyboard -- (below: E / R / T while the Agency tab is open)
@@ -122,9 +123,15 @@ do
 		dot()
 	end)
 end
-local function showTab(id: string)
+-- (prompt 54, 23 Oct) one window, two places: the left-nav TRAINERS button opens only MY TRAINERS (your trainers); the
+-- Trainer Agency (rolling) opens only at the Agency desk in the Starter Gym (its "ROLL TRAINERS" prompt); its own MY
+-- TRAINERS button (bottom of the roll side) switches to your trainers. No tabs.
+local tabsRow = modal.panel:FindFirstChild("Tabs", true)
+if tabsRow then tabsRow.Visible = false end
+function showTab(id: string)
 	tab = id
 	modal.selectTab(id)
+	modal.setTitle(if id == "My" then "My trainers" else "Trainer agency")
 	agencyFrame.Visible = id == "Agency"
 	myPanel.frame.Visible = id == "My"
 	if id == "My" then myPanel.refresh() end
@@ -194,7 +201,7 @@ for order, trainer in ipairs(Trainers.List) do
 	local slot = { cell = cell, tile = tile, count = count, trainer = trainer, order = order }
 	slots[trainer.id] = slot
 	tile.button.Activated:Connect(function()
-		Audio.PlayUI("Click")
+		Kit.SelectFeedback(tile.button) -- (prompt 54: bounce + select sound)
 		if tooltip.Visible and tipName.Text ~= "" and os.clock() - tipShownAt < 2.5 and tooltip:GetAttribute("For") == trainer.id then hideTip() return end
 		tooltip:SetAttribute("For", trainer.id)
 		showTip(slot)
@@ -347,6 +354,21 @@ myTrainers.Activated:Connect(function()
 	Audio.PlayUI("Click")
 	showTab("My")
 end)
+-- (prompt 31 / 54) the red dot for a trainer you haven't seen in MY TRAINERS yet: on this button (the tabs are gone)
+do
+	local Discovery = require(Shared.UI.Discovery)
+	local TrainersPanel = require(Shared.UI.TrainersPanel)
+	local function dot()
+		if ClientData.IsLoaded() then Discovery.Dot(myTrainers, Discovery.HasNew("Trainers", TrainersPanel.Discovered(ClientData.Get().trainers))) end
+	end
+	ClientData.Changed:Connect(function(path)
+		if path[1] == "trainers" or path[1] == "settings" then dot() end
+	end)
+	task.spawn(function()
+		ClientData.Get()
+		dot()
+	end)
+end
 
 local autoOn = false
 local autoLoop -- (below)
@@ -1345,14 +1367,15 @@ modal.gui:GetPropertyChangedSignal("Enabled"):Connect(function()
 	end
 end)
 menuButton.Activated:Connect(function()
-	if modal.isOpen() then modal.close() else UIBus.PanelOpened("Trainers") showTab(tab) open() end
+	-- (prompt 54) the TRAINERS button: MY TRAINERS only (rolling is at the Agency desk)
+	if modal.isOpen() then modal.close() else UIBus.PanelOpened("Trainers") showTab("My") open() end
 end)
 UIBus.RegisterPanel("Trainers", function() modal.close() end)
--- (tab "My" = MY TRAINERS; nothing = the Agency)
-UIBus.OpenAgency.Event:Connect(function(openTab)
+-- (prompt 54: always MY TRAINERS; the Agency opens only at its desk)
+UIBus.OpenAgency.Event:Connect(function(_openTab)
 	if UIBus.IsLocked and UIBus.IsLocked("Trainers") then UIBus.ShowLocked("Trainers") return end -- (prompt 39: still locked, GuideClient)
 	if not modal.isOpen() then UIBus.PanelOpened("Trainers") end
-	showTab(if openTab == "My" then "My" else "Agency")
+	showTab("My")
 	open()
 end)
 ClientData.Changed:Connect(function(path)
