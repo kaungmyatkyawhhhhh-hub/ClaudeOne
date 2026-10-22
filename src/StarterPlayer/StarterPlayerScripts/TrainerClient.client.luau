@@ -146,7 +146,7 @@ end
 -- (prompt 52, 23 Oct: rebuilt to the owner's reference ref_agency.png) ONE panel: TRAINER AGENCY with the gold underline,
 -- the 8 rarities as 2 rows of 4 big trainer tiles (Shared/UI/TrainerTile in rarity mode: his name, his portrait (a black
 -- silhouette with a rim on a bright burst until you own him; Secret and Eternal "???" too), the rarity name in its color,
--- the chance as a percentage; a gold check when owned, "x2" bottom-right). A tap (or hover) shows his name and boost.
+-- the chance as a percentage; "x2" bottom-right; owner, 23 Oct: no check, his art says he's owned). A tap (or hover) shows his name and boost.
 -- UNDER the panel, centred: the pity pill ("EPIC GUARANTEED IN 63 ROLLS" and a thin teal bar), then one row: the red ROLL
 -- ("525 COINS"), flat X3 (its price) and AUTO (OFF / ON), MY TRAINERS and the gear (the auto-delete toggles).
 -- The tiles take the room the screen has (layoutWindow, below).

@@ -13,7 +13,7 @@
 -- 3D rig (a not-owned one = the portrait in black with a rim), the planner's backgrounds per stage (Trainers.StageArt:
 -- hex = the base, evo = the stage effect on top, animated: IRON-BORN pulses, BEAST-MODE / LIMITLESS turn, COLOSSUS
 -- flashes with its lightning), and a highlight that runs round the border. Rarity mode (the Agency): the rarity's colors,
--- the rarity name and the chance instead of the stage and LV, a gold check when owned.
+-- the rarity name and the chance instead of the stage and LV (owner, 23 Oct: no check on the Agency).
 --   TrainerTile.New({ Name, LayoutOrder, Size, Position, AnchorPoint, Parent, px = its width in mockup px }) -> tile
 --   tile:Set({ id, s, l, equipped, noLevel, caption, hidden }); tile.cell (the frame to place), tile.button (taps)
 -- (owner, 23 Oct) hidden = a stage the player has never had (the evolutions chart): him as a black silhouette, "???" for the
@@ -322,7 +322,8 @@ function Tile:Set(info)
 		self.stageGradient.Color = twoColors
 		self.stage.TextColor3 = Color3.new(1, 1, 1)
 	end
-	self.check.Visible = info.equipped == true or (rarityMode and info.owned == true)
+	-- (owner, 23 Oct) only EQUIPPED (MY TRAINERS); the Agency shows no check: an owned trainer shows his art, the rest a silhouette
+	self.check.Visible = info.equipped == true
 	self.name.Visible, self.stage.Visible, self.level.Visible = not info.mini, not info.mini, not info.mini
 	self.artHolder.Position = if info.mini then UDim2.fromScale(0.5, 0.04) else UDim2.fromScale(0.5, 0.12)
 	self.artHolder.Size = if info.mini then UDim2.fromScale(1.05, 0.96) else UDim2.fromScale(1.02, 0.62)

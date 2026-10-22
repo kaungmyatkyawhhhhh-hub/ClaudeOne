@@ -154,6 +154,7 @@ local tab = "Supplements"
 local picked = {} -- [section] = entry key
 local refresh -- (below)
 local openOn -- (below)
+local tileColor -- (below)
 local tabs = {}
 for _, section in ipairs(PumpShop.Sections) do table.insert(tabs, { id = section.id, text = section.name, icon = section.icon }) end
 local modal = Kit.Modal({ name = "PumpShop", title = "Pump Shop", icon = "dumbbell", width = W, height = H, displayOrder = 25, tabs = tabs, coins = true,
@@ -171,48 +172,120 @@ local function showShopTabs()
 	modal.setTitle(shop().title)
 end
 
--- (prompt 47, 22 Oct; like the Store, prompt 40 mockups 01_store_A / real\store_auras) A row of item tiles (Kit.RewardTile:
--- the item's big icon on a soft glow in its color, the name, the effect as a gold pill "+50% EXP · 15 MIN", a chunky
--- green BUY button with the coin price; can't afford = grey + "NEED 1,200 MORE"; owned gear = a gold OWNED stamp; the
--- Champion gear's border has a gold highlight running round it). The picked tile shows a detail strip at the bottom:
--- icon, name, what it does in one plain line, and its buttons (BUY x1 / x5 for supplements, the next gear level, DNA:
--- BUY TOKEN / REROLL, alters: ALTER NOW / MY SKINS). Buying: the coins count down, the item flies to the Inventory button.
+-- (prompt 47, 22 Oct) A row of item tiles and a detail strip at the bottom for the picked one (its buttons: BUY x1 / x5
+-- for supplements, the next gear level, DNA: BUY TOKEN / REROLL). Buying: the coins count down, the item flies to the
+-- Inventory button.
+-- (owner, 23 Oct) Restyled like the Alters / Auras detail panels (premium, not chunky; Coach Dex's shop is this window):
+--   * a tile: a soft background in the item's colour filling it, faint rings behind the icon, a dark gradient at the
+--     bottom for the words, a thin outline in its colour (picked: gold, with the soft glow, Shared/UI/ReadyGlow); the icon
+--     centred on a glow; the name white and stroked (one line, it shrinks to fit); the effect in a slim dark pill outlined
+--     in its colour ("+50% EXP · 15 MIN"; long ones shortened, "2x STAMINA REGEN"); the price on a slim graphite button with
+--     a coin ("3,950"; can't afford: the price red and "NEED 1,200 MORE" under it; owned gear: a gold OWNED).
+--   * the strip: the picked item's background, its icon on a glow, the name white and stroked, one light gray line, and
+--     slim graphite buttons with a thin gold outline, a coin and the price ("x1", "x5"; a small BEST tag on x5 only when
+--     it's cheaper per item).
 local STRIP_H = 64
-local TILE_W, TILE_H = 132, 148
-local grid = New("ScrollingFrame", { Name = "Grid", BackgroundTransparency = 1, BorderSizePixel = 0, Size = UDim2.new(1, 0, 1, -(STRIP_H + 8)),
+local TILE_W, TILE_H = 132, 146
+local TILE_GLOW = 8 -- (the picked tile's glow reaches this far: the row leaves room for it)
+local GRAPHITE = Color3.fromHex("#232027")
+local GRAPHITE_EDGE = Color3.fromHex("#4A4652")
+local PILL_DARK = Color3.fromHex("#1E1B20")
+local NEED_RED = Color3.fromHex("#FF5A5F")
+local ReadyGlow = require(Shared.UI.ReadyGlow)
+local grid = New("ScrollingFrame", { Name = "Grid", BackgroundTransparency = 1, BorderSizePixel = 0, Size = UDim2.new(1, 0, 1, -(STRIP_H + 4)),
 	ScrollBarThickness = 4, ScrollBarImageColor3 = Colors.Muted, AutomaticCanvasSize = Enum.AutomaticSize.X, CanvasSize = UDim2.new(),
 	ScrollingDirection = Enum.ScrollingDirection.X, Parent = modal.body }, {
 	New("UIListLayout", { FillDirection = Enum.FillDirection.Horizontal, Padding = UDim.new(0, 10), SortOrder = Enum.SortOrder.LayoutOrder,
 		VerticalAlignment = Enum.VerticalAlignment.Center }),
-	New("UIPadding", { PaddingLeft = UDim.new(0, 6), PaddingRight = UDim.new(0, 6), PaddingTop = UDim.new(0, 6), PaddingBottom = UDim.new(0, 6) }),
+	New("UIPadding", { PaddingLeft = UDim.new(0, TILE_GLOW), PaddingRight = UDim.new(0, TILE_GLOW), PaddingTop = UDim.new(0, 2), PaddingBottom = UDim.new(0, 2) }),
 })
 local lockNote = Kit.Text({ Name = "Locked", Text = "", Font = "Chunky", TextSize = 18, TextWrapped = true, AnchorPoint = Vector2.new(0.5, 0.5), Position = UDim2.fromScale(0.5, 0.4),
 	Size = UDim2.new(0.8, 0, 0, 60), Visible = false, Parent = modal.body })
 
--- the detail strip
+-- a soft themed background in `color` (a dark gradient, faint rings round `center`), rounded; returns a function to recolour it
+local function themedBackground(parent: GuiObject, corner: number, center: UDim2, ringSizes: { number })
+	local base = New("Frame", { Name = "Theme", BackgroundColor3 = Color3.new(1, 1, 1), BorderSizePixel = 0, Size = UDim2.fromScale(1, 1), ZIndex = 1, Parent = parent }, {
+		New("UICorner", { CornerRadius = UDim.new(0, corner) }),
+	})
+	local gradient = New("UIGradient", { Rotation = 90, Parent = base })
+	-- (the rings in a frame inset by ~0.3 of the corner radius: ClipsDescendants clips square, no corner pokes out)
+	local inset = math.ceil(corner * 0.3)
+	local clip = New("Frame", { Name = "Rings", BackgroundTransparency = 1, ClipsDescendants = true, Position = UDim2.fromOffset(inset, inset),
+		Size = UDim2.new(1, -2 * inset, 1, -2 * inset), ZIndex = 1, Parent = parent })
+	local strokes = {}
+	for _, size in ipairs(ringSizes) do
+		local ring = New("Frame", { BackgroundTransparency = 1, AnchorPoint = Vector2.new(0.5, 0.5), Position = center - UDim2.fromOffset(inset, inset), Size = UDim2.fromOffset(size, size),
+			ZIndex = 1, Parent = clip }, { New("UICorner", { CornerRadius = UDim.new(1, 0) }) })
+		table.insert(strokes, New("UIStroke", { Thickness = 1.5, Transparency = 0.72, Parent = ring }))
+	end
+	return function(color: Color3)
+		gradient.Color = ColorSequence.new(color:Lerp(Color3.new(0, 0, 0), 0.66), color:Lerp(Color3.new(0, 0, 0), 0.86))
+		for _, stroke in ipairs(strokes) do stroke.Color = color end
+	end
+end
+
+-- a slim graphite button with a thin outline (like the alters' WORN): an optional label ("x1"), a coin and a number, or
+-- just words. look = "buy" (gold outline), "plain" (gray outline), "need" (the price red), "owned" (gold words), "off"
+local function slimButton(parent, props, label: string?, price: number?, look: string, textSize: number?)
+	local size = textSize or 14
+	local button = New("TextButton", { Name = props.Name or "Button", Text = "", AutoButtonColor = false, BackgroundColor3 = GRAPHITE, Parent = parent }, {
+		New("UICorner", { CornerRadius = UDim.new(0, 8) }),
+		New("UIStroke", { Name = "Edge", Thickness = 1.5, ApplyStrokeMode = Enum.ApplyStrokeMode.Border,
+			Color = if look == "buy" or look == "owned" then Colors.Gold else GRAPHITE_EDGE }),
+	})
+	for k, v in pairs(props) do if k ~= "Name" then button[k] = v end end
+	local row = New("Frame", { Name = "Row", BackgroundTransparency = 1, Size = UDim2.fromScale(1, 1), ZIndex = button.ZIndex + 1, Parent = button }, {
+		New("UIListLayout", { FillDirection = Enum.FillDirection.Horizontal, Padding = UDim.new(0, 5), HorizontalAlignment = Enum.HorizontalAlignment.Center,
+			VerticalAlignment = Enum.VerticalAlignment.Center, SortOrder = Enum.SortOrder.LayoutOrder }),
+	})
+	local color = if look == "owned" then Colors.Gold elseif look == "need" then NEED_RED elseif look == "off" then Colors.Faint else Colors.Text
+	if label then
+		Kit.Text({ Name = "Label", LayoutOrder = 1, Text = label, Font = "Title", KeepItalic = true, TextSize = size, Upper = true, TextColor3 = color,
+			Size = UDim2.fromOffset(0, size + 4), AutomaticSize = Enum.AutomaticSize.X, ZIndex = button.ZIndex + 2, Parent = row })
+	end
+	if price then
+		Kit.Coin(math.floor(size * 1.05), { LayoutOrder = 2, ZIndex = button.ZIndex + 2, Parent = row })
+		Kit.Text({ Name = "Price", LayoutOrder = 3, Text = Kit.Format(price), Font = "Title", KeepItalic = true, TextSize = size, TextColor3 = color,
+			Size = UDim2.fromOffset(0, size + 4), AutomaticSize = Enum.AutomaticSize.X, ZIndex = button.ZIndex + 2, Parent = row })
+	end
+	Theme.BindPress(button)
+	return button
+end
+
+-- the detail strip: the picked item's background behind it
 local strip = New("Frame", { Name = "Detail", BackgroundColor3 = Color3.fromHex("#141317"), AnchorPoint = Vector2.new(0, 1), Position = UDim2.fromScale(0, 1),
 	Size = UDim2.new(1, 0, 0, STRIP_H), Parent = modal.body }, {
 	New("UICorner", { CornerRadius = UDim.new(0, 12) }),
-	New("UIStroke", { Name = "Edge", Color = Colors.Gold, Thickness = 2, Transparency = 0.2, ApplyStrokeMode = Enum.ApplyStrokeMode.Border }),
+	New("UIStroke", { Name = "Edge", Color = Colors.Gold, Thickness = 1.5, ApplyStrokeMode = Enum.ApplyStrokeMode.Border }),
 })
--- (owner, 23 Oct, chrome reset: no mesh on a child of the panel)
-local stripIcon = New("Frame", { Name = "Icon", BackgroundTransparency = 1, Position = UDim2.fromOffset(8, 6), Size = UDim2.fromOffset(52, 52), Parent = strip })
+local paintStrip = themedBackground(strip, 12, UDim2.fromOffset(34, STRIP_H / 2), { 70, 120 })
+local stripGlow = AlterFX.Image(strip, "ember", { Name = "Glow", AnchorPoint = Vector2.new(0.5, 0.5), Position = UDim2.fromOffset(34, STRIP_H / 2), Size = UDim2.fromOffset(80, 80),
+	ImageTransparency = 0.45, ZIndex = 2 })
+local stripIcon = New("Frame", { Name = "Icon", BackgroundTransparency = 1, Position = UDim2.fromOffset(10, 8), Size = UDim2.fromOffset(48, 48), ZIndex = 3, Parent = strip })
 local stripName = Kit.Text({ Name = "Name", Text = "", Font = "Chunky", TextSize = 18, Position = UDim2.fromOffset(68, 8), Size = UDim2.new(1, -340, 0, 22),
-	TextXAlignment = Enum.TextXAlignment.Left, Parent = strip })
+	TextXAlignment = Enum.TextXAlignment.Left, ZIndex = 3, Parent = strip })
 Kit.Fit(stripName, 18, 11)
-local stripLine = Kit.Text({ Name = "Line", Text = "", Font = "Strong", TextSize = 12, TextColor3 = Color3.fromHex("#BDBAC4"), TextWrapped = true, Position = UDim2.fromOffset(68, 30),
-	Size = UDim2.new(1, -340, 0, 30), TextXAlignment = Enum.TextXAlignment.Left, TextYAlignment = Enum.TextYAlignment.Top, Parent = strip })
+local stripLine = Kit.Text({ Name = "Line", Text = "", Font = "Strong", TextSize = 12, TextColor3 = Color3.fromHex("#C9C5CF"), TextWrapped = true, Position = UDim2.fromOffset(68, 30),
+	Size = UDim2.new(1, -340, 0, 30), TextXAlignment = Enum.TextXAlignment.Left, TextYAlignment = Enum.TextYAlignment.Top, ZIndex = 3, Parent = strip })
 Kit.Fit(stripLine, 12, 9, 2)
-local buttonRow = New("Frame", { Name = "Buttons", BackgroundTransparency = 1, AnchorPoint = Vector2.new(1, 0.5), Position = UDim2.new(1, -8, 0.5, 0),
-	Size = UDim2.fromOffset(330, 48), Parent = strip }, { Theme.List(Enum.FillDirection.Horizontal, 8, Enum.HorizontalAlignment.Right, Enum.VerticalAlignment.Center) })
+local buttonRow = New("Frame", { Name = "Buttons", BackgroundTransparency = 1, AnchorPoint = Vector2.new(1, 0.5), Position = UDim2.new(1, -10, 0.5, 0),
+	Size = UDim2.fromOffset(330, 48), ZIndex = 3, Parent = strip }, { Theme.List(Enum.FillDirection.Horizontal, 8, Enum.HorizontalAlignment.Right, Enum.VerticalAlignment.Center) })
 
 local function clearButtons()
 	for _, child in ipairs(buttonRow:GetChildren()) do
 		if child:IsA("GuiButton") then child:Destroy() end
 	end
 end
-local function addButton(style, text, width, onTap, order)
-	local button = Kit.Button(style, text, { LayoutOrder = order or 1, Parent = buttonRow }, { width = width, height = 44, textSize = 15, icon = if style == "Green" then "coin" else nil })
+-- style: "Green" (a buy you can afford: gold outline), "Disabled" (can't afford: the price red), "Gold" (gold outline,
+-- gold words), "Quiet" (gray outline); price = coins shown with a coin (nil = words only); best = the small BEST tag
+local function addButton(style, text, width, onTap, order, price, best)
+	local look = if style == "Green" then "buy" elseif style == "Disabled" then (if price then "need" else "off") elseif style == "Gold" then "owned" else "plain"
+	local button = slimButton(buttonRow, { Name = "Buy" .. (order or 1), LayoutOrder = order or 1, Size = UDim2.fromOffset(width, 40), ZIndex = 4 }, text, price, look, 15)
+	if best then
+		local tag = New("Frame", { Name = "Best", BackgroundColor3 = Colors.Gold, AnchorPoint = Vector2.new(1, 0.5), Position = UDim2.new(1, 4, 0, 0), Size = UDim2.fromOffset(38, 14),
+			ZIndex = 8, Parent = button }, { New("UICorner", { CornerRadius = UDim.new(1, 0) }) })
+		Kit.Text({ Name = "Text", Text = "BEST", Font = "Chunky", TextSize = 10, TextColor3 = Colors.Ink, Size = UDim2.fromScale(1, 1), ZIndex = 9, Parent = tag })
+	end
 	button.Activated:Connect(function()
 		if style == "Disabled" then return end
 		Audio.PlayUI("Click")
@@ -231,15 +304,18 @@ local function setIcon(holder: GuiObject, entry)
 	if string.sub(icon, 1, 13) == "rbxassetid://" then
 		New("ImageLabel", { BackgroundTransparency = 1, Image = icon, ScaleType = Enum.ScaleType.Fit, Size = UDim2.fromScale(1, 1), Parent = holder })
 	else
-		Kit.IconTile(icon, entry.color, math.floor(holder.AbsoluteSize.X > 0 and holder.AbsoluteSize.X or 52), { Size = UDim2.fromScale(1, 1), Parent = holder })
+		Kit.IconTile(icon, tileColor(entry), math.floor(holder.AbsoluteSize.X > 0 and holder.AbsoluteSize.X or 52), { Size = UDim2.fromScale(1, 1), Parent = holder })
 	end
 end
 
--- the effect pill text: "+50% EXP · 15 MIN"
+-- the effect pill text: "+50% EXP · 15 MIN" (owner, 23 Oct: short enough for the tile: "+100%" -> "2x", and a long effect
+-- drops the time, which the strip still says)
 local function effectText(entry): string
 	if entry.section == "Supplements" then
 		local item = Boosts.ById[entry.key]
-		return (item.short or item.text) .. (if item.duration then " · " .. string.upper(item.duration) else "")
+		local short = string.gsub(item.short or item.text, "^%+100%%", "2x")
+		local full = short .. (if item.duration then " · " .. string.upper(item.duration) else "")
+		return if #full > 20 then short else full
 	elseif entry.section == "Gear" then
 		local _, nextLevel = gearLevels(entry.gear)
 		local level = nextLevel or PumpShop.GearLevels[#PumpShop.GearLevels]
@@ -274,6 +350,20 @@ local function flyToInventory(entry, from: GuiObject?)
 	end)
 end
 
+-- an item's colour (gear: its next level's, or the one you have)
+function tileColor(entry): Color3
+	local color = entry.color or Colors.Gold
+	if entry.section == "Gear" then
+		local have, nextLevel = gearLevels(entry.gear)
+		local level = nextLevel or have
+		if level then color = Color3.fromHex(level.color) end
+	elseif entry.section == "Alters" then
+		color = AlterThemes.Get(entry.alter.number).accent
+	end
+	if color == Color3.fromHex("#2B2B30") then color = Color3.fromHex("#8A8790") end -- (Basic black: readable)
+	return color
+end
+
 local tilesByKey = {}
 local lastBuyTile = nil
 local function buy(entry, ...)
@@ -289,6 +379,10 @@ local function showStrip(entry)
 	strip.Visible = true
 	setIcon(stripIcon, entry)
 	stripName.Text = string.upper(entry.name)
+	local color = tileColor(entry)
+	paintStrip(color)
+	stripGlow.ImageColor3 = color
+	strip.Edge.Color = color
 	clearButtons()
 	local price = priceOf(entry)
 	local afford = price ~= nil and coins() >= price
@@ -299,9 +393,11 @@ local function showStrip(entry)
 		for i, quantity in ipairs(shop().quantities or { 1, 5 }) do
 			if quantity <= 5 then
 				local cost = (price or 0) * quantity
-				addButton(if coins() >= cost then "Green" else "Disabled", "x" .. quantity .. "  " .. Kit.Format(cost), 140, function()
+				-- (BEST only when the bigger pack is cheaper per item; today it's the same price each)
+				local best = quantity > 1 and cost / quantity < (price or 0)
+				addButton(if coins() >= cost then "Green" else "Disabled", "x" .. quantity, 128, function()
 					buy(entry, "Supplements", entry.key, quantity)
-				end, i)
+				end, i, cost, best)
 			end
 		end
 	elseif entry.section == "Gear" then
@@ -310,9 +406,9 @@ local function showStrip(entry)
 		if have then table.insert(parts, "You have " .. have.name .. ".") end
 		stripLine.Text = table.concat(parts, " ")
 		if nextLevel and table.find(shop().gear, nextLevel.id) then
-			addButton(if afford then "Green" else "Disabled", "Buy " .. nextLevel.name .. "  " .. Kit.Format(nextLevel.price), 230, function()
+			addButton(if afford then "Green" else "Disabled", "Buy " .. nextLevel.name, 210, function()
 				buy(entry, "Gear", entry.gear.id)
-			end)
+			end, 1, nextLevel.price)
 		elseif nextLevel then
 			local atCoach = table.find(PumpShop.Shops.Coach.gear, nextLevel.id) ~= nil
 			addButton("Quiet", if atCoach then "Go to Coach Dex" else "Go to Pump Shop", 200, function()
@@ -352,10 +448,10 @@ local function showStrip(entry)
 			modal.close()
 			UIBus.OpenGenetics:Fire()
 		end, 1)
-		addButton(if afford then "Green" else "Disabled", "Buy  " .. Kit.Format(price or 0), 160, function()
+		addButton(if afford then "Green" else "Disabled", "Buy", 150, function()
 			lastBuyTile = tilesByKey[entry.key]
 			Remotes.PlayerAction:FireServer("BuyDnaToken")
-		end, 2)
+		end, 2, price or 0)
 	end
 end
 
@@ -424,84 +520,104 @@ function refresh()
 	end
 	if not picked[tab] and list[1] then picked[tab] = list[1].key end
 	for order, entry in ipairs(list) do
-		local color = entry.color or Colors.Gold
+		local color = tileColor(entry)
 		local champion = false
 		if entry.section == "Gear" then
 			local have, nextLevel = gearLevels(entry.gear)
 			local level = nextLevel or have
-			if level then
-				color = Color3.fromHex(level.color)
-				champion = level.id == "Champion"
-			end
-		elseif entry.section == "Alters" then
-			color = AlterThemes.Get(entry.alter.number).accent
+			champion = level ~= nil and level.id == "Champion"
 		end
-		if color == Color3.fromHex("#2B2B30") then color = Color3.fromHex("#8A8790") end -- (Basic black: readable)
-		local tile, api = Kit.RewardTile(color, { Name = entry.key, LayoutOrder = order, Size = UDim2.fromOffset(TILE_W, TILE_H), Parent = grid })
+		local isPicked = picked[tab] == entry.key
+		-- (a cell per tile: the picked tile's glow sits beside it, outside the list layout)
+		local cell = New("Frame", { Name = entry.key, LayoutOrder = order, BackgroundTransparency = 1, Size = UDim2.fromOffset(TILE_W, TILE_H), Parent = grid })
+		local tile = New("TextButton", { Name = "Tile", Text = "", AutoButtonColor = false, BackgroundColor3 = color:Lerp(Color3.new(0, 0, 0), 0.85), Size = UDim2.fromScale(1, 1),
+			ZIndex = 2, Parent = cell }, { New("UICorner", { CornerRadius = UDim.new(0, 12) }) })
+		local border = New("UIStroke", { Name = "Border", Color = if isPicked then Colors.Gold else color, Thickness = if isPicked then 2 else 1.5,
+			ApplyStrokeMode = Enum.ApplyStrokeMode.Border, Parent = tile })
 		tilesByKey[entry.key] = tile
-		-- the big icon on a soft glow
+		-- the soft background in its colour, faint rings behind the icon, a dark gradient at the bottom for the words
+		themedBackground(tile, 12, UDim2.new(0.5, 0, 0, 36), { 64, 104 })(color)
+		New("Frame", { Name = "Shade", BackgroundColor3 = Color3.new(0, 0, 0), AnchorPoint = Vector2.new(0, 1), Position = UDim2.fromScale(0, 1), Size = UDim2.fromScale(1, 0.58),
+			ZIndex = 1, Parent = tile }, {
+			New("UICorner", { CornerRadius = UDim.new(0, 12) }),
+			New("UIGradient", { Rotation = 90, Transparency = NumberSequence.new(1, 0.25) }),
+		})
+		-- the icon, centred on a glow in its colour
+		AlterFX.Image(tile, "ember", { Name = "Glow", AnchorPoint = Vector2.new(0.5, 0.5), Position = UDim2.new(0.5, 0, 0, 36), Size = UDim2.fromOffset(96, 96),
+			ImageColor3 = color, ImageTransparency = 0.4, ZIndex = 2 })
+		local holder = New("Frame", { Name = "Icon", BackgroundTransparency = 1, AnchorPoint = Vector2.new(0.5, 0.5), Position = UDim2.new(0.5, 0, 0, 36), Size = UDim2.fromOffset(52, 52),
+			ZIndex = 3, Parent = tile })
 		local icon = iconOf(entry)
-		AlterFX.Image(tile, "ember", { Name = "Glow", AnchorPoint = Vector2.new(0.5, 0.5), Position = UDim2.new(0.5, 0, 0, 42), Size = UDim2.fromOffset(104, 104),
-			ImageColor3 = color, ImageTransparency = 0.55, ZIndex = 1 })
 		if string.sub(icon, 1, 13) == "rbxassetid://" then
-			api.art.Image = icon
+			New("ImageLabel", { BackgroundTransparency = 1, Image = icon, ScaleType = Enum.ScaleType.Fit, Size = UDim2.fromScale(1, 1), ZIndex = 3, Parent = holder })
 		else
-			api.art.Image = ""
-			local holder = New("Frame", { BackgroundTransparency = 1, AnchorPoint = Vector2.new(0.5, 0), Position = UDim2.new(0.5, 0, 0, 10), Size = UDim2.fromOffset(60, 60),
-				ZIndex = 2, Parent = tile })
-			Kit.IconTile(icon, color, 60, { Size = UDim2.fromScale(1, 1), Parent = holder })
+			Kit.IconTile(icon, color, 52, { Size = UDim2.fromScale(1, 1), ZIndex = 3, Parent = holder })
 		end
-		api.art.Size = UDim2.new(0.8, 0, 0, 74)
-		api.name.Text = entry.name
-		api.name.Position = UDim2.new(0.5, 0, 1, -48)
-		-- the effect as a gold pill (sub line), the price on the green button (pill)
+		-- the name: white, stroked, one line (it shrinks to fit)
+		local name = Kit.Text({ Name = "Name", Text = string.upper(entry.name), Font = "Chunky", TextSize = 16, AnchorPoint = Vector2.new(0.5, 0), Position = UDim2.new(0.5, 0, 0, 64),
+			Size = UDim2.new(1, -12, 0, 18), ZIndex = 4, Parent = tile })
+		name.TextWrapped = false
+		Kit.Fit(name, 16, 9)
+		-- the effect: a slim dark pill outlined in its colour
 		local effect = effectText(entry)
-		api.sub.Visible = effect ~= ""
-		api.sub.Text = effect
-		api.sub.TextColor3 = Colors.Gold
-		api.sub.Position = UDim2.new(0.5, 0, 1, -33)
+		if effect ~= "" then
+			local pill = New("Frame", { Name = "Effect", BackgroundColor3 = PILL_DARK, AnchorPoint = Vector2.new(0.5, 0), Position = UDim2.new(0.5, 0, 0, 85), Size = UDim2.new(1, -14, 0, 17),
+				ZIndex = 4, Parent = tile }, {
+				New("UICorner", { CornerRadius = UDim.new(1, 0) }),
+				New("UIStroke", { Color = color, Thickness = 1.5, ApplyStrokeMode = Enum.ApplyStrokeMode.Border }),
+			})
+			local text = Kit.Text({ Name = "Text", Text = effect, Font = "Chunky", TextSize = 11, Position = UDim2.fromOffset(6, 0), Size = UDim2.new(1, -12, 1, 0), ZIndex = 5, Parent = pill })
+			text.TextWrapped = false
+			Kit.Fit(text, 11, 7)
+		end
+		-- the price: a slim graphite button with a coin (can't afford: red + NEED x MORE; owned gear: gold OWNED)
 		local price = priceOf(entry)
+		local priceProps = { Name = "Price", AnchorPoint = Vector2.new(0.5, 0), Position = UDim2.new(0.5, 0, 0, 107), Size = UDim2.new(1, -16, 0, 22), ZIndex = 4 }
+		local priceButton = nil
 		if entry.section == "Alters" then
 			local status = alterStatus(entry, altersNow)
-			api:SetState(if entry.alter.number < altersNow.next then "owned" else "normal", status)
-			if entry.alter.number >= altersNow.next then api:SetRequirement(status) end
+			priceButton = slimButton(tile, priceProps, status, nil, if entry.alter.number < altersNow.next then "owned" else "plain", 12)
 		elseif isOwned(entry) then
-			api:SetState("owned", "OWNED")
-			-- the gold stamp
-			api.pill.Size = UDim2.new(0.7, 0, 0, 22)
-			api:SetPill("OWNED", Colors.Gold)
-			api.check.BackgroundColor3 = Colors.Gold
+			priceButton = slimButton(tile, priceProps, "Owned", nil, "owned", 13)
 		elseif entry.section == "Gear" and price and not table.find(shop().gear, (select(2, gearLevels(entry.gear))).id) then
 			-- (sold in the other shop)
 			local _, nextLevel = gearLevels(entry.gear)
-			api:SetRequirement(if table.find(PumpShop.Shops.Coach.gear, nextLevel.id) then "AT COACH DEX" else "AT PUMP SHOP")
+			priceButton = slimButton(tile, priceProps, if table.find(PumpShop.Shops.Coach.gear, nextLevel.id) then "At Coach Dex" else "At Pump Shop", nil, "plain", 11)
 		elseif price then
-			if coins() >= price then
-				api:SetPill(Kit.Format(price), Colors.Green)
-			else
-				api:SetPill("NEED " .. Kit.Format(price - coins()) .. " MORE", Color3.fromHex("#4A474F"))
+			local afford = coins() >= price
+			priceButton = slimButton(tile, priceProps, nil, price, if afford then "plain" else "need", 13)
+			if not afford then
+				local need = Kit.Text({ Name = "Need", Text = "NEED " .. Kit.Format(price - coins()) .. " MORE", Font = "Chunky", TextSize = 9, TextColor3 = Color3.fromHex("#BDB8C2"),
+					AnchorPoint = Vector2.new(0.5, 0), Position = UDim2.new(0.5, 0, 0, 130), Size = UDim2.new(1, -12, 0, 11), ZIndex = 4, Parent = tile })
+				Kit.Fit(need, 9, 7)
 			end
 		end
+		-- (the price button picks the tile too: buying is in the strip)
+		if priceButton then priceButton.Activated:Connect(function() tile:SetAttribute("Tap", (tile:GetAttribute("Tap") or 0) + 1) end) end
 		if champion then
-			local border = tile:FindFirstChild("Border")
-			if border then
-				border.Color = Color3.new(1, 1, 1)
-				local gradient = New("UIGradient", { Name = "Spin", Color = ColorSequence.new({ ColorSequenceKeypoint.new(0, Color3.fromHex("#C98A12")),
-					ColorSequenceKeypoint.new(0.45, Color3.fromHex("#F6C75A")), ColorSequenceKeypoint.new(0.5, Color3.fromHex("#FFF3C4")),
-					ColorSequenceKeypoint.new(0.55, Color3.fromHex("#F6C75A")), ColorSequenceKeypoint.new(1, Color3.fromHex("#C98A12")) }), Parent = border })
-				spinning[gradient] = true
-			end
+			-- the Champion gear's border: a gold highlight runs round it
+			border.Color = Color3.new(1, 1, 1)
+			local gradient = New("UIGradient", { Name = "Spin", Color = ColorSequence.new({ ColorSequenceKeypoint.new(0, Color3.fromHex("#C98A12")),
+				ColorSequenceKeypoint.new(0.45, Color3.fromHex("#F6C75A")), ColorSequenceKeypoint.new(0.5, Color3.fromHex("#FFF3C4")),
+				ColorSequenceKeypoint.new(0.55, Color3.fromHex("#F6C75A")), ColorSequenceKeypoint.new(1, Color3.fromHex("#C98A12")) }), Parent = border })
+			spinning[gradient] = true
+		end
+		-- picked: the gold outline with the soft glow (the champion keeps its own running highlight)
+		if isPicked then
+			ReadyGlow.New(tile, { stroke = if champion then nil else border, pad = TILE_GLOW }):Set(true, Colors.Gold)
 		end
 		local scale = tile:FindFirstChild("PickScale") or New("UIScale", { Name = "PickScale", Parent = tile })
-		scale.Scale = if picked[tab] == entry.key then 1 else 0.96
-		tile:SetAttribute("Picked", picked[tab] == entry.key)
-		tile.Activated:Connect(function()
-			-- (prompt 54) the grid is rebuilt: the new tile does the bounce (quiet: Kit.RewardTile's hook played the sound)
+		scale.Scale = if isPicked then 1 else 0.96
+		tile:SetAttribute("Picked", isPicked)
+		local function pick()
+			-- (prompt 54) the grid is rebuilt: the new tile does the bounce and the select sound
 			picked[tab] = entry.key
 			refresh()
 			local now = tilesByKey[entry.key]
-			if now then Kit.SelectFeedback(now, strip, true) end
-		end)
+			if now then Kit.SelectFeedback(now, strip) end
+		end
+		tile.Activated:Connect(pick)
+		tile:GetAttributeChangedSignal("Tap"):Connect(pick)
 	end
 	local current = nil
 	for _, entry in ipairs(list) do
