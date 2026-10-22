@@ -928,9 +928,28 @@ function Kit.Modal(spec)
 			Size = UDim2.fromOffset(0, 34), Parent = panel })
 		task.spawn(function()
 			local clientData = require(Shared:WaitForChild("ClientData"))
+			-- (prompt 47) a change counts up / down to the new number (~0.4 s) instead of jumping
+			local shown, token = nil, 0
 			local function refresh()
 				local value = coins:FindFirstChild("Value")
-				if value then value.Text = formatInt(clientData.Get().coins or 0) end
+				if not value then return end
+				local target = clientData.Get().coins or 0
+				if shown == nil or not gui.Enabled then
+					shown = target
+					value.Text = formatInt(target)
+					return
+				end
+				token += 1
+				local mine, from, started = token, shown, os.clock()
+				task.spawn(function()
+					while token == mine do
+						local k = math.min((os.clock() - started) / 0.4, 1)
+						shown = math.floor(from + (target - from) * (1 - (1 - k) ^ 2) + 0.5)
+						value.Text = formatInt(shown)
+						if k >= 1 then break end
+						task.wait()
+					end
+				end)
 			end
 			refresh()
 			clientData.Changed:Connect(function(path)
