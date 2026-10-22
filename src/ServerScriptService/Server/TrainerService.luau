@@ -147,11 +147,15 @@ local function roll(player, count, auto)
 			-- a free slot: he starts following right away
 			if #Trainers.CleanEquipped(state, slots) < slots then table.insert(state.equipped, copy.u) end
 		end
-		local same = 0
+		-- (count = his BASE copies, toward the next evolution; new = the first of him at any stage)
+		local same, any = 0, 0
 		for _, c in ipairs(state.copies) do
-			if c.id == trainer.id and c.s == 1 then same += 1 end
+			if c.id == trainer.id then
+				any += 1
+				if c.s == 1 then same += 1 end
+			end
 		end
-		table.insert(results, { id = trainer.id, rarity = rarityId, deleted = deleted, count = same })
+		table.insert(results, { id = trainer.id, rarity = rarityId, deleted = deleted, count = same, new = not deleted and any == 1 })
 		Analytics.Event(player, "TrainerRoll", Trainers.RarityById[rarityId].index)
 		if Trainers.RarityById[rarityId].index >= announceFrom then
 			remote:FireAllClients("Pulled", { userId = player.UserId, name = player.DisplayName, rarity = rarityId, trainer = trainer.id })
@@ -763,7 +767,7 @@ function TrainerService.Start()
 	end
 
 	-- Studio: Workspace attribute TestTrainers = "RookieCoach,PumpCoach@3" gives every player those trainers (stage 3 =
-	-- BEAST-MODE) and equips them
+	-- BEAST-MODE) and equips them; "AeonCoach@5#20" = at LV 20
 	-- (TestTrainerSlots = 2 acts out the Extra Trainer pass)
 	if game:GetService("RunService"):IsStudio() then
 		local function test()
@@ -774,8 +778,9 @@ function TrainerService.Start()
 				local state = stateOf(player)
 				state.equipped = {}
 				for entry in string.gmatch(list, "[^,]+") do
-					local id, stage = Trainers.ParseEntry(entry)
-					if id then table.insert(state.equipped, newCopy(state, id, stage).u) end
+					local level = tonumber(string.match(entry, "#(%d+)$"))
+					local id, stage = Trainers.ParseEntry((string.gsub(entry, "#%d+$", "")))
+					if id then table.insert(state.equipped, newCopy(state, id, stage, level and math.clamp(level, 1, Trainers.MaxLevel)).u) end
 				end
 				-- (prompt 33) TestTrainerCopies = "RookieCoach:9,VoltaCoach:3" adds that many BASE copies (to evolve)
 				local extra = Workspace:GetAttribute("TestTrainerCopies")

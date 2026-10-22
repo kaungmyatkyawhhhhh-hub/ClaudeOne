@@ -238,8 +238,15 @@ function TrainersPanel.Build(parent: Instance)
 	-- the gold EVOLVE button (the next stage's name on it) and the quiet EQUIP / UNEQUIP
 	local evolveButton = Kit.Button("Gold", "Evolve", { Name = "Evolve", Position = UDim2.fromOffset(0, 166), Parent = col }, { width = 200, height = 40, textSize = 18 })
 	evolveButton.Size = UDim2.new(1, 0, 0, 40)
-	local equipButton = Kit.Button("Quiet", "Equip", { Name = "Equip", Position = UDim2.fromOffset(0, 212), Parent = col }, { width = 200, height = 30, textSize = 13 })
-	equipButton.Size = UDim2.new(1, 0, 0, 30)
+	local equipButton = Kit.Button("Quiet", "Equip", { Name = "Equip", AnchorPoint = Vector2.new(1, 0), Position = UDim2.new(1, 0, 0, 212), Parent = col },
+		{ width = 108, height = 30, textSize = 13 })
+	-- (prompt 48) the following trainers' real total, after the cap: "TOTAL +180% EXP (MAX +400%)", the other kinds under it
+	local totalMain = chunky(col, { Name = "Total", Position = UDim2.fromOffset(0, 210), Size = UDim2.new(1, -114, 0, 18), TextXAlignment = Enum.TextXAlignment.Left,
+		TextColor3 = Colors.Gold }, 13)
+	Kit.Fit(totalMain, 13, 8)
+	local totalSub = Kit.Text({ Name = "TotalMore", Text = "", Font = "Body", TextSize = 10, TextColor3 = Colors.Muted, Position = UDim2.fromOffset(0, 228),
+		Size = UDim2.new(1, -114, 0, 14), TextXAlignment = Enum.TextXAlignment.Left, Parent = col })
+	Kit.Fit(totalSub, 10, 7)
 
 	------------------------------------------------------------------------
 	-- The evolutions chart (over the panel)
@@ -266,7 +273,10 @@ function TrainersPanel.Build(parent: Instance)
 				ZIndex = 22, TextColor3 = C(Trainers.Stages[i + 1].color) }, 22)
 		end
 	end
-	local chartNote = Kit.Text({ Name = "Note", Text = "3 of the same trainer at the same stage make 1 of the next (x2 the boost). He keeps the best level of the 3.",
+	local mults = {}
+	for i = 2, #Trainers.Stages do table.insert(mults, "x" .. Trainers.Stages[i].mult) end
+	local chartNote = Kit.Text({ Name = "Note", Text = "3 of the same trainer at the same stage make 1 of the next (the boost " .. table.concat(mults, ", ")
+		.. "; LV 20 +" .. math.floor(Trainers.MaxLevelBonus * 100 + 0.5) .. "%). He keeps the best level of the 3.",
 		Font = "Body", TextSize = 11, TextColor3 = Colors.Muted, AnchorPoint = Vector2.new(0.5, 0), Position = UDim2.new(0.5, 0, 0, CHART_TILE + 96), Size = UDim2.new(1, -24, 0, 16),
 		ZIndex = 21, Parent = chart })
 	chartNote.TextWrapped = true
@@ -280,7 +290,7 @@ function TrainersPanel.Build(parent: Instance)
 		local s = state()
 		local list = sorted(s)
 		local slotCount = slots()
-		local equippedUids = Trainers.CleanEquipped(s, slotCount)
+		local equippedUids, equippedCopies = Trainers.CleanEquipped(s, slotCount)
 		local equippedSet = {}
 		for _, u in ipairs(equippedUids) do equippedSet[u] = true end
 		local pages = math.max(1, math.ceil(#list / PER_PAGE))
@@ -324,6 +334,17 @@ function TrainersPanel.Build(parent: Instance)
 		Kit.SetButton(evolveAll, if canAny then "Gold" else "Disabled", "Evolve all")
 		equippedPill.Text = string.format("EQUIPPED %d/%d", #equippedUids, slotCount)
 		ownedPill.Text = string.format("OWNED %d/%d", #s.copies, Trainers.MaxCopies)
+		local cap = math.floor(Trainers.BoostCap * 100 + 0.5)
+		local totals = Trainers.TotalLines(equippedCopies)
+		if totals[1] then
+			totalMain.Text = string.format("TOTAL +%d%% %s (MAX +%d%%)", totals[1].pct, STAT[totals[1].kind][3], cap)
+			local more = {}
+			for i = 2, #totals do table.insert(more, string.format("+%d%% %s", totals[i].pct, string.lower(STAT[totals[i].kind][3]))) end
+			totalSub.Text = if #more > 0 then table.concat(more, ", ") else "from the trainers following you"
+		else
+			totalMain.Text = string.format("TOTAL +0%% (MAX +%d%%)", cap)
+			totalSub.Text = "Equip a trainer to get his boost"
+		end
 		-- the picked one
 		current = map[pickedUid]
 		local trainer = Trainers.ById[current.id]
