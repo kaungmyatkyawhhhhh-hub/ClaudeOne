@@ -611,16 +611,33 @@ end
 ------------------------------------------------------------------------
 -- Layout: every card fits between the top bar and the bottom bar (one shared scale for the batch)
 ------------------------------------------------------------------------
-local function cardHeight(result): number
-	local h = RR.pad + RR.art + RR.pill + 2 + RR.name + 2 + statsHeight(Trainers.ById[result.id]) + RR.bottom
-	if result.deleted then
-		h += 4 + RR.dupe
-	elseif not isNewResult(result) then
-		h += 4 + RR.dupe + 3 + RR.dupeBar
-	end
-	return h
+-- the dupe line's height under the stats (none for a new one)
+local function dupeHeight(result): number
+	if result.deleted then return 4 + RR.dupe end
+	if not isNewResult(result) then return 4 + RR.dupe + 3 + RR.dupeBar end
+	return 0
 end
--- sets entry.pos / entry.scale / entry.bubble; -> the slot size
+-- (prompt 57) a card's shape (mockup px, before its scale). Stacked (desktop): the picture on top, the rarity, NAME, stat
+-- rows and dupe line under it. Side (phones, when stacked would be under ~90%): the picture on the left, the rest in a
+-- column on the right, so the card is wide and short. art* = the picture's box (x / width as shares of the card), col* =
+-- the text column (px), infoTop = where its first row starts.
+local RS = RollReveal.Side
+local function shapeOf(entry, side: boolean, sideWidth: number?)
+	local trainer, result = entry.trainer, entry.result
+	local statsH = statsHeight(trainer)
+	if not side then
+		local h = RR.pad + RR.art + RR.pill + 2 + RR.name + 2 + statsH + dupeHeight(result) + RR.bottom
+		return { side = false, w = RR.width, h = h, artX = 0.5, artW = RR.artWidth, artTop = RR.pad, artH = RR.art, colX = 0, colW = RR.width,
+			infoTop = RR.pad + RR.art, name = RR.name, pill = 0.62, stats = 0.86, dupe = 0.9 }
+	end
+	local w = sideWidth or RS.width
+	local artCol = math.floor(w * RS.artShare)
+	local infoH = RR.pill + RS.gap + RS.name + RS.gap + statsH + dupeHeight(result)
+	local h = math.max(RS.artMin + 2 * RR.pad, infoH + 2 * RR.pad)
+	return { side = true, w = w, h = h, artX = artCol / 2 / w, artW = artCol * 1.08 / w, artTop = RR.pad, artH = h - 2 * RR.pad, colX = artCol,
+		colW = w - artCol - RR.pad, infoTop = math.floor((h - infoH) / 2), name = RS.name, pill = 0.72, stats = 1, dupe = 1 }
+end
+-- sets entry.shape / entry.pos / entry.scale / entry.bubble; -> the slot size
 local function layout(order): Vector2
 	local uiScale = rollRoot:FindFirstChildOfClass("UIScale")
 	local s = math.max(if uiScale then uiScale.Scale else Kit.Scale(), 0.01)
@@ -629,21 +646,40 @@ local function layout(order): Vector2
 	local top = math.max(Screen.top, game:GetService("GuiService"):GetGuiInset().Y / s + Kit.TopbarGap)
 	local availH = units.Y - top - Screen.bottom
 	local availW = units.X - 32
-	local tallest, totalW = 0, 0
+	local gaps = Screen.gap * (#order - 1)
+	-- the scale every card gets in one shape (shapes set on the entries)
+	local function fitFor(side: boolean, sideWidth: number?): number
+		local tallest, totalW = 0, gaps
+		for _, entry in ipairs(order) do
+			local r = RollReveal.RarityScale[entry.rarity.id] or 1
+			entry.shape = shapeOf(entry, side, sideWidth)
+			tallest = math.max(tallest, entry.shape.h * r + (RollReveal.RarityLift[entry.rarity.id] or 0))
+			totalW += entry.shape.w * r
+		end
+		return math.min(1.15, availH / tallest, availW / totalW)
+	end
+	local fit = fitFor(false)
+	-- (prompt 57) stacked would be small (phones): the side shape, as wide as the row allows, when it comes out bigger
+	if fit < RS.threshold then
+		local shares = 0
+		for _, entry in ipairs(order) do shares += RollReveal.RarityScale[entry.rarity.id] or 1 end
+		local sideWidth = math.clamp((availW - gaps) / shares, RS.minWidth, RS.width)
+		local sideFit = fitFor(true, sideWidth)
+		if sideFit > fit then fit = sideFit else fit = fitFor(false) end
+	end
+	local tallest, totalW = 0, gaps
 	for _, entry in ipairs(order) do
 		local r = RollReveal.RarityScale[entry.rarity.id] or 1
-		tallest = math.max(tallest, cardHeight(entry.result) * r + (RollReveal.RarityLift[entry.rarity.id] or 0))
-		totalW += RR.width * r
+		tallest = math.max(tallest, entry.shape.h * r + (RollReveal.RarityLift[entry.rarity.id] or 0))
+		totalW += entry.shape.w * r
 	end
-	totalW += Screen.gap * (#order - 1)
-	local fit = math.min(1.15, availH / tallest, availW / totalW)
 	-- one card: the speech bubble above it when there's room (not on phones)
 	local bubble = #order == 1 and availH - tallest * fit >= Screen.bubbleRoom
 	local centerY = top + availH / 2 + (if bubble then Screen.bubbleRoom / 2 else 0)
 	local x = -totalW * fit / 2
 	for _, entry in ipairs(order) do
 		local r = RollReveal.RarityScale[entry.rarity.id] or 1
-		local w = RR.width * r * fit
+		local w = entry.shape.w * r * fit
 		entry.x = x + w / 2
 		x += w + Screen.gap * fit
 		entry.scale = r * fit
@@ -652,8 +688,8 @@ local function layout(order): Vector2
 		entry.bubble = bubble
 	end
 	local tallestSlot = 0
-	for _, entry in ipairs(order) do tallestSlot = math.max(tallestSlot, cardHeight(entry.result)) end
-	return Vector2.new(RR.width * fit, tallestSlot * fit)
+	for _, entry in ipairs(order) do tallestSlot = math.max(tallestSlot, entry.shape.h) end
+	return Vector2.new(order[1].shape.w * fit, tallestSlot * fit)
 end
 -- a dark slot with a faint dashed outline
 local function dashedSlot(at: UDim2, size: Vector2)
@@ -703,9 +739,16 @@ local function makeCard(entry, index: number)
 	-- (prompt 56) his theme: the card's background, its glow and highlight, the screen behind (Shared/UI/RollCardFX)
 	local theme = RollCardFX.ThemeFor(trainer, rarity)
 	local themeColor = hex(theme.color)
-	local h = cardHeight(result)
+	-- (prompt 57) its shape (stacked, or side on phones: layout) and the text floor: no word smaller than the HUD's
+	-- smallest label once the card's scale is applied
+	local g = entry.shape or shapeOf(entry, false)
+	local h = g.h
+	local minText = math.ceil(Theme.TextSize.Label / math.max(entry.scale or 1, 0.1))
+	local function textSize(base: number): number return math.max(base, minText) end
+	local cx = g.colX + g.colW / 2 -- (the text column's middle)
+	local function colPos(y: number): UDim2 return UDim2.new(0, cx, 0, y) end
 	local holder = New("Frame", { Name = "Card" .. index, BackgroundTransparency = 1, AnchorPoint = Vector2.new(0.5, 0.5), Position = entry.pos,
-		Size = UDim2.fromOffset(RR.width, h), Visible = false, ZIndex = 5, Parent = rollRoot })
+		Size = UDim2.fromOffset(g.w, h), Visible = false, ZIndex = 5, Parent = rollRoot })
 	New("UIScale", { Scale = entry.scale, Parent = holder })
 	-- (the pop scales from the middle)
 	local pop = New("Frame", { Name = "Pop", BackgroundTransparency = 1, AnchorPoint = Vector2.new(0.5, 0.5), Position = UDim2.fromScale(0.5, 0.5),
@@ -726,26 +769,31 @@ local function makeCard(entry, index: number)
 	local cardClip = New("Frame", { Name = "Clip", BackgroundTransparency = 1, ClipsDescendants = true, Position = UDim2.fromOffset(cardInset, cardInset),
 		Size = UDim2.new(1, -2 * cardInset, 1, -2 * cardInset), ZIndex = 5, Parent = card })
 	-- (prompt 56: no more sunburst) his art (it breathes) on his theme's animated background (Shared/UI/RollCardFX)
-	local art = TrainerPortrait.Art(trainer.id, { AnchorPoint = Vector2.new(0.5, 0), Position = UDim2.new(0.5, 0, 0, RR.pad), Size = UDim2.new(RR.artWidth, 0, 0, RR.art),
+	local art = TrainerPortrait.Art(trainer.id, { AnchorPoint = Vector2.new(0.5, 0), Position = UDim2.new(g.artX, 0, 0, g.artTop), Size = UDim2.new(g.artW, 0, 0, g.artH),
 		ZIndex = 6, Parent = card })
-	local fx = RollCardFX.Card({ card = card, clip = cardClip, pop = pop, art = art, size = Vector2.new(RR.width, h), artTop = RR.pad, artHeight = RR.art,
-		artWidth = RR.artWidth, theme = theme, escape = tier == 4 })
-	local y = RR.pad + RR.art
+	if g.side and art:IsA("ImageLabel") then
+		-- (the picture's faint backdrop would end in a hard edge inside the card: it fades out on the right)
+		New("UIGradient", { Transparency = NumberSequence.new({ NumberSequenceKeypoint.new(0, 0), NumberSequenceKeypoint.new(0.8, 0),
+			NumberSequenceKeypoint.new(1, 1) }), Parent = art })
+	end
+	local fx = RollCardFX.Card({ card = card, clip = cardClip, pop = pop, art = art, size = Vector2.new(g.w, h), artTop = g.artTop, artHeight = g.artH,
+		artWidth = g.artW, artX = g.artX, theme = theme, escape = tier == 4 })
+	local y = g.infoTop
 	-- the rarity pill: near black, the rarity name in its color
-	local pillPos = UDim2.new(0.5, 0, 0, y)
+	local pillPos = colPos(y)
 	local pill = New("Frame", { Name = "Rarity", BackgroundColor3 = Color3.fromHex("#0B0A0D"), AnchorPoint = Vector2.new(0.5, 0), Position = pillPos,
-		Size = UDim2.new(0.62, 0, 0, RR.pill), ZIndex = 7, Parent = card }, { New("UICorner", { CornerRadius = UDim.new(1, 0) }) })
+		Size = UDim2.fromOffset(g.colW * g.pill, RR.pill), ZIndex = 7, Parent = card }, { New("UICorner", { CornerRadius = UDim.new(1, 0) }) })
 	local pillEdge = New("UIStroke", { Color = edge, Thickness = 1.5, Parent = pill })
 	-- (prompt 56) the pill glows in its colour (a soft glow just behind it, breathing in the hold)
 	local pillGlow = New("ImageLabel", { Name = "RarityGlow", BackgroundTransparency = 1, Image = UIConfig.SoftGlow, ImageColor3 = edge, ImageTransparency = 1,
-		AnchorPoint = Vector2.new(0.5, 0.5), Position = UDim2.new(0.5, 0, 0, y + RR.pill / 2), Size = UDim2.new(0.62, 46, 0, RR.pill + 30), ZIndex = 6, Parent = card })
-	local pillText = Kit.Text({ Name = "Text", Text = string.upper(rarity.name), Font = "Chunky", TextSize = RR.textSizes.pill, TextColor3 = edge, Size = UDim2.fromScale(1, 1),
-		ZIndex = 8, Parent = pill })
+		AnchorPoint = Vector2.new(0.5, 0.5), Position = colPos(y + RR.pill / 2), Size = UDim2.fromOffset(g.colW * g.pill + 46, RR.pill + 30), ZIndex = 6, Parent = card })
+	local pillText = Kit.Text({ Name = "Text", Text = string.upper(rarity.name), Font = "Chunky", TextSize = textSize(RR.textSizes.pill), TextColor3 = edge,
+		Size = UDim2.fromScale(1, 1), ZIndex = 8, Parent = pill })
 	strokeOf(pillText).Color = INK
-	y += RR.pill + 2
+	y += RR.pill + (if g.side then RS.gap else 2)
 	-- the NAME: white chunky with a dark stroke (on the pop, so the slam isn't clipped)
 	local nameLabel = New("TextLabel", { Name = "Name", BackgroundTransparency = 1, Text = string.upper(trainer.name), FontFace = LUCKIEST, TextScaled = true,
-		TextColor3 = Color3.new(1, 1, 1), AnchorPoint = Vector2.new(0.5, 0.5), Position = UDim2.new(0.5, 0, 0, y + RR.name / 2), Size = UDim2.new(1, -12, 0, RR.name),
+		TextColor3 = Color3.new(1, 1, 1), AnchorPoint = Vector2.new(0.5, 0.5), Position = colPos(y + g.name / 2), Size = UDim2.fromOffset(g.colW - 12, g.name),
 		ZIndex = 9, Parent = pop })
 	local nameStroke = New("UIStroke", { Thickness = 3, Color = INK, Parent = nameLabel })
 	local nameScale = New("UIScale", { Parent = nameLabel })
@@ -754,11 +802,11 @@ local function makeCard(entry, index: number)
 	local shimmer = New("UIGradient", { Name = "Shimmer", Offset = Vector2.new(-1.2, 0), Rotation = 20, Parent = nameLabel,
 		Color = ColorSequence.new({ ColorSequenceKeypoint.new(0, Color3.new(1, 1, 1)), ColorSequenceKeypoint.new(0.42, Color3.new(1, 1, 1)),
 			ColorSequenceKeypoint.new(0.5, band), ColorSequenceKeypoint.new(0.58, Color3.new(1, 1, 1)), ColorSequenceKeypoint.new(1, Color3.new(1, 1, 1)) }) })
-	y += RR.name + 2
+	y += g.name + (if g.side then RS.gap else 2)
 	-- (prompt 56) his boosts: one row per stat (an icon in a colored badge, "+35% EXP" in that color) in a dark box
 	local statsH = statsHeight(trainer)
 	local statBox = New("Frame", { Name = "Boosts", BackgroundColor3 = Color3.fromHex("#0B0A0D"), BackgroundTransparency = 0.25, AnchorPoint = Vector2.new(0.5, 0),
-		Position = UDim2.new(0.5, 0, 0, y), Size = UDim2.new(0.86, 0, 0, statsH), ZIndex = 7, Parent = card }, {
+		Position = colPos(y), Size = UDim2.fromOffset(g.colW * g.stats, statsH), ZIndex = 7, Parent = card }, {
 		New("UICorner", { CornerRadius = UDim.new(0, 8) }),
 		New("UIStroke", { Color = Color3.fromHex("#2E2B33"), Thickness = 1, ApplyStrokeMode = Enum.ApplyStrokeMode.Border }),
 	})
@@ -776,9 +824,9 @@ local function makeCard(entry, index: number)
 		local icon = Pieces.Icon(look[1], INK, { AnchorPoint = Vector2.new(0.5, 0.5), Position = UDim2.fromScale(0.5, 0.5), Size = UDim2.fromScale(0.68, 0.68), ZIndex = 9,
 			Parent = badge })
 		icon:SetAttribute("KeepColor", true)
-		local text = Kit.Text({ Name = "Text", Text = "+" .. line.pct .. "% " .. look[3], Font = "Chunky", TextSize = RR.textSizes.stat, TextColor3 = look[2],
+		local text = Kit.Text({ Name = "Text", Text = "+" .. line.pct .. "% " .. look[3], Font = "Chunky", TextSize = textSize(RR.textSizes.stat), TextColor3 = look[2],
 			Position = UDim2.fromOffset(RR.stat + 3, 0), Size = UDim2.new(1, -(RR.stat + 3), 1, 0), TextXAlignment = Enum.TextXAlignment.Left, ZIndex = 9, Parent = row })
-		Kit.Fit(text, RR.textSizes.stat, 9)
+		Kit.Fit(text, textSize(RR.textSizes.stat), minText)
 		strokeOf(text).Color = INK
 		statRows[i] = { row = row, scale = rowScale }
 	end
@@ -794,19 +842,20 @@ local function makeCard(entry, index: number)
 			local count = math.max(1, result.count or 1)
 			local nextName = Trainers.Stages[2].name
 			dupeShare = math.min(count, need) / need
-			text = if count >= need then "X" .. count .. " · READY: EVOLVE TO " .. nextName else "X" .. count .. " · " .. count .. "/" .. need .. " TO " .. nextName
+			-- (prompt 57: the ready line is shorter, so it fits at the text floor)
+			text = if count >= need then "X" .. count .. " · READY: " .. nextName else "X" .. count .. " · " .. count .. "/" .. need .. " TO " .. nextName
 		end
-		dupePill = New("Frame", { Name = "Dupe", BackgroundColor3 = Color3.fromHex("#0B0A0D"), AnchorPoint = Vector2.new(0.5, 0), Position = UDim2.new(0.5, 0, 0, y + 4),
-			Size = UDim2.new(0.84, 0, 0, RR.dupe), ZIndex = 7, Parent = card }, {
+		dupePill = New("Frame", { Name = "Dupe", BackgroundColor3 = Color3.fromHex("#0B0A0D"), AnchorPoint = Vector2.new(0.5, 0), Position = colPos(y + 4),
+			Size = UDim2.fromOffset(g.colW * g.dupe, RR.dupe), ZIndex = 7, Parent = card }, {
 			New("UICorner", { CornerRadius = UDim.new(1, 0) }),
 			New("UIStroke", { Color = if result.deleted then Colors.Muted else GOLD, Thickness = 1, Transparency = 0.3 }),
 		})
-		local t = Kit.Text({ Name = "Text", Text = text, Font = "Chunky", TextSize = RR.textSizes.dupe, TextColor3 = if result.deleted then Colors.Muted else GOLD,
+		local t = Kit.Text({ Name = "Text", Text = text, Font = "Chunky", TextSize = textSize(RR.textSizes.dupe), TextColor3 = if result.deleted then Colors.Muted else GOLD,
 			Size = UDim2.fromScale(1, 1), ZIndex = 8, Parent = dupePill })
-		Kit.Fit(t, RR.textSizes.dupe, 7)
+		Kit.Fit(t, textSize(RR.textSizes.dupe), minText)
 		if not result.deleted then
 			local _bar
-			_bar, setDupe, dupeFill = Kit.Bar(GOLD, { AnchorPoint = Vector2.new(0.5, 0), Position = UDim2.new(0.5, 0, 0, y + 4 + RR.dupe + 3), Size = UDim2.new(0.6, 0, 0, RR.dupeBar),
+			_bar, setDupe, dupeFill = Kit.Bar(GOLD, { AnchorPoint = Vector2.new(0.5, 0), Position = colPos(y + 4 + RR.dupe + 3), Size = UDim2.fromOffset(g.colW * 0.6, RR.dupeBar),
 				ZIndex = 7, Parent = card })
 			setDupe(0)
 		end
@@ -821,7 +870,7 @@ local function makeCard(entry, index: number)
 			New("UIStroke", { Color = INK, Thickness = 2, ApplyStrokeMode = Enum.ApplyStrokeMode.Border }),
 		})
 		New("UIScale", { Parent = sticker })
-		local t = Kit.Text({ Name = "Text", Text = "NEW!", Font = "Chunky", TextSize = RR.textSizes.sticker, TextColor3 = Color3.new(1, 1, 1), Size = UDim2.fromScale(1, 1),
+		local t = Kit.Text({ Name = "Text", Text = "NEW!", Font = "Chunky", TextSize = textSize(RR.textSizes.sticker), TextColor3 = Color3.new(1, 1, 1), Size = UDim2.fromScale(1, 1),
 			ZIndex = 13, Parent = sticker })
 		strokeOf(t).Color = INK
 	end

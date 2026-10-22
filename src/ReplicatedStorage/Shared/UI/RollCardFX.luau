@@ -12,7 +12,8 @@
 --   * Light on phones: a few particles each (half with low graphics), everything stops when the reveal closes (the
 --     caller destroys it). Reduced Motion: no flicker (no lightning, no flashes), no tilt.
 --   local fx = RollCardFX.Card({ card = Frame, clip = Frame, pop = Frame, art = ImageLabel, size = Vector2 (the card,
---     mockup px), artTop = px, artHeight = px, artWidth = share, theme = RollCardFX.ThemeFor(trainer, rarity),
+--     mockup px), artTop = px, artHeight = px, artWidth = share, artX = share (the picture's middle; prompt 57: the
+--     phones' side card has it on the left; default 0.5), theme = RollCardFX.ThemeFor(trainer, rarity),
 --     escape = bool })
 --   fx:Step(t, dt)  fx:Tilt(x, y) (-1..1)
 --   local screen = RollCardFX.Screen(layer, theme, { flash = function(alpha) end })  screen:Step(t, dt)  screen:Destroy()
@@ -75,21 +76,23 @@ function RollCardFX.Card(spec)
 		hexImage.ImageTransparency = if self.kind == "hex" then A.hexTransparency else 0.94
 	end
 	local artMid = (spec.artTop + spec.artHeight * 0.42) / size.Y
-	self.artMid = artMid
+	local artX = spec.artX or 0.5
+	self.artMid, self.artX = artMid, artX
 	-- the art breathes from his feet
 	if self.art then
 		self.art.AnchorPoint = Vector2.new(0.5, 1)
-		self.art.Position = UDim2.new(0.5, 0, 0, spec.artTop + spec.artHeight)
+		self.art.Position = UDim2.new(artX, 0, 0, spec.artTop + spec.artHeight)
 		self.artBase = Vector2.new(spec.artWidth, spec.artHeight)
 	end
 	-- the sheen: a faint light band over his art that follows the tilt
 	self.sheenFrame = New("Frame", { Name = "Sheen", BackgroundColor3 = Color3.new(1, 1, 1), BackgroundTransparency = 0.87, BorderSizePixel = 0,
-		Position = UDim2.fromOffset(0, spec.artTop - 6), Size = UDim2.new(1, 0, 0, spec.artHeight + 6), ZIndex = 7, Parent = card })
+		AnchorPoint = Vector2.new(0.5, 0), Position = UDim2.new(artX, 0, 0, spec.artTop - 6), Size = UDim2.new(math.min(1, spec.artWidth), 0, 0, spec.artHeight + 6),
+		ZIndex = 7, Parent = card })
 	self.sheen = New("UIGradient", { Rotation = 25, Offset = Vector2.new(-0.3, 0), Transparency = NumberSequence.new({ NumberSequenceKeypoint.new(0, 1),
 		NumberSequenceKeypoint.new(0.42, 1), NumberSequenceKeypoint.new(0.5, 0.35), NumberSequenceKeypoint.new(0.58, 1), NumberSequenceKeypoint.new(1, 1) }),
 		Parent = self.sheenFrame })
 	-- the soft radial light behind him
-	AlterFX.Image(clip, "ember", { Name = "Radial", AnchorPoint = Vector2.new(0.5, 0.5), Position = UDim2.fromScale(0.5, artMid), Size = UDim2.new(1.3, 0, 0, spec.artHeight * 1.05),
+	AlterFX.Image(clip, "ember", { Name = "Radial", AnchorPoint = Vector2.new(0.5, 0.5), Position = UDim2.fromScale(artX, artMid), Size = UDim2.new(spec.artWidth * 1.16, 0, 0, spec.artHeight * 1.05),
 		ImageColor3 = self.color, ImageTransparency = if self.kind == "clouds" then 0.35 else 0.55, ZIndex = 5 })
 	local build = self["build_" .. self.kind]
 	if build then build(self) end
@@ -116,7 +119,7 @@ end
 function Card:build_storm()
 	self.bolts = {}
 	for i = 1, 2 do
-		local bolt = AlterFX.Image(self.clip, "lightning", { Name = "Bolt" .. i, AnchorPoint = Vector2.new(0.5, 0.5), Size = UDim2.fromScale(0.75, 0.62),
+		local bolt = AlterFX.Image(self.clip, "lightning", { Name = "Bolt" .. i, AnchorPoint = Vector2.new(0.5, 0.5), Size = UDim2.fromScale(0.67 * self.spec.artWidth, 0.62),
 			ImageColor3 = hex("#BFE4FF"), ImageTransparency = 1, ZIndex = 5 })
 		self.bolts[i] = bolt
 	end
@@ -139,7 +142,7 @@ function Card:build_forge()
 	local starts = { Vector2.new(0, 0.22), Vector2.new(1, 0.4), Vector2.new(0.15, 1), Vector2.new(0.9, 0.95), Vector2.new(0.6, 0) }
 	for i, start in ipairs(starts) do
 		local p = Vector2.new(start.X * size.X, start.Y * size.Y)
-		local toward = (Vector2.new(size.X * 0.5, size.Y * self.artMid) - p).Unit
+		local toward = (Vector2.new(size.X * self.artX, size.Y * self.artMid) - p).Unit
 		for _ = 1, 4 do
 			local angle = math.atan2(toward.Y, toward.X) + rng:NextNumber(-0.7, 0.7)
 			local length = rng:NextNumber(14, 26)
@@ -167,7 +170,8 @@ function Card:build_smoke()
 		table.insert(self.smoke, { label = puff, phase = (i - 1) / 3, x = 0.3 + 0.2 * i })
 	end
 	self.eyes = {}
-	for i, x in ipairs({ 0.17, 0.27 }) do
+	local aw = self.spec.artWidth
+	for i, x in ipairs({ self.artX - 0.3 * aw, self.artX - 0.21 * aw }) do
 		local glow = AlterFX.Image(self.clip, "ember", { AnchorPoint = Vector2.new(0.5, 0.5), Position = UDim2.fromScale(x, 0.11), Size = UDim2.fromOffset(26, 18),
 			ImageColor3 = hex("#B65CFF"), ImageTransparency = 1, ZIndex = 5 })
 		local eye = New("Frame", { Name = "Eye" .. i, BackgroundColor3 = hex("#E6C8FF"), BorderSizePixel = 0, AnchorPoint = Vector2.new(0.5, 0.5), Position = UDim2.fromScale(x, 0.11),
@@ -197,8 +201,8 @@ function Card:build_clouds()
 		table.insert(self.clouds, { label = puff, y = 0.12 + (i - 1) * 0.24, phase = i * 0.37, speed = 0.025 + i * 0.006 })
 	end
 	-- the laurel: a big faint wreath behind him, two branches of leaves meeting at the bottom, open at the top
-	local center = Vector2.new(size.X * 0.5, self.spec.artTop + self.spec.artHeight * 0.36)
-	local radius = size.X * 0.4
+	local center = Vector2.new(size.X * self.artX, self.spec.artTop + self.spec.artHeight * 0.36)
+	local radius = math.min(size.X * self.spec.artWidth * 0.36, self.spec.artHeight * 0.45)
 	for side = -1, 1, 2 do
 		for k = 0, 8 do
 			local a = math.rad(90 + side * (18 + k * 16)) -- (from the bottom up each side)
@@ -258,7 +262,7 @@ function Card:Step(t: number, dt: number)
 		local flex = if since < A.flexTime then math.sin(since / A.flexTime * math.pi) else 0
 		local grow = A.breath * (0.5 + 0.5 * breath) + A.flex * flex
 		self.art.Size = UDim2.new(self.artBase.X * (1 + grow * 0.7), 0, 0, self.artBase.Y * (1 + grow))
-		self.art.Position = UDim2.new(0.5, self.tiltX * A.artParallax, 0, self.spec.artTop + self.spec.artHeight)
+		self.art.Position = UDim2.new(self.artX, self.tiltX * A.artParallax, 0, self.spec.artTop + self.spec.artHeight)
 	end
 	-- the sheen follows the tilt (and drifts slowly on its own)
 	self.sheen.Offset = Vector2.new(math.clamp(self.tiltX * 0.5 + 0.25 * math.sin(t * 0.5), -0.9, 0.9), 0)
@@ -276,7 +280,8 @@ function Card:Step(t: number, dt: number)
 		if not self.reduced then
 			if not self.strike and t >= self.nextStrike then
 				local bolt = self.bolts[self.rng:NextInteger(1, #self.bolts)]
-				bolt.Position = UDim2.fromScale(if self.rng:NextNumber() < 0.5 then 0.24 else 0.76, self.rng:NextNumber(0.2, 0.4))
+				local side = if self.rng:NextNumber() < 0.5 then -1 else 1
+				bolt.Position = UDim2.fromScale(self.artX + side * 0.23 * self.spec.artWidth, self.rng:NextNumber(0.2, 0.4))
 				bolt.ImageRectOffset = Vector2.new(self.rng:NextInteger(0, 3) * 256, self.rng:NextInteger(0, 3) * 256)
 				bolt.Rotation = self.rng:NextNumber(-15, 15)
 				self.strike = { bolt = bolt, at = t }

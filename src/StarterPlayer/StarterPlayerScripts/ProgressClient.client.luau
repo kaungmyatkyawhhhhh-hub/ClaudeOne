@@ -47,6 +47,7 @@ local New, Colors = Theme.New, Theme.Colors
 local UIBus = require(Shared.UI.UIBus)
 local AlterPopup = require(Shared.UI.AlterPopup)
 local AlterFX = require(Shared.VFX.AlterFX)
+local ReadyGlow = require(Shared.UI.ReadyGlow)
 local TILE_H = 48 -- (owner, 22 Oct: 10% taller)
 local holder = New("Frame", { Name = "GrowthSpurt", Size = UDim2.fromOffset(RightColumn.Width, TILE_H + 6), BackgroundTransparency = 1, Visible = false })
 local tile = Theme.Button("Gold", { Name = "Tile", Size = UDim2.new(1, 0, 0, TILE_H), Parent = holder }, {})
@@ -77,17 +78,31 @@ local alterStrip = New("CanvasGroup", { Name = "AlterArt", BackgroundTransparenc
 	Size = UDim2.new(1, -3, 1, -3), ZIndex = tile.ZIndex, Visible = false, Parent = tile }, { New("UICorner", { CornerRadius = UDim.new(0, 9) }) })
 local alterArt = New("ImageLabel", { Name = "Art", BackgroundColor3 = Color3.new(1, 1, 1), BackgroundTransparency = 1, ScaleType = Enum.ScaleType.Crop,
 	AnchorPoint = Vector2.new(0.5, 0.5), Position = UDim2.fromScale(0.5, 0.5), Size = UDim2.fromScale(1.16, 1), Parent = alterStrip })
-New("Frame", { Name = "Shade", BackgroundColor3 = Color3.new(0, 0, 0), BorderSizePixel = 0, Size = UDim2.fromScale(1, 1), ZIndex = 2, Parent = alterStrip }, {
-	New("UIGradient", { Transparency = NumberSequence.new(0.45, 0.75) }),
-})
--- (owner, 23 Oct) READY: the same pill; the outline glows and pulses gently in the alter's colour and the art drifts a bit
--- faster (alterReadyColor set by setAlterLook; nil = progressing)
+-- (prompt 57) a wash of the alter's colour over a dark art (AlterThemes pillWash; SHREDDED) and the shade's strength per alter
+-- (pillShade), so every alter's art shows about as much as PUMPED's
+local alterWash = New("Frame", { Name = "Wash", BackgroundColor3 = Color3.new(1, 1, 1), BackgroundTransparency = 1, BorderSizePixel = 0, Size = UDim2.fromScale(1, 1),
+	ZIndex = 2, Parent = alterStrip })
+local alterShade = New("UIGradient", { Transparency = NumberSequence.new(0.45, 0.75) })
+New("Frame", { Name = "Shade", BackgroundColor3 = Color3.new(0, 0, 0), BorderSizePixel = 0, Size = UDim2.fromScale(1, 1), ZIndex = 3, Parent = alterStrip }, { alterShade })
+-- (owner, 23 Oct) READY: the same pill and the art drifts a bit faster (alterReadyColor set by setAlterLook; nil =
+-- progressing). (prompt 57) The pill's outline is the HUD cards' own (chrome: 1.5 px, solid) tinted in the next alter's
+-- colour, no gold; READY = that outline does the ready glow (Shared/UI/ReadyGlow: a soft glow breathing behind the pill
+-- and a highlight travelling round the outline), still in the alter's colour.
 local alterReadyColor: Color3? = nil
-local readyGlow = New("Frame", { Name = "ReadyGlow", BackgroundTransparency = 1, AnchorPoint = Vector2.new(0.5, 0.5), Position = UDim2.fromScale(0.5, 0.5),
-	Size = UDim2.new(1, 8, 1, 8), Visible = false, ZIndex = tile.ZIndex, Parent = tile }, {
-	New("UICorner", { CornerRadius = UDim.new(0, 14) }),
-	New("UIStroke", { Name = "Stroke", Thickness = 4, Transparency = 0.6, ApplyStrokeMode = Enum.ApplyStrokeMode.Border }),
-})
+local alterGlow = nil -- (made on first use: the outline is the tile's own Border, from its style)
+local function alterOutline(color: Color3?, ready: boolean)
+	local edge = tile:FindFirstChild("Border")
+	if not (edge and edge:IsA("UIStroke")) then return end
+	if not alterGlow then
+		if not color then return end
+		alterGlow = ReadyGlow.New(tile, { stroke = edge, pad = 16 })
+	end
+	if color then
+		alterGlow:Set(ready, color)
+	else
+		alterGlow:Set(false, Colors.Outline)
+	end
+end
 task.spawn(function()
 	local phase, last = 0, os.clock()
 	while alterStrip.Parent do
@@ -100,14 +115,6 @@ task.spawn(function()
 			alterArt.Position = UDim2.fromScale(0.5 + 0.07 * math.sin(phase), 0.5)
 		else
 			alterArt.Position = UDim2.fromScale(0.5, 0.5)
-		end
-		readyGlow.Visible = alterReadyColor ~= nil and alterStrip.Visible
-		if alterReadyColor and alterStrip.Visible then
-			local wave = if still then 0.5 else 0.5 + 0.5 * math.sin(now * 3)
-			readyGlow.Stroke.Color = alterReadyColor
-			readyGlow.Stroke.Transparency = 0.75 - 0.4 * wave
-			local edge = tile:FindFirstChild("Border")
-			if edge and edge:IsA("UIStroke") then edge.Color = Colors.Gold:Lerp(alterReadyColor, 0.35 + 0.4 * wave) end
 		end
 		task.wait(1 / 20)
 	end
@@ -133,14 +140,18 @@ local function setAlterLook(theme, percent: number?, ready: boolean?)
 	titleGradient.Enabled = on and not ready
 	alterStrip.Visible = on
 	alterPct.Visible = on and not ready
+	alterOutline(if on then theme.accent else nil, ready == true)
 	tileText.Position = UDim2.fromOffset(8, 4)
 	tileLabel.Position = UDim2.fromOffset(if on then 4 else 0, tileLabel.Position.Y.Offset)
 	tileLabel.Size = UDim2.new(1, if on then -4 else 0, 0, tileLabel.Size.Y.Offset)
 	tileText.Size = UDim2.new(1, if on then -60 else -16, 0, 22)
 	tileText.TextXAlignment = if on then Enum.TextXAlignment.Left else Enum.TextXAlignment.Center
 	if not on then return end
-	-- (owner, 23 Oct, chrome reset) the card stays dark graphite with the screen's one gold outline (was the alter's own
-	-- base colour and accent edge); the name keeps its alter gradient, the strip its art
+	-- (owner, 23 Oct, chrome reset) the card stays dark graphite (prompt 57: its chrome outline in the alter's colour,
+	-- alterOutline above); the name keeps its alter gradient, the strip its art
+	local shade = theme.pillShade or { 0.45, 0.75 }
+	alterShade.Transparency = NumberSequence.new(shade[1], shade[2])
+	alterWash.BackgroundColor3, alterWash.BackgroundTransparency = theme.accent, theme.pillWash or 1
 	if theme.bg then
 		alterArt.Image, alterArt.BackgroundTransparency = theme.bg, 1
 	else
@@ -589,12 +600,12 @@ local function refresh()
 		-- "!" chip; the outline pulses in the alter's colour; a tap opens the BODY ALTER READY popup
 		tileText.Text = string.upper(nextName) .. " READY"
 		tileLabel.Text = "Tap to alter"
-		styleTile("Quiet", true, true)
+		styleTile("Quiet", true) -- (prompt 57: no gold outline; setAlterLook tints it in the alter's colour)
 		setAlterLook(AlterThemes.Get(progress.next), percent, true)
 	elseif alterMode then
 		tileText.Text = "NEXT: " .. string.upper(nextName)
 		tileLabel.Text = if needs ~= "" then "Needs " .. needs else "Tap for what to train"
-		styleTile("Quiet", true, true)
+		styleTile("Quiet", true)
 		setAlterLook(AlterThemes.Get(progress.next), percent)
 	elseif progress.maxed then
 		tileText.Text = "MAX GROWTH SPURT"

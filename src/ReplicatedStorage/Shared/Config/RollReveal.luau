@@ -19,6 +19,11 @@ RollReveal.Card = {
 	hexTile = Vector2.new(18, 10), hexTransparency = 0.85, -- small cells, ~15%
 	textSizes = { pill = 13, stat = 15, dupe = 11, sticker = 16 },
 }
+-- (prompt 57) The side card (phones): when the stacked card would show under `threshold` of its size, the picture goes on
+-- the left (artShare of the card) and the rarity, NAME, stat rows and dupe line in a column on the right. One card is
+-- `width` wide; a batch shares the row (down to minWidth). Words are never smaller than the HUD's smallest label
+-- (Theme.TextSize.Label) after the card's scale, on every card.
+RollReveal.Side = { threshold = 0.9, width = 400, minWidth = 250, artShare = 0.42, artMin = 180, name = 34, gap = 4 }
 -- Card size by rarity (the best in a batch is the biggest); lift = moved up (mockup px)
 RollReveal.RarityScale = { Common = 0.9, Uncommon = 0.9, Rare = 1, Epic = 1, Legendary = 1.1, Mythic = 1.15, Secret = 1.15 }
 RollReveal.RarityLift = { Mythic = 8, Secret = 8 }

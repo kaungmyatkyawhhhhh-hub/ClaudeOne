@@ -70,6 +70,10 @@ themes[1] = { -- PUMPED: crimson, a heartbeat
 themes[2] = { -- SHREDDED: steel / silver, ice-blue, a blade
 	bg = "rbxassetid://121615053568328", base = C("#14181D"), accent = C("#A9D4F2"), buttonText = C("#14181D"),
 	title = { C("#EEF3F8"), C("#8C9AAA") }, intro = "slice",
+	-- (prompt 57) its art is dark steel with thin blades at the edges: on the HUD's NEXT pill a lighter shade and a wash of
+	-- the accent, so it shows as much as PUMPED's (pillShade = the black's transparency left / right; pillWash = the
+	-- accent layer's transparency; the defaults: 0.45 / 0.75, none)
+	pillShade = { 0.62, 0.9 }, pillWash = 0.8,
 	particle = { texture = "spark", color = C("#DDEFFF"), motion = "drift" },
 	sting = { { "Shing", 0 } },
 }
