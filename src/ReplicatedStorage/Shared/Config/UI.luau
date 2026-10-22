@@ -91,6 +91,7 @@ UI.Trainers = { -- portraits shown in the Trainers panel (by Config/Trainers id 
 UI.MenuArt = "rbxassetid://124549460345839"
 -- the GYM ARC 3D stone logo (owner, 15 Oct: Downloads\gym_arc_logo_3d.png, 432x354, transparent) on the menu + loading screen
 UI.Logo3D = "rbxassetid://86034269506160"
+UI.ReadyGlow = "" -- (owner, 23 Oct) assets/ui/ready_glow.png: a white blurred rounded rectangle, 9-slice (Shared/UI/ReadyGlow); not uploaded yet
 UI.SoftGlow = "rbxassetid://108461610476976" -- a soft round glow (the aura's glow_soft.png), tinted red behind the logo
 -- the GYM ARC logo image (Downloads\gym_arc_ui_3d_icons\logo.png, 1182x286, uploaded from Studio 14 Oct): loading screen + menu
 UI.Logo = "rbxassetid://84167052331251"

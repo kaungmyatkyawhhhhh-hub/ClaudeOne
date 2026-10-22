@@ -1,33 +1,44 @@
 -- TrainersPanel (prompt 24, 21 Oct; prompt 33, 22 Oct: rewritten to the planner's v5 mockups): the TRAINERS window's MY
--- TRAINERS tab (TrainerClient builds the window and calls this).
---   * LEFT: every trainer you own as a tile (Shared/UI/TrainerTile), 4 columns, 12 a page, nearly touching, highest stage
---     first, then level, then rarity; PREV / PAGE 1 / 2 / NEXT and EVOLVE ALL under it.
---   * RIGHT, the picked one: his tile big; the EXP bar (LV 18 . 7.2K / 10K EXP . LV 19); his boost (stage x level) in a
---     framed box ("+120% EXP", "+60% COINS", "+40% PROGRESS"); "NEEDS 3x BEAST-MODE . 2/3" with the 3 copies as mini
---     tiles (the missing one dim); EQUIP (green; red UNEQUIP while he follows you) and the EVOLVE preview (the next stage's
---     colors and name, "LV x"; dim until 3 copies, grey "MAX STAGE" at LIMITLESS); EQUIPPED x / y and OWNED n; EVOLUTIONS
---     (the chart: the same tile five times, BASE -> LIMITLESS, chevrons, FROM ROLLS / 3x BASE ...). (owner, prompt 48:
---     every stage's real name shows, no "???" stages.)
+-- TRAINERS screen (TrainerClient builds the window and calls this).
+-- (prompt 52, 23 Oct: rebuilt to the owner's reference ref_my_trainers.png, two columns)
+--   * The header (the window's title row): TRAINERS, then "● EQUIPPED 3/3" (green dot; a gold + buys the extra slot pass
+--     while you don't have it) and "● OWNED 16/400" (teal dot), and EVOLUTIONS (the chart).
+--   * LEFT: every trainer you own as a big tile (Shared/UI/TrainerTile), 4 across, best first (stage, then rarity, then
+--     level), the ones following you with the gold check; PREV · PAGE 1/2 · NEXT and a small EVOLVE ALL under them.
+--   * RIGHT, the picked one in a dark box: his tile big; the EXP bar ("LV 18" · 7.2K / 10K EXP · "LV 19", in the stage's
+--     color); his boosts as big colored rows with an icon each; "NEEDS 3X BEAST-MODE · 2/3" with the 3 copies as mini
+--     tiles (a missing one dim); a green EQUIP (dark UNEQUIP while he follows you) and the next stage as a button on its
+--     own background ("COLOSSUS" / "LV 18"; "MAX STAGE" at the end); the total line small under them.
+--     (owner, 23 Oct) The next-stage button is always at full brightness, its stage effect moving. With 3 copies: only a
+--     soft glow in the stage color breathing behind it and a highlight running round its outline (Shared/UI/ReadyGlow; no
+--     tag), and a tap asks, then evolves. Without: a tap bounces the NEEDS line. Its level is the one he'll have after evolving (the best of the 3, TrainerService combine).
+--   * The size comes from the room: on a phone (short screen) 2-3 rows of tiles and the detail side by side (his tile,
+--     the boosts and the needs line next to it, the bar and the buttons under); on a PC 4 rows and the detail stacked
+--     like the reference. panel.layout(bodyHeight, maxWidth) -> the width it needs.
+--   * The evolutions chart (EVOLUTIONS): a wide gold-edged panel over the window, TRAINER EVOLUTIONS, the picked trainer
+--     5 times (BASE > ... > LIMITLESS, LV 1), FROM ROLLS / 3x BASE ... under them in gray italic.
 --   * The evolve moment (panel.evolved): the 3 fly together, shake, a white flash, the new one slams in with its name
 --     stamp, confetti in the stage color, a big sound.
---   * (prompt 31) a trainer you haven't seen here yet turns over with a gold burst; "5/8 FOUND".
--- (prompt 47, 22 Oct) Restyled with the chunky kit: the big tile with the EQUIPPED / OWNED pills under it; on the right his
--- name, rarity and LV (gold), the EXP bar, his boosts as stat pills, the evolve bar (copies 2 / 3 + the mini tiles), a
--- big gold EVOLVE button and a quiet EQUIP / UNEQUIP. Nothing yet: "NO TRAINERS YET" and a red GO TO TRAINER AGENCY
--- button that takes you there (a fade; 10 s cooldown, checked on the server).
--- TrainersPanel.Build(parent) -> { frame, refresh(), evolved(info) }. Every change goes to the server (remote "Trainers").
+--   * (prompt 31) a trainer you haven't seen here yet turns over with a gold burst.
+-- Nothing yet: "NO TRAINERS YET" and a red GO TO TRAINER AGENCY button that takes you there (a fade; 10 s cooldown).
+-- TrainersPanel.Build(parent, header) -> { frame, refresh(), layout(h, w), evolved(info), closeOverlays() }.
+-- header = { row = the window's title row (the pills go in it), group = the window's group (the chart goes over it) }.
+-- Every change goes to the server (remote "Trainers").
 local Players = game:GetService("Players")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local TweenService = game:GetService("TweenService")
+local MarketplaceService = game:GetService("MarketplaceService")
 local Theme = require(script.Parent.Theme)
 local Kit = require(script.Parent.Kit)
 local UIBus = require(script.Parent.UIBus)
 local Pieces = require(script.Parent.Pieces)
 local Discovery = require(script.Parent.Discovery)
 local TrainerTile = require(script.Parent.TrainerTile)
+local ReadyGlow = require(script.Parent.ReadyGlow)
 local Audio = require(script.Parent.Parent.Audio)
 local ClientData = require(script.Parent.Parent.ClientData)
 local Trainers = require(script.Parent.Parent.Config.Trainers)
+local Monetization = require(script.Parent.Parent.Config.Monetization)
 local AlterFX = require(script.Parent.Parent.VFX.AlterFX)
 
 local New, Colors = Theme.New, Theme.Colors
@@ -35,13 +46,15 @@ local INK = Color3.fromHex("#0A090B")
 
 local TrainersPanel = {}
 
-local COLS, ROWS = 4, 3
-local PER_PAGE = COLS * ROWS
-local TILE, GAP = 66, 5
-local GRID_W = COLS * TILE + (COLS - 1) * GAP
-local GRID_H = ROWS * TILE + (ROWS - 1) * GAP
-local BIG = 168
-local SIDE_X = GRID_W + 12
+local COLS, GAP = 4, 8
+local PAGER_H = 34
+local MAX_TILE = 124 -- (phone: as many rows as fit with tiles up to this size)
+local STACK_FROM = 380 -- body height (mockup px) from which the detail stacks like the reference (a PC); under it, the phone layout
+local SIDE_BOX = 176 -- (phone) the boosts box / needs line next to his big tile
+local BOX_H = 82
+local BUTTON_H = 46
+local MINI, MINI_GAP = 30, 4
+local CHART_TILE, CHEVRON = 140, 22
 
 local function C(hex: string): Color3 return Color3.fromHex(hex) end
 
@@ -65,70 +78,135 @@ local function chunky(parent, props, size)
 	stroke.Color, stroke.Thickness, stroke.Transparency = INK, math.max(1.5, size * 0.1), 0
 	return label
 end
--- a box framed like a tile: a dark base, the hex mesh, an outline + an inner dark ring
-local function framed(parent, props, color: Color3)
-	local box = New("Frame", { BackgroundColor3 = C("#141317"), Parent = parent }, {
-		New("UICorner", { CornerRadius = UDim.new(0, 10) }),
-		New("UIStroke", { Color = color, Thickness = 3, ApplyStrokeMode = Enum.ApplyStrokeMode.Border }),
-	})
-	for k, v in pairs(props) do box[k] = v end
-	-- (owner, 23 Oct, chrome reset: no mesh on a bar inside the panel)
-	New("Frame", { Name = "InnerRing", BackgroundTransparency = 1, Position = UDim2.fromOffset(3, 3), Size = UDim2.new(1, -6, 1, -6), ZIndex = 3, Parent = box }, {
-		New("UICorner", { CornerRadius = UDim.new(0, 7) }),
-		New("UIStroke", { Color = INK, Thickness = 1.5 }),
-	})
-	return box
-end
 
 local function shortNumber(n: number): string
 	if n >= 10000 then return (string.format("%.1fK", n / 1000):gsub("%.0K", "K")) end
 	return tostring(math.floor(n))
 end
 
-function TrainersPanel.Build(parent: Instance)
+-- the rainbow (LIMITLESS)
+local function rainbow(): ColorSequence
+	local keys = {}
+	local hues = { 0.95, 0.08, 0.15, 0.33, 0.52, 0.72 }
+	for i, h in ipairs(hues) do keys[i] = ColorSequenceKeypoint.new((i - 1) / (#hues - 1), Color3.fromHSV(h, 0.6, 1)) end
+	return ColorSequence.new(keys)
+end
+
+-- a gold underline (under the screen titles, as in the references)
+local function underline(parent, props)
+	local bar = New("Frame", { Name = "Underline", BackgroundColor3 = Color3.new(1, 1, 1), BorderSizePixel = 0, Size = UDim2.fromOffset(64, 4), Parent = parent }, {
+		New("UICorner", { CornerRadius = UDim.new(1, 0) }),
+		New("UIGradient", { Color = ColorSequence.new({ ColorSequenceKeypoint.new(0, C("#FFF3C4")), ColorSequenceKeypoint.new(0.5, C("#F6C75A")),
+			ColorSequenceKeypoint.new(1, C("#C98A12")) }) }),
+	})
+	for k, v in pairs(props or {}) do bar[k] = v end
+	return bar
+end
+TrainersPanel.Underline = underline
+
+function TrainersPanel.Build(parent: Instance, header)
+	header = header or {}
 	local player = Players.LocalPlayer
 	local remote = ReplicatedStorage:WaitForChild("Remotes"):WaitForChild("Trainers", 30)
+	local PASS = Monetization.PassByKey and Monetization.PassByKey[Trainers.ExtraSlotPass]
 	local panel = {}
 	local page, pickedUid = 1, nil
 	local holder = New("Frame", { Name = "Trainers", BackgroundTransparency = 1, Size = UDim2.fromScale(1, 1), Visible = false, Parent = parent })
+	local L = { mode = "side", rows = 0, tile = 0, big = 0, bodyH = 0, gridW = 0, detailW = 0 }
 
 	local function state() return Trainers.Migrate((ClientData.Get() or {}).trainers) end
 	local function slots(): number return player:GetAttribute("TrainerSlots") or 1 end
+	-- (prompt 52) best first: the stage, then the rarity, then the level
 	local function sorted(s)
 		local list = table.clone(s.copies)
 		table.sort(list, function(a, b)
 			if a.s ~= b.s then return a.s > b.s end
-			if a.l ~= b.l then return a.l > b.l end
 			local ra, rb = Trainers.ById[a.id].index, Trainers.ById[b.id].index
 			if ra ~= rb then return ra > rb end
+			if a.l ~= b.l then return a.l > b.l end
 			return a.u < b.u
 		end)
 		return list
 	end
 
 	------------------------------------------------------------------------
+	-- The header: EQUIPPED / OWNED pills, EVOLUTIONS (in the window's title row)
+	------------------------------------------------------------------------
+	local headerItems = {}
+	local function headerPill(name: string, dotColor: Color3, order: number)
+		local pill = New("Frame", { Name = name, LayoutOrder = order, BackgroundColor3 = C("#141317"), Size = UDim2.fromOffset(0, 28), AutomaticSize = Enum.AutomaticSize.X,
+			Parent = header.row or holder }, {
+			New("UICorner", { CornerRadius = UDim.new(1, 0) }),
+			New("UIStroke", { Color = C("#2E2B33"), Thickness = 1.5, ApplyStrokeMode = Enum.ApplyStrokeMode.Border }),
+			New("UIPadding", { PaddingLeft = UDim.new(0, 10), PaddingRight = UDim.new(0, 10) }),
+			New("UIListLayout", { FillDirection = Enum.FillDirection.Horizontal, Padding = UDim.new(0, 6), VerticalAlignment = Enum.VerticalAlignment.Center,
+				SortOrder = Enum.SortOrder.LayoutOrder }),
+		})
+		New("Frame", { Name = "Dot", LayoutOrder = 1, BackgroundColor3 = dotColor, Size = UDim2.fromOffset(9, 9), Parent = pill }, {
+			New("UICorner", { CornerRadius = UDim.new(1, 0) }),
+		})
+		local text = Kit.Text({ Name = "Text", LayoutOrder = 2, Text = "", Font = "Strong", TextSize = 14, Size = UDim2.fromOffset(0, 28),
+			AutomaticSize = Enum.AutomaticSize.X, Parent = pill })
+		table.insert(headerItems, pill)
+		return pill, text
+	end
+	local equippedPill, equippedText = headerPill("EquippedPill", C("#4BE07A"), 10)
+	local _ownedPill, ownedText = headerPill("OwnedPill", C("#2FD4C4"), 11)
+	-- the extra slot pass: a small gold + at the end of the EQUIPPED pill (while you don't have it)
+	local slotPlus = New("TextButton", { Name = "ExtraSlot", LayoutOrder = 3, Text = "", AutoButtonColor = false, BackgroundColor3 = Colors.Gold,
+		Size = UDim2.fromOffset(20, 20), Visible = false, Parent = equippedPill }, {
+		New("UICorner", { CornerRadius = UDim.new(1, 0) }),
+		New("UIStroke", { Color = INK, Thickness = 1.2, ApplyStrokeMode = Enum.ApplyStrokeMode.Border }),
+	})
+	Pieces.Icon("plus", INK, { AnchorPoint = Vector2.new(0.5, 0.5), Position = UDim2.fromScale(0.5, 0.5), Size = UDim2.fromScale(0.7, 0.7), Parent = slotPlus })
+		:SetAttribute("KeepColor", true)
+	slotPlus.Activated:Connect(function()
+		if PASS and PASS.id and not player:GetAttribute("Pass_" .. Trainers.ExtraSlotPass) then
+			Audio.PlayUI("Click")
+			MarketplaceService:PromptGamePassPurchase(player, PASS.id)
+		end
+	end)
+	local chartButton = Kit.Button("Dark", "Evolutions", { Name = "EvolutionsButton", LayoutOrder = 12, Parent = header.row or holder },
+		{ width = 104, height = 30, textSize = 12 })
+	table.insert(headerItems, chartButton)
+	local function headerShown()
+		for _, item in ipairs(headerItems) do item.Visible = holder.Visible end
+	end
+	holder:GetPropertyChangedSignal("Visible"):Connect(headerShown)
+	headerShown()
+
+	------------------------------------------------------------------------
 	-- LEFT: the grid and the paging row
 	------------------------------------------------------------------------
-	local grid = New("Frame", { Name = "Grid", BackgroundTransparency = 1, Size = UDim2.fromOffset(GRID_W, GRID_H), Parent = holder })
+	local grid = New("Frame", { Name = "Grid", BackgroundTransparency = 1, Parent = holder })
 	local tiles = {}
-	for i = 1, PER_PAGE do
-		local column, row = (i - 1) % COLS, (i - 1) // COLS
-		local tile = TrainerTile.New({ Name = "Tile" .. i, px = TILE, Size = UDim2.fromOffset(TILE, TILE), Position = UDim2.fromOffset(column * (TILE + GAP), row * (TILE + GAP)),
-			Parent = grid })
-		tile.button.Activated:Connect(function()
-			if not tile.copy then return end
-			Kit.SelectFeedback(tile.button) -- (prompt 54: bounce + select sound)
-			pickedUid = tile.copy.u
-			panel.refresh()
-		end)
-		tiles[i] = tile
+	local detail -- (below)
+	local function buildGrid()
+		for _, tile in ipairs(tiles) do tile.cell:Destroy() end
+		table.clear(tiles)
+		for i = 1, COLS * L.rows do
+			local column, row = (i - 1) % COLS, (i - 1) // COLS
+			local tile = TrainerTile.New({ Name = "Tile" .. i, px = L.tile, Size = UDim2.fromOffset(L.tile, L.tile),
+				Position = UDim2.fromOffset(column * (L.tile + GAP), row * (L.tile + GAP)), Parent = grid })
+			tile.button.Activated:Connect(function()
+				if not tile.copy then return end
+				pickedUid = tile.copy.u
+				panel.refresh()
+				-- (prompt 54: bounce + select sound; the detail slides in. After the refresh: the slide-in's fade keeps the
+				-- transparencies it finds, so it must find the new trainer's)
+				Kit.SelectFeedback(tile.button, detail)
+			end)
+			tiles[i] = tile
+		end
 	end
-	local pager = New("Frame", { Name = "Pager", BackgroundTransparency = 1, Position = UDim2.fromOffset(0, GRID_H + 6), Size = UDim2.fromOffset(GRID_W, 30), Parent = holder })
-	local prev = Kit.Button("Dark", "Prev", { Name = "Prev", Position = UDim2.fromOffset(0, 0), Parent = pager }, { width = 58, height = 30, textSize = 12 })
-	local pageText = chunky(pager, { Name = "Page", Position = UDim2.fromOffset(62, 0), Size = UDim2.fromOffset(78, 30) }, 13)
-	local nextButton = Kit.Button("Dark", "Next", { Name = "Next", Position = UDim2.fromOffset(142, 0), Parent = pager }, { width = 58, height = 30, textSize = 12 })
-	local evolveAll = Kit.Button("Gold", "Evolve all", { Name = "EvolveAll", AnchorPoint = Vector2.new(1, 0), Position = UDim2.new(1, 0, 0, 0), Parent = pager },
-		{ width = 76, height = 30, textSize = 11 })
+	local pager = New("Frame", { Name = "Pager", BackgroundTransparency = 1, Size = UDim2.fromOffset(0, PAGER_H), Parent = holder })
+	local trio = New("Frame", { Name = "Pages", BackgroundTransparency = 1, Size = UDim2.fromOffset(244, PAGER_H), Parent = pager })
+	local prev = Kit.Button("Dark", "Prev", { Name = "Prev", Position = UDim2.fromOffset(0, 0), Parent = trio }, { width = 70, height = PAGER_H, textSize = 15 })
+	local pageText = chunky(trio, { Name = "Page", Position = UDim2.fromOffset(74, 0), Size = UDim2.fromOffset(96, PAGER_H) }, 17)
+	Kit.Fit(pageText, 17, 10)
+	local nextButton = Kit.Button("Dark", "Next", { Name = "Next", Position = UDim2.fromOffset(174, 0), Parent = trio }, { width = 70, height = PAGER_H, textSize = 15 })
+	local evolveAll = Kit.Button("Dark", "Evolve all", { Name = "EvolveAll", AnchorPoint = Vector2.new(1, 0), Position = UDim2.new(1, 0, 0, 0), Parent = pager },
+		{ width = 92, height = PAGER_H, textSize = 11 })
 	prev.Activated:Connect(function() page = math.max(1, page - 1) Audio.PlayUI("Click") panel.refresh() end)
 	nextButton.Activated:Connect(function() page += 1 Audio.PlayUI("Click") panel.refresh() end)
 	evolveAll.Activated:Connect(function()
@@ -167,135 +245,274 @@ function TrainersPanel.Build(parent: Instance)
 	end)
 
 	------------------------------------------------------------------------
-	-- RIGHT: the picked one
+	-- RIGHT: the picked one (a dark box)
 	------------------------------------------------------------------------
-	local side = New("Frame", { Name = "Detail", BackgroundTransparency = 1, Position = UDim2.fromOffset(SIDE_X, 0), Size = UDim2.new(1, -SIDE_X, 1, 0), Parent = holder })
-	local big = TrainerTile.New({ Name = "Big", px = BIG, Size = UDim2.fromOffset(BIG, BIG), Parent = side })
-	-- under the big tile: the two pills, and the evolutions chart button
-	local function pillFrame(name, x)
-		local pill = New("Frame", { Name = name, BackgroundColor3 = C("#141317"), Position = UDim2.fromOffset(x, BIG + 6), Size = UDim2.fromOffset(BIG / 2 - 3, 22), Parent = side }, {
-			New("UICorner", { CornerRadius = UDim.new(1, 0) }),
-			New("UIStroke", { Color = Colors.Gold, Thickness = 1.5, ApplyStrokeMode = Enum.ApplyStrokeMode.Border }),
-		})
-		return chunky(pill, { Name = "Text", Size = UDim2.fromScale(1, 1) }, 10)
-	end
-	local equippedPill = pillFrame("Equipped", 0)
-	local ownedPill = pillFrame("Owned", BIG / 2 + 3)
-	local chartButton = Kit.Button("Dark", "Evolutions", { Name = "Chart", Position = UDim2.fromOffset(0, BIG + 34), Parent = side }, { width = BIG, height = 30, textSize = 12 })
-	local COL_X = BIG + 10
-	local col = New("Frame", { Name = "Column", BackgroundTransparency = 1, Position = UDim2.fromOffset(COL_X, 0), Size = UDim2.new(1, -COL_X, 1, 0), Parent = side })
-	-- his name, the rarity, LV in gold
-	local nameText = chunky(col, { Name = "Name", Size = UDim2.new(1, -70, 0, 22), TextXAlignment = Enum.TextXAlignment.Left }, 19)
-	Kit.Fit(nameText, 19, 11)
-	local rarityText = chunky(col, { Name = "Rarity", Position = UDim2.fromOffset(0, 22), Size = UDim2.new(1, -70, 0, 14), TextXAlignment = Enum.TextXAlignment.Left }, 11)
-	local levelText = chunky(col, { Name = "Level", AnchorPoint = Vector2.new(1, 0), Position = UDim2.new(1, 0, 0, 2), Size = UDim2.fromOffset(70, 30),
-		TextXAlignment = Enum.TextXAlignment.Right, TextColor3 = Colors.Gold }, 22)
-	-- the EXP bar
-	local bar = framed(col, { Name = "ExpBar", Position = UDim2.fromOffset(0, 40), Size = UDim2.new(1, 0, 0, 26) }, C("#5AA8FF"))
-	local fill = New("Frame", { Name = "Fill", BackgroundColor3 = Color3.new(1, 1, 1), Position = UDim2.fromOffset(4, 4), Size = UDim2.new(0, 0, 1, -8), ZIndex = 2, Parent = bar }, {
-		New("UICorner", { CornerRadius = UDim.new(0, 6) }),
-		New("UIGradient", { Rotation = 90, Color = ColorSequence.new(C("#9AD8FF"), C("#2F7BFF")) }),
+	detail = New("Frame", { Name = "Detail", BackgroundColor3 = C("#151418"), Parent = holder }, {
+		New("UICorner", { CornerRadius = UDim.new(0, 12) }),
+		New("UIStroke", { Color = C("#2A2830"), Thickness = 1.5, ApplyStrokeMode = Enum.ApplyStrokeMode.Border }),
 	})
-	local expText = chunky(bar, { Name = "Exp", Size = UDim2.fromScale(1, 1), ZIndex = 4 }, 12)
-	-- the boosts as stat pills
-	local pillsRow = New("Frame", { Name = "Stats", BackgroundTransparency = 1, Position = UDim2.fromOffset(0, 72), Size = UDim2.new(1, 0, 0, 56), Parent = col }, {
-		New("UIListLayout", { FillDirection = Enum.FillDirection.Horizontal, Wraps = true, Padding = UDim.new(0, 5), SortOrder = Enum.SortOrder.LayoutOrder }),
+	local big = nil -- his big tile (made again when its size changes)
+	local function buildBig()
+		if big then big.cell:Destroy() end
+		big = TrainerTile.New({ Name = "Big", px = L.big, Size = UDim2.fromOffset(L.big, L.big), Parent = detail })
+	end
+	-- the EXP bar: a pill in the stage's color, "LV 18" and "LV 19" chips on its ends, the EXP in the middle
+	local expBar = New("Frame", { Name = "ExpBar", BackgroundColor3 = C("#0E0D10"), Size = UDim2.fromOffset(100, 22), Parent = detail }, {
+		New("UICorner", { CornerRadius = UDim.new(1, 0) }),
+	})
+	local expEdge = New("UIStroke", { Thickness = 2, ApplyStrokeMode = Enum.ApplyStrokeMode.Border, Parent = expBar })
+	local expFill = New("Frame", { Name = "Fill", BackgroundColor3 = Color3.new(1, 1, 1), Position = UDim2.fromOffset(2, 2), Size = UDim2.new(0, 0, 1, -4), ZIndex = 2,
+		Parent = expBar }, { New("UICorner", { CornerRadius = UDim.new(1, 0) }) })
+	local expGradient = New("UIGradient", { Rotation = 90, Parent = expFill })
+	local function endChip(right: boolean)
+		local chip = New("Frame", { Name = if right then "To" else "From", BackgroundColor3 = INK, BackgroundTransparency = 0.1, AnchorPoint = Vector2.new(if right then 1 else 0, 0.5),
+			Position = UDim2.new(if right then 1 else 0, if right then -3 else 3, 0.5, 0), Size = UDim2.fromOffset(40, 16), ZIndex = 4, Parent = expBar }, {
+			New("UICorner", { CornerRadius = UDim.new(1, 0) }),
+			New("UIStroke", { Color = Color3.new(1, 1, 1), Transparency = 0.55, Thickness = 1, ApplyStrokeMode = Enum.ApplyStrokeMode.Border }),
+		})
+		local text = chunky(chip, { Name = "Text", Size = UDim2.fromScale(1, 1), ZIndex = 5 }, 10)
+		Kit.Fit(text, 10, 7)
+		return chip, text
+	end
+	local _fromChip, lvFrom = endChip(false)
+	local toChip, lvTo = endChip(true)
+	local expText = chunky(expBar, { Name = "Exp", Position = UDim2.fromOffset(46, 0), Size = UDim2.new(1, -92, 1, 0), ZIndex = 4 }, 13)
+	Kit.Fit(expText, 13, 8)
+	-- the boosts: big colored rows with an icon each, in a dark box
+	local boostBox = New("Frame", { Name = "Boosts", BackgroundColor3 = C("#0E0D10"), ClipsDescendants = true, Parent = detail }, {
+		New("UICorner", { CornerRadius = UDim.new(0, 10) }),
+		New("UIStroke", { Color = C("#2E2B33"), Thickness = 1.5, ApplyStrokeMode = Enum.ApplyStrokeMode.Border }),
+		New("ImageLabel", { Name = "Hex", BackgroundTransparency = 1, Image = Theme.HexImage, ScaleType = Enum.ScaleType.Tile, TileSize = UDim2.fromOffset(18, 10),
+			ImageTransparency = 0.93, Size = UDim2.fromScale(1, 1) }),
 	})
 	local STAT = { gains = { "zap", C("#5AA8FF"), "EXP" }, coins = { "coin", C("#F6C75A"), "COINS" }, progress = { "arrow-big-up", C("#5CE07A"), "PROGRESS" },
 		maxStamina = { "heart-pulse", C("#FF6A7A"), "MAX STAMINA" }, staminaRegen = { "heart-pulse", C("#36C2C2"), "STAMINA REGEN" } }
-	local statPills = {}
+	local boostRows = {}
 	for i = 1, 3 do
-		local pill = New("Frame", { Name = "Stat" .. i, LayoutOrder = i, BackgroundColor3 = C("#141317"), Size = UDim2.fromOffset(0, 25), AutomaticSize = Enum.AutomaticSize.X,
-			Parent = pillsRow }, {
-			New("UICorner", { CornerRadius = UDim.new(1, 0) }),
-			New("UIStroke", { Name = "Edge", Thickness = 2, ApplyStrokeMode = Enum.ApplyStrokeMode.Border }),
-			New("UIListLayout", { FillDirection = Enum.FillDirection.Horizontal, Padding = UDim.new(0, 4), VerticalAlignment = Enum.VerticalAlignment.Center }),
-			New("UIPadding", { PaddingLeft = UDim.new(0, 4), PaddingRight = UDim.new(0, 9) }),
-		})
-		local badge = New("Frame", { Name = "Badge", BackgroundColor3 = Colors.Gold, Size = UDim2.fromOffset(19, 19), Parent = pill }, {
+		local row = New("Frame", { Name = "Row" .. i, BackgroundTransparency = 1, Position = UDim2.new(0, 8, 0, 6 + (i - 1) * 24), Size = UDim2.new(1, -16, 0, 22),
+			ZIndex = 2, Parent = boostBox })
+		local badge = New("Frame", { Name = "Badge", BackgroundColor3 = Colors.Gold, Position = UDim2.fromOffset(0, 1), Size = UDim2.fromOffset(20, 20), ZIndex = 2, Parent = row }, {
 			New("UICorner", { CornerRadius = UDim.new(1, 0) }),
 			New("UIStroke", { Color = INK, Thickness = 1.2 }),
 		})
-		local icon = Pieces.Icon("zap", INK, { AnchorPoint = Vector2.new(0.5, 0.5), Position = UDim2.fromScale(0.5, 0.5), Size = UDim2.fromScale(0.68, 0.68), Parent = badge })
+		local icon = Pieces.Icon("zap", INK, { AnchorPoint = Vector2.new(0.5, 0.5), Position = UDim2.fromScale(0.5, 0.5), Size = UDim2.fromScale(0.68, 0.68), ZIndex = 3,
+			Parent = badge })
 		icon:SetAttribute("KeepColor", true)
-		local text = chunky(pill, { Name = "Text", LayoutOrder = 2, Size = UDim2.fromOffset(0, 25), AutomaticSize = Enum.AutomaticSize.X }, 13)
-		statPills[i] = { pill = pill, badge = badge, icon = icon, text = text }
+		local text = chunky(row, { Name = "Text", Position = UDim2.fromOffset(27, 0), Size = UDim2.new(1, -27, 1, 0), TextXAlignment = Enum.TextXAlignment.Left, ZIndex = 3 }, 18)
+		Kit.Fit(text, 18, 10)
+		boostRows[i] = { row = row, badge = badge, icon = icon, text = text }
 	end
-	-- the evolve bar: copies 2 / 3 toward the next stage, the 3 mini tiles
-	local evoBar = framed(col, { Name = "EvolveBar", Position = UDim2.fromOffset(0, 130), Size = UDim2.new(1, -112, 0, 30) }, C("#3A3640"))
-	local evoFill = New("Frame", { Name = "Fill", BackgroundColor3 = Color3.new(1, 1, 1), Position = UDim2.fromOffset(4, 4), Size = UDim2.new(0, 0, 1, -8), ZIndex = 2, Parent = evoBar }, {
-		New("UICorner", { CornerRadius = UDim.new(0, 6) }),
-		New("UIGradient", { Rotation = 90, Color = ColorSequence.new(C("#FFE38A"), C("#C98A12")) }),
-	})
-	local needs = chunky(evoBar, { Name = "Needs", Size = UDim2.new(1, -8, 1, 0), Position = UDim2.fromOffset(4, 0), ZIndex = 4 }, 10)
-	Kit.Fit(needs, 10, 7)
+	-- "NEEDS 3X BEAST-MODE · 2/3" and the 3 copies as mini tiles
+	local needs = chunky(detail, { Name = "Needs", TextXAlignment = Enum.TextXAlignment.Left, TextWrapped = true }, 12)
+	Kit.Fit(needs, 12, 8, 2)
 	local minis = {}
 	for i = 1, Trainers.EvolveCount do
-		minis[i] = TrainerTile.New({ Name = "Mini" .. i, px = 32, Size = UDim2.fromOffset(32, 32), AnchorPoint = Vector2.new(1, 0),
-			Position = UDim2.new(1, -(Trainers.EvolveCount - i) * 36, 0, 129), Parent = col })
+		minis[i] = TrainerTile.New({ Name = "Mini" .. i, px = MINI, Size = UDim2.fromOffset(MINI, MINI), Parent = detail })
 	end
-	-- the gold EVOLVE button (the next stage's name on it) and the quiet EQUIP / UNEQUIP
-	local evolveButton = Kit.Button("Gold", "Evolve", { Name = "Evolve", Position = UDim2.fromOffset(0, 166), Parent = col }, { width = 200, height = 40, textSize = 18 })
-	evolveButton.Size = UDim2.new(1, 0, 0, 40)
-	local equipButton = Kit.Button("Quiet", "Equip", { Name = "Equip", AnchorPoint = Vector2.new(1, 0), Position = UDim2.new(1, 0, 0, 212), Parent = col },
-		{ width = 108, height = 30, textSize = 13 })
-	-- (prompt 27b) the following trainers' real total, after the cap: "TOTAL +180% EXP (MAX +400%)", the other kinds under it
-	local totalMain = chunky(col, { Name = "Total", Position = UDim2.fromOffset(0, 210), Size = UDim2.new(1, -114, 0, 18), TextXAlignment = Enum.TextXAlignment.Left,
-		TextColor3 = Colors.Gold }, 13)
-	Kit.Fit(totalMain, 13, 8)
-	local totalSub = Kit.Text({ Name = "TotalMore", Text = "", Font = "Body", TextSize = 10, TextColor3 = Colors.Muted, Position = UDim2.fromOffset(0, 228),
-		Size = UDim2.new(1, -114, 0, 14), TextXAlignment = Enum.TextXAlignment.Left, Parent = col })
-	Kit.Fit(totalSub, 10, 7)
+	-- the two big buttons: EQUIP (green; dark UNEQUIP) and the next stage on its own background
+	local equipButton = Kit.Button("Green", "Equip", { Name = "Equip", Parent = detail }, { width = 100, height = BUTTON_H, textSize = 20 })
+	local nextCell = New("Frame", { Name = "NextCell", BackgroundTransparency = 1, Parent = detail })
+	local nextStageButton = New("TextButton", { Name = "NextStage", Text = "", AutoButtonColor = false, BackgroundColor3 = C("#1A181B"), ClipsDescendants = true,
+		Size = UDim2.fromScale(1, 1), ZIndex = 2, Parent = nextCell }, { New("UICorner", { CornerRadius = UDim.new(0, 10) }) })
+	local nextEdge = New("UIStroke", { Thickness = 3, ApplyStrokeMode = Enum.ApplyStrokeMode.Border, Parent = nextStageButton })
+	-- (owner, 23 Oct) ready: the soft glow behind it and a highlight travelling round its outline (Shared/UI/ReadyGlow)
+	local nextReady = ReadyGlow.New(nextStageButton, { stroke = nextEdge, pad = 22 })
+	-- (owner, 23 Oct) the picture has the button's own rounded corners (the outline sits on its edge: the stroke is drawn
+	-- outside); the moving effect sits in a clip inset by ~0.3 of the radius, so no square corner shows past the curve
+	local nextHex = New("ImageLabel", { Name = "HexArt", BackgroundTransparency = 1, ScaleType = Enum.ScaleType.Crop, Size = UDim2.fromScale(1, 1), ZIndex = 2,
+		Parent = nextStageButton }, { New("UICorner", { CornerRadius = UDim.new(0, 10) }) })
+	local nextClip = New("Frame", { Name = "Clip", BackgroundTransparency = 1, ClipsDescendants = true, Position = UDim2.fromOffset(3, 3), Size = UDim2.new(1, -6, 1, -6),
+		ZIndex = 3, Parent = nextStageButton })
+	local nextEvo = New("ImageLabel", { Name = "EvoArt", BackgroundTransparency = 1, ScaleType = Enum.ScaleType.Crop, ImageTransparency = 0.25, Size = UDim2.fromScale(1, 1),
+		ZIndex = 3, Parent = nextClip })
+	local nextName = chunky(nextStageButton, { Name = "Stage", Position = UDim2.new(0, 4, 0, 4), Size = UDim2.new(1, -8, 0.55, -4), ZIndex = 6 }, 20)
+	Kit.Fit(nextName, 20, 9)
+	local nextGradient = New("UIGradient", { Name = "Colors", Enabled = false, Parent = nextName })
+	local nextLevel = chunky(nextStageButton, { Name = "Level", Position = UDim2.fromScale(0, 0.55), Size = UDim2.fromScale(1, 0.38), ZIndex = 6 }, 13)
+	Theme.BindPress(nextStageButton)
+	-- its stage effect moves (like the tiles: IRON-BORN pulses, BEAST-MODE / LIMITLESS turn, COLOSSUS flashes), only while
+	-- the panel is on screen
+	local nextStageId = nil
+	task.spawn(function()
+		while true do
+			task.wait(1 / 30)
+			local gui = holder:FindFirstAncestorOfClass("ScreenGui")
+			if holder.Visible and gui and gui.Enabled and nextStageId and nextEvo.Visible then
+				local t = os.clock()
+				if nextStageId == "IronBorn" then
+					nextEvo.ImageTransparency = 0.08 + 0.25 * (0.5 + 0.5 * math.sin(t * 2.6))
+				elseif nextStageId == "BeastMode" or nextStageId == "Limitless" then
+					nextEvo.Rotation = (t * (if nextStageId == "Limitless" then 22 else 14)) % 360
+				elseif nextStageId == "Colossus" then
+					local k = (t * 0.7) % 1
+					nextEvo.ImageTransparency = if k < 0.04 or (k > 0.08 and k < 0.11) then 0 else 0.25
+				end
+			end
+		end
+	end)
+	-- (prompt 27b) the following trainers' real total, after the cap: "TOTAL +180% EXP (MAX +400%)"
+	local totalMain = chunky(detail, { Name = "Total", TextColor3 = Colors.Gold }, 11)
+	Kit.Fit(totalMain, 11, 7)
+
+	-- places the detail's pieces for the layout (side = phone, stack = PC / the reference)
+	local function placeDetail()
+		local w, b = L.detailW, L.big
+		local function at(gui, x, y, width, height)
+			gui.Position = UDim2.fromOffset(x, y)
+			if width then gui.Size = UDim2.fromOffset(width, height) end
+		end
+		if L.mode == "side" then
+			local rx, rw = 16 + b, w - (16 + b) - 8
+			at(big.cell, 8, 8)
+			at(boostBox, rx, 8, rw, BOX_H)
+			at(needs, rx, 16 + BOX_H, rw, 28)
+			for i, mini in ipairs(minis) do at(mini.cell, rx + (i - 1) * (MINI + MINI_GAP), 48 + BOX_H) end
+			at(expBar, 8, 16 + b, w - 16, 22)
+			local by = b + 46
+			local bw = math.floor((w - 24) / 2)
+			at(equipButton, 8, by, bw, BUTTON_H)
+			at(nextCell, 16 + bw, by, w - 24 - bw, BUTTON_H)
+			at(totalMain, 8, by + BUTTON_H + 6, w - 16, 14)
+		else
+			at(big.cell, math.floor((w - b) / 2), 8)
+			at(expBar, 8, 16 + b, w - 16, 22)
+			at(boostBox, 8, b + 46, w - 16, BOX_H)
+			local minisW = Trainers.EvolveCount * MINI + (Trainers.EvolveCount - 1) * MINI_GAP
+			at(needs, 8, b + 136, w - 24 - minisW, 30)
+			for i, mini in ipairs(minis) do at(mini.cell, w - 8 - minisW + (i - 1) * (MINI + MINI_GAP), b + 136) end
+			local by = b + 174
+			local bw = math.floor((w - 24) / 2)
+			at(equipButton, 8, by, bw, BUTTON_H)
+			at(nextCell, 16 + bw, by, w - 24 - bw, BUTTON_H)
+			at(totalMain, 8, by + BUTTON_H + 6, w - 16, 14)
+		end
+	end
+
+	-- the layout for the room the window has (body height and the widest it may be, mockup px); returns the width it needs
+	function panel.layout(bodyH: number, maxW: number): number
+		local mode = if bodyH >= STACK_FROM then "stack" else "side"
+		local gridH = bodyH - PAGER_H - GAP
+		local rows = if mode == "stack" then 4 else math.clamp(math.ceil((gridH + GAP) / (MAX_TILE + GAP)), 1, 4)
+		local tile = math.floor((gridH - (rows - 1) * GAP) / rows)
+		local bigSize, detailW
+		if mode == "stack" then
+			bigSize = math.clamp(bodyH - 250, 120, 210)
+			detailW = math.max(bigSize + 16, 220)
+		else
+			bigSize = math.clamp(bodyH - 120, 100, 210)
+			detailW = 8 + bigSize + 8 + SIDE_BOX + 8
+		end
+		local gridW = COLS * tile + (COLS - 1) * GAP
+		if gridW + 14 + detailW > maxW then
+			tile = math.max(56, math.floor((maxW - 14 - detailW - (COLS - 1) * GAP) / COLS))
+			gridW = COLS * tile + (COLS - 1) * GAP
+		end
+		local gridChanged = tile ~= L.tile or rows ~= L.rows
+		local bigChanged = bigSize ~= L.big
+		L.mode, L.rows, L.tile, L.big, L.bodyH, L.gridW, L.detailW = mode, rows, tile, bigSize, bodyH, gridW, detailW
+		if gridChanged then buildGrid() end
+		if bigChanged or not big then buildBig() end
+		grid.Size = UDim2.fromOffset(gridW, rows * tile + (rows - 1) * GAP)
+		pager.Position = UDim2.fromOffset(0, bodyH - PAGER_H)
+		pager.Size = UDim2.fromOffset(gridW, PAGER_H)
+		trio.Position = UDim2.fromOffset(math.max(0, math.floor((gridW - 96 - 244) / 2)), 0)
+		detail.Position = UDim2.fromOffset(gridW + 14, 0)
+		detail.Size = UDim2.fromOffset(detailW, bodyH)
+		detail:SetAttribute("HomePosition", detail.Position)
+		placeDetail()
+		if gridChanged or bigChanged then panel.refresh() end
+		return gridW + 14 + detailW
+	end
 
 	------------------------------------------------------------------------
-	-- The evolutions chart (over the panel)
+	-- The evolutions chart and the evolve question (over the window)
 	------------------------------------------------------------------------
-	-- (a little past the panel on every side: the grid tiles' glows reach out a few px)
-	local chart = New("Frame", { Name = "Chart", BackgroundColor3 = C("#0E0D10"), BackgroundTransparency = 0.02, Position = UDim2.fromOffset(-8, -8), Size = UDim2.new(1, 16, 1, 16),
-		Visible = false, ZIndex = 20,
-		Parent = holder }, { New("UICorner", { CornerRadius = UDim.new(0, 12) }) })
-	chunky(chart, { Name = "Title", Text = "EVOLUTIONS", Position = UDim2.fromOffset(12, 6), Size = UDim2.new(1, -80, 0, 26), ZIndex = 21,
-		TextXAlignment = Enum.TextXAlignment.Left }, 20)
-	local chartClose = Kit.Button("Dark", "Back", { Name = "Close", AnchorPoint = Vector2.new(1, 0), Position = UDim2.new(1, -8, 0, 6), ZIndex = 21, Parent = chart },
-		{ width = 64, height = 30, textSize = 12 })
-	local CHART_TILE, CHEVRON = 112, 22
-	local chartRow = New("Frame", { Name = "Row", BackgroundTransparency = 1, AnchorPoint = Vector2.new(0.5, 0), Position = UDim2.new(0.5, 0, 0, 46),
-		Size = UDim2.fromOffset(5 * CHART_TILE + 4 * CHEVRON, CHART_TILE + 40), ZIndex = 21, Parent = chart })
+	local overParent = header.group or holder
+	local function overlay(name: string, width: number, height: number, z: number)
+		local shade = New("TextButton", { Name = name .. "Shade", Text = "", AutoButtonColor = false, BackgroundColor3 = Color3.new(0, 0, 0), BackgroundTransparency = 0.35,
+			AnchorPoint = Vector2.new(0.5, 0.5), Position = UDim2.fromScale(0.5, 0.5), Size = UDim2.new(1, 40, 1, 40), Visible = false, ZIndex = z, Parent = overParent }, {
+			New("UICorner", { CornerRadius = UDim.new(0, 16) }),
+		})
+		local box = New("Frame", { Name = name, BackgroundColor3 = C("#121115"), AnchorPoint = Vector2.new(0.5, 0.5), Position = UDim2.fromScale(0.5, 0.5),
+			Size = UDim2.fromOffset(width, height), Active = true, Visible = false, ZIndex = z + 1, Parent = overParent }, {
+			New("UICorner", { CornerRadius = UDim.new(0, 16) }),
+			New("ImageLabel", { Name = "Hex", BackgroundTransparency = 1, Image = Theme.HexImage, ScaleType = Enum.ScaleType.Tile, TileSize = UDim2.fromOffset(18, 10),
+				ImageTransparency = 0.9, Size = UDim2.fromScale(1, 1), ZIndex = z + 1 }),
+		})
+		-- a gold edge with a soft gold glow outside
+		New("UIStroke", { Thickness = 3, Color = Color3.new(1, 1, 1), ApplyStrokeMode = Enum.ApplyStrokeMode.Border, Parent = box }, {
+			New("UIGradient", { Rotation = 90, Color = ColorSequence.new({ ColorSequenceKeypoint.new(0, C("#FFE08A")), ColorSequenceKeypoint.new(1, C("#C98A12")) }) }),
+		})
+		local glow = New("Frame", { Name = "Glow", BackgroundTransparency = 1, AnchorPoint = Vector2.new(0.5, 0.5), Position = UDim2.fromScale(0.5, 0.5),
+			Size = UDim2.new(1, 6, 1, 6), ZIndex = z + 1, Parent = box }, { New("UICorner", { CornerRadius = UDim.new(0, 19) }) })
+		New("UIStroke", { Color = C("#F6C75A"), Thickness = 8, Transparency = 0.8, ApplyStrokeMode = Enum.ApplyStrokeMode.Border, Parent = glow })
+		local function show(on: boolean)
+			shade.Visible, box.Visible = on, on
+		end
+		shade.Activated:Connect(function() Audio.PlayUI("Click") show(false) end)
+		local close = Kit.CloseButton({ AnchorPoint = Vector2.new(1, 0), Position = UDim2.new(1, -10, 0, 10), ZIndex = z + 4, Parent = box })
+		close.Activated:Connect(function() show(false) end)
+		return box, show
+	end
+
+	local CHART_W = 5 * CHART_TILE + 4 * CHEVRON + 48
+	local chart, showChart = overlay("Chart", CHART_W, 70 + CHART_TILE + 40, 40)
+	Kit.Text({ Name = "Title", Text = "Trainer evolutions", Font = "Title", TextSize = 30, Upper = true, AnchorPoint = Vector2.new(0.5, 0), Position = UDim2.new(0.5, 0, 0, 12),
+		Size = UDim2.new(1, -120, 0, 36), ZIndex = 44, Parent = chart })
+	underline(chart, { AnchorPoint = Vector2.new(0.5, 0), Position = UDim2.new(0.5, 0, 0, 52), ZIndex = 44 })
+	local chartRow = New("Frame", { Name = "Row", BackgroundTransparency = 1, AnchorPoint = Vector2.new(0.5, 0), Position = UDim2.new(0.5, 0, 0, 70),
+		Size = UDim2.fromOffset(5 * CHART_TILE + 4 * CHEVRON, CHART_TILE + 30), ZIndex = 44, Parent = chart })
 	local chartTiles = {}
 	for i, stage in ipairs(Trainers.Stages) do
 		local x = (i - 1) * (CHART_TILE + CHEVRON)
 		chartTiles[i] = TrainerTile.New({ Name = stage.id, px = CHART_TILE, Size = UDim2.fromOffset(CHART_TILE, CHART_TILE), Position = UDim2.fromOffset(x, 0), Parent = chartRow })
-		chunky(chartRow, { Name = "Caption" .. i, Text = stage.from, Position = UDim2.fromOffset(x, CHART_TILE + 6), Size = UDim2.fromOffset(CHART_TILE, 18), ZIndex = 22,
-			TextColor3 = C("#BDBAC4") }, 11)
+		Kit.Text({ Name = "Caption" .. i, Text = stage.from, Font = "Title", KeepItalic = true, TextSize = 13, TextColor3 = C("#8C8994"), Position = UDim2.fromOffset(x, CHART_TILE + 8),
+			Size = UDim2.fromOffset(CHART_TILE, 18), ZIndex = 45, Parent = chartRow })
 		if i < #Trainers.Stages then
-			chunky(chartRow, { Name = "Chevron" .. i, Text = ">", Position = UDim2.fromOffset(x + CHART_TILE, CHART_TILE / 2 - 14), Size = UDim2.fromOffset(CHEVRON, 28),
-				ZIndex = 22, TextColor3 = C(Trainers.Stages[i + 1].color) }, 22)
+			Pieces.Icon("chevron-left", C("#D8D6DE"), { Name = "Arrow" .. i, Rotation = 180, AnchorPoint = Vector2.new(0.5, 0.5), Position = UDim2.fromOffset(x + CHART_TILE + CHEVRON / 2, CHART_TILE / 2),
+				Size = UDim2.fromOffset(20, 20), ZIndex = 45, Parent = chartRow }):SetAttribute("KeepColor", true)
 		end
 	end
-	local mults = {}
-	for i = 2, #Trainers.Stages do table.insert(mults, "x" .. Trainers.Stages[i].mult) end
-	local chartNote = Kit.Text({ Name = "Note", Text = "3 of the same trainer at the same stage make 1 of the next (the boost " .. table.concat(mults, ", ")
-		.. "; LV 20 +" .. math.floor(Trainers.MaxLevelBonus * 100 + 0.5) .. "%). He keeps the best level of the 3.",
-		Font = "Body", TextSize = 11, TextColor3 = Colors.Muted, AnchorPoint = Vector2.new(0.5, 0), Position = UDim2.new(0.5, 0, 0, CHART_TILE + 96), Size = UDim2.new(1, -24, 0, 16),
-		ZIndex = 21, Parent = chart })
-	chartNote.TextWrapped = true
-	chartClose.Activated:Connect(function() Audio.PlayUI("Click") chart.Visible = false end)
+
+	-- "EVOLVE?" (the next-stage button asks first)
+	local ask, showAsk = overlay("Ask", 380, 176, 50)
+	Kit.Text({ Name = "Title", Text = "Evolve?", Font = "Title", TextSize = 28, Upper = true, AnchorPoint = Vector2.new(0.5, 0), Position = UDim2.new(0.5, 0, 0, 12),
+		Size = UDim2.new(1, -100, 0, 34), ZIndex = 54, Parent = ask })
+	local askLine = chunky(ask, { Name = "Line", RichText = true, TextWrapped = true, AnchorPoint = Vector2.new(0.5, 0), Position = UDim2.new(0.5, 0, 0, 52),
+		Size = UDim2.new(1, -40, 0, 50), ZIndex = 54 }, 15)
+	Kit.Fit(askLine, 15, 9, 2)
+	local askYes = Kit.Button("Gold", "Evolve", { Name = "Yes", AnchorPoint = Vector2.new(1, 1), Position = UDim2.new(0.5, -6, 1, -14), ZIndex = 54, Parent = ask },
+		{ width = 150, height = 46, textSize = 20 })
+	local askNo = Kit.Button("Dark", "Cancel", { Name = "No", AnchorPoint = Vector2.new(0, 1), Position = UDim2.new(0.5, 6, 1, -14), ZIndex = 54, Parent = ask },
+		{ width = 120, height = 46, textSize = 16 })
+
+	function panel.closeOverlays()
+		showChart(false)
+		showAsk(false)
+	end
+	holder:GetPropertyChangedSignal("Visible"):Connect(function() if not holder.Visible then panel.closeOverlays() end end)
 
 	------------------------------------------------------------------------
 	-- Refresh
 	------------------------------------------------------------------------
 	local currentSet, current = {}, nil
 	function panel.refresh()
+		if L.rows == 0 or not big then return end -- (no layout yet)
 		local s = state()
 		local list = sorted(s)
 		local slotCount = slots()
+		local perPage = COLS * L.rows
 		local equippedUids, equippedCopies = Trainers.CleanEquipped(s, slotCount)
 		local equippedSet = {}
 		for _, u in ipairs(equippedUids) do equippedSet[u] = true end
-		local pages = math.max(1, math.ceil(#list / PER_PAGE))
+		local pages = math.max(1, math.ceil(#list / perPage))
 		page = math.clamp(page, 1, pages)
+		equippedText.Text = string.format("EQUIPPED %d/%d", #equippedUids, slotCount)
+		ownedText.Text = string.format("OWNED %d/%d", #s.copies, Trainers.MaxCopies)
+		slotPlus.Visible = PASS ~= nil and PASS.id ~= nil and player:GetAttribute("Pass_" .. Trainers.ExtraSlotPass) ~= true
 		empty.Visible = #list == 0
-		grid.Visible, pager.Visible, side.Visible = #list > 0, #list > 0, #list > 0
+		grid.Visible, pager.Visible, detail.Visible = #list > 0, #list > 0, #list > 0
+		chartButton.Visible = holder.Visible and #list > 0
 		if #list == 0 then return end
 		-- (prompt 31) new trainers since you last looked turn over with a gold burst
 		local discovered = TrainersPanel.Discovered((ClientData.Get() or {}).trainers)
@@ -303,13 +520,13 @@ function TrainersPanel.Build(parent: Instance)
 		local map = Trainers.CopyByUid(s)
 		if not pickedUid or not map[pickedUid] then pickedUid = list[1].u end
 		for i, tile in ipairs(tiles) do
-			local copy = list[(page - 1) * PER_PAGE + i]
+			local copy = list[(page - 1) * perPage + i]
 			tile.copy = copy
 			tile.cell.Visible = copy ~= nil
 			if copy then
 				tile:Set({ id = copy.id, s = copy.s, l = copy.l, equipped = equippedSet[copy.u] })
 				local scale = tile.cell:FindFirstChild("Picked") or New("UIScale", { Name = "Picked", Parent = tile.cell })
-				scale.Scale = if copy.u == pickedUid then 1.06 else 1
+				scale.Scale = if copy.u == pickedUid then 1.05 else 1
 				if fresh[copy.id] then
 					fresh[copy.id] = nil
 					Discovery.Reveal(tile.button)
@@ -317,7 +534,7 @@ function TrainersPanel.Build(parent: Instance)
 			end
 		end
 		if holder.Visible then Discovery.Seen("Trainers", discovered) end
-		pageText.Text = "PAGE " .. page .. " / " .. pages
+		pageText.Text = "PAGE " .. page .. "/" .. pages
 		Kit.SetButton(prev, if page > 1 then "Dark" else "Disabled", "Prev")
 		Kit.SetButton(nextButton, if page < pages then "Dark" else "Disabled", "Next")
 		-- anything to evolve?
@@ -330,51 +547,48 @@ function TrainersPanel.Build(parent: Instance)
 				if groups[key] >= Trainers.EvolveCount then canAny = true end
 			end
 		end
-		Kit.SetButton(evolveAll, if canAny then "Gold" else "Disabled", "Evolve all")
-		equippedPill.Text = string.format("EQUIPPED %d/%d", #equippedUids, slotCount)
-		ownedPill.Text = string.format("OWNED %d/%d", #s.copies, Trainers.MaxCopies)
+		Kit.SetButton(evolveAll, if canAny then "Dark" else "Disabled", "Evolve all")
 		local cap = math.floor(Trainers.BoostCap * 100 + 0.5)
 		local totals = Trainers.TotalLines(equippedCopies)
 		if totals[1] then
 			totalMain.Text = string.format("TOTAL +%d%% %s (MAX +%d%%)", totals[1].pct, STAT[totals[1].kind][3], cap)
-			local more = {}
-			for i = 2, #totals do table.insert(more, string.format("+%d%% %s", totals[i].pct, string.lower(STAT[totals[i].kind][3]))) end
-			totalSub.Text = if #more > 0 then table.concat(more, ", ") else "from the trainers following you"
 		else
 			totalMain.Text = string.format("TOTAL +0%% (MAX +%d%%)", cap)
-			totalSub.Text = "Equip a trainer to get his boost"
 		end
 		-- the picked one
 		current = map[pickedUid]
 		local trainer = Trainers.ById[current.id]
 		local stage = Trainers.Stages[current.s]
-		local rarity = Trainers.RarityById[trainer.rarity]
+		local stageColor = C(stage.color)
 		big:Set({ id = current.id, s = current.s, l = current.l, equipped = equippedSet[current.u] })
-		nameText.Text = string.upper(trainer.name)
-		rarityText.Text = string.upper(rarity.name) .. "  ·  " .. stage.name
-		rarityText.TextColor3 = C(if rarity.id == "Secret" then rarity.color2 else rarity.color)
-		levelText.Text = "LV " .. current.l
+		-- the EXP bar, in the stage's color
+		expEdge.Color = stageColor
+		expGradient.Color = ColorSequence.new(stageColor:Lerp(Color3.new(1, 1, 1), 0.35), stageColor:Lerp(Color3.new(0, 0, 0), 0.25))
+		lvFrom.Text = "LV " .. current.l
 		if current.l >= Trainers.MaxLevel then
 			expText.Text = "MAX LEVEL"
-			fill.Size = UDim2.new(1, -8, 1, -8)
+			toChip.Visible = false
+			expFill.Size = UDim2.new(1, -4, 1, -4)
 		else
 			local need = Trainers.LevelXp(current.l, current.s)
 			local k = math.clamp(current.x / need, 0, 1)
-			expText.Text = shortNumber(current.x) .. " / " .. shortNumber(need) .. " EXP  ·  LV " .. (current.l + 1)
-			fill.Size = UDim2.new(k, -8 * k, 1, -8)
+			expText.Text = shortNumber(current.x) .. " / " .. shortNumber(need) .. " EXP"
+			toChip.Visible = true
+			lvTo.Text = "LV " .. (current.l + 1)
+			expFill.Size = UDim2.new(k, -4 * k, 1, -4)
 		end
+		-- the boosts
 		local lines = Trainers.PerkLines(trainer, current)
 		local icons = require(script.Parent.Parent.Config.UI).Icons
-		for i, sp in ipairs(statPills) do
+		for i, r in ipairs(boostRows) do
 			local line = lines[i]
-			sp.pill.Visible = line ~= nil
+			r.row.Visible = line ~= nil
 			if line then
 				local look = STAT[line.kind]
-				sp.badge.BackgroundColor3 = look[2]
-				sp.icon.Image = icons[look[1]] or sp.icon.Image
-				sp.text.Text = "+" .. line.pct .. "% " .. look[3]
-				sp.text.TextColor3 = look[2]
-				sp.pill:FindFirstChild("Edge").Color = look[2]
+				r.badge.BackgroundColor3 = look[2]
+				r.icon.Image = icons[look[1]] or r.icon.Image
+				r.text.Text = "+" .. line.pct .. "% " .. look[3]
+				r.text.TextColor3 = look[2]
 			end
 		end
 		-- evolving
@@ -383,9 +597,8 @@ function TrainersPanel.Build(parent: Instance)
 		local ready = not maxed and #currentSet >= Trainers.EvolveCount
 		local nextStage = Trainers.Stages[current.s + 1]
 		local have = math.min(#currentSet, Trainers.EvolveCount)
-		needs.Text = if maxed then "MAX STAGE" else string.format("%d/%d  ·  3x %s", have, Trainers.EvolveCount, stage.name)
-		local k = if maxed then 1 else have / Trainers.EvolveCount
-		evoFill.Size = UDim2.new(k, -8 * k, 1, -8)
+		needs.Visible = not maxed -- (the button says MAX STAGE)
+		needs.Text = if maxed then "" else string.format("NEEDS %dX %s · %d/%d", Trainers.EvolveCount, stage.name, have, Trainers.EvolveCount)
 		for i, mini in ipairs(minis) do
 			local got = currentSet[i] ~= nil
 			mini.cell.Visible = not maxed
@@ -395,30 +608,52 @@ function TrainersPanel.Build(parent: Instance)
 				if d:IsA("ViewportFrame") then d.ImageTransparency = if got then 0 else 0.75 end
 			end
 			mini.button.BackgroundTransparency = if got then 0 else 0.6
+			local dim = mini.button:FindFirstChild("Missing") or New("Frame", { Name = "Missing", BackgroundColor3 = Color3.new(0, 0, 0), Size = UDim2.fromScale(1, 1),
+				ZIndex = 12, Parent = mini.button })
+			dim.BackgroundTransparency = if got then 1 else 0.45
 		end
-		-- (owner, prompt 48) "EVOLVE > IRON-BORN": the next stage's real name in its color (a 3 px dark stroke); "MAX STAGE"
-		-- at LIMITLESS
-		local evolveLabel = evolveButton:FindFirstChild("Label")
-		if evolveLabel then evolveLabel.RichText = true end -- (set before the text: Theme.Uppercase leaves the tags alone)
-		local nextText = if nextStage then string.format('<font color="#%s">%s</font>', C(nextStage.color):ToHex(), nextStage.name) else ""
+		-- the next stage's button: its background, its name in its color, the level he'll keep; dim until 3 copies
+		local bestLevel = current.l
+		for _, c in ipairs(currentSet) do bestLevel = math.max(bestLevel, c.l) end
 		if maxed then
-			Kit.SetButton(evolveButton, "Disabled", "Max stage")
-		elseif ready then
-			local bestLevel = 1
-			for _, c in ipairs(currentSet) do bestLevel = math.max(bestLevel, c.l) end
-			Kit.SetButton(evolveButton, "Gold", "Evolve > " .. nextText .. " · LV " .. bestLevel)
+			nextHex.Visible, nextEvo.Visible = false, false
+			nextStageButton.BackgroundColor3 = C("#232127")
+			nextEdge.Color = C("#3A3740")
+			nextName.Text = "MAX STAGE"
+			nextName.TextColor3 = C("#8C8994")
+			nextGradient.Enabled = false
+			nextLevel.Text = ""
+			nextStageId = nil
+			nextReady:Set(false, C("#3A3740"))
 		else
-			Kit.SetButton(evolveButton, "Disabled", "Evolve > " .. nextText)
-		end
-		local evolveStroke = evolveLabel and evolveLabel:FindFirstChildOfClass("UIStroke")
-		if evolveStroke and not maxed then
-			evolveStroke.Color, evolveStroke.Thickness, evolveStroke.Transparency = INK, 3, 0
+			local art = Trainers.StageArt[nextStage.id]
+			nextHex.Visible, nextEvo.Visible = art ~= nil, art ~= nil
+			if art then nextHex.Image, nextEvo.Image = art.hex, art.evo end
+			nextStageButton.BackgroundColor3 = C(nextStage.base)
+			nextEdge.Color = C(nextStage.color)
+			nextName.Text = nextStage.name
+			nextGradient.Enabled = nextStage.rainbow == true
+			if nextStage.rainbow then nextGradient.Color = rainbow() end
+			nextName.TextColor3 = if nextStage.rainbow then Color3.new(1, 1, 1) else C(nextStage.color)
+			nextLevel.Text = "LV " .. bestLevel
+			-- (owner, 23 Oct) always full brightness; ready = only the pulsing glow in its color (no tag)
+			nextStageId = nextStage.id
+			nextEvo.Rotation, nextEvo.ImageTransparency = 0, 0.25
+			local turning = nextStage.id == "BeastMode" or nextStage.id == "Limitless"
+			nextEvo.SizeConstraint = if turning then Enum.SizeConstraint.RelativeXX else Enum.SizeConstraint.RelativeXY
+			nextEvo.AnchorPoint, nextEvo.Position = Vector2.new(0.5, 0.5), UDim2.fromScale(0.5, 0.5)
+			nextEvo.Size = if turning then UDim2.fromScale(1.2, 1.2) else UDim2.fromScale(1, 1)
+			nextReady:Set(ready, C(nextStage.color))
 		end
 		local isEquipped = equippedSet[current.u] == true
-		Kit.SetButton(equipButton, "Quiet", if isEquipped then "Unequip" else "Equip")
-		-- the chart: this trainer at every stage
+		Kit.SetButton(equipButton, if isEquipped then "Dark" else "Green", if isEquipped then "Unequip" else "Equip")
+		-- the chart and the question: this trainer
 		for i, tile in ipairs(chartTiles) do
 			tile:Set({ id = current.id, s = i, l = 1 })
+		end
+		if ready then
+			askLine.Text = string.format('%d %s <font color="#%s">%s</font> make 1 <font color="#%s">%s</font> · LV %d', Trainers.EvolveCount,
+				string.upper(trainer.name), stageColor:ToHex(), stage.name, C(nextStage.color):ToHex(), nextStage.name, bestLevel)
 		end
 	end
 
@@ -435,15 +670,38 @@ function TrainersPanel.Build(parent: Instance)
 			remote:FireServer("Equip", math.min(#uids + 1, slots()), current.u)
 		end
 	end)
-	evolveButton.Activated:Connect(function()
-		if not current or current.s >= #Trainers.Stages or #currentSet < Trainers.EvolveCount then return end
+	nextStageButton.Activated:Connect(function()
+		if not current or current.s >= #Trainers.Stages then return end
 		Audio.PlayUI("Click")
+		if #currentSet < Trainers.EvolveCount then
+			-- (owner, 23 Oct) not yet: the NEEDS line bounces so you see what's missing
+			if needs:GetAttribute("Hopping") then return end
+			needs:SetAttribute("Hopping", true)
+			local home = needs.Position
+			needs.TextColor3 = Colors.Gold
+			Theme.Tween(needs, { Position = home - UDim2.fromOffset(0, 5) }, 0.08, Enum.EasingStyle.Quad)
+			task.delay(0.08, function()
+				Theme.Tween(needs, { Position = home }, 0.25, Enum.EasingStyle.Bounce)
+				task.delay(0.45, function()
+					needs.Position = home
+					needs.TextColor3 = Color3.new(1, 1, 1)
+					needs:SetAttribute("Hopping", nil)
+				end)
+			end)
+			return
+		end
+		showAsk(true)
+	end)
+	askYes.Activated:Connect(function()
+		showAsk(false)
+		if not current or current.s >= #Trainers.Stages or #currentSet < Trainers.EvolveCount then return end
 		remote:FireServer("Evolve", current.u)
 	end)
+	askNo.Activated:Connect(function() Audio.PlayUI("Click") showAsk(false) end)
 	chartButton.Activated:Connect(function()
 		Audio.PlayUI("Click")
 		panel.refresh()
-		chart.Visible = true
+		showChart(true)
 	end)
 
 	------------------------------------------------------------------------

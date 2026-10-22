@@ -103,7 +103,11 @@ local modal = Kit.Modal({ name = "Trainers", title = "Trainers", width = W, heig
 		if bindKeys then bindKeys(keyboard and id == "Agency") end
 	end })
 agencyFrame = New("Frame", { Name = "Agency", BackgroundTransparency = 1, Size = UDim2.fromScale(1, 1), Parent = modal.body })
-myPanel = require(Shared.UI.TrainersPanel).Build(modal.body)
+local titleRow = modal.panel:FindFirstChild("TitleRow", true)
+myPanel = require(Shared.UI.TrainersPanel).Build(modal.body, { row = titleRow, group = modal.group })
+-- (prompt 52) the references' short gold underline under the title
+require(Shared.UI.TrainersPanel).Underline(modal.panel, { Position = UDim2.fromOffset(18, 47), ZIndex = 3 })
+local onTab -- (below: the window's look per screen)
 -- (prompt 31) a red dot on MY TRAINERS while there's a trainer you haven't seen there yet
 do
 	local Discovery = require(Shared.UI.Discovery)
@@ -131,28 +135,32 @@ if tabsRow then tabsRow.Visible = false end
 function showTab(id: string)
 	tab = id
 	modal.selectTab(id)
-	modal.setTitle(if id == "My" then "My trainers" else "Trainer agency")
+	modal.setTitle(if id == "My" then "Trainers" else "Trainer agency") -- (prompt 52: as in the references)
 	agencyFrame.Visible = id == "Agency"
 	myPanel.frame.Visible = id == "My"
+	if onTab then onTab(id) end
 	if id == "My" then myPanel.refresh() end
 	if bindKeys then bindKeys(keyboard and id == "Agency" and modal.isOpen()) end
 end
 
--- (prompt 27, 22 Oct: the kit design kit_agency_stand.png) LEFT: the odds grid, 2 rows of 4 rarity slots. A slot: a dark tile
--- with a deep radial glow and faint light rays in the rarity color, a thin border in a darker rarity color, the trainer's
--- portrait (Config/Trainers icon); one you haven't owned yet is a black silhouette with a thin rim in the rarity color on a
--- brighter burst (owner, 22 Oct: the hidden rarities, Secret and Eternal, too, and their name is "???" until you own
--- them). Under it the rarity name (loud, its color) and the chance (small, gray: Trainers.ChanceText, "50%", "0.035%").
--- Owned: a small gold check; a count "x2" bottom-right. A tap (or hover) shows his name and boost.
-local GRID_W = 384
+-- (prompt 52, 23 Oct: rebuilt to the owner's reference ref_agency.png) ONE panel: TRAINER AGENCY with the gold underline,
+-- the 8 rarities as 2 rows of 4 big trainer tiles (Shared/UI/TrainerTile in rarity mode: his name, his portrait (a black
+-- silhouette with a rim on a bright burst until you own him; Secret and Eternal "???" too), the rarity name in its color,
+-- the chance as a percentage; a gold check when owned, "x2" bottom-right). A tap (or hover) shows his name and boost.
+-- UNDER the panel, centred: the pity pill ("EPIC GUARANTEED IN 63 ROLLS" and a thin teal bar), then one row: the red ROLL
+-- ("525 COINS"), flat X3 (its price) and AUTO (OFF / ON), MY TRAINERS and the gear (the auto-delete toggles).
+-- The tiles take the room the screen has (layoutWindow, below).
 local CELL_GAP = 8
-local SLOT_TEXT = 0 -- (prompt 47: the rarity name and the chance are inside the tile now)
-local DARK_TILE = Color3.fromHex("#16161A")
-local grid = New("Frame", { Name = "Odds", BackgroundTransparency = 1, Size = UDim2.new(0, GRID_W, 1, 0), Parent = agencyFrame }, {
+local AGENCY_TOP = 54 -- (the panel's header: the title and its underline)
+local ROW_H = 46
+local CONTROLS_H = 8 + 28 + 6 + ROW_H -- (under the panel: a gap, the pity pill, a gap, the button row)
+local ROW_W = 140 + 70 + 70 + 96 + 44 + 4 * 6
+local grid = New("Frame", { Name = "Odds", BackgroundTransparency = 1, Size = UDim2.fromScale(1, 1), Parent = agencyFrame }, {
 	New("UIGridLayout", { CellSize = UDim2.new(0.25, -CELL_GAP * 3 / 4, 0.5, -CELL_GAP / 2), CellPadding = UDim2.fromOffset(CELL_GAP, CELL_GAP),
 		SortOrder = Enum.SortOrder.LayoutOrder, FillDirection = Enum.FillDirection.Horizontal }),
 })
 local slots = {}
+local slotPx = 0
 local tooltip = New("Frame", { Name = "Tooltip", BackgroundColor3 = Color3.fromHex("#0E0E11"), BackgroundTransparency = 0.05, AnchorPoint = Vector2.new(0.5, 1),
 	Size = UDim2.fromOffset(150, 40), Visible = false, ZIndex = 20, Parent = agencyFrame }, {
 	New("UICorner", { CornerRadius = UDim.new(0, 8) }),
@@ -168,23 +176,18 @@ local function showTip(slot)
 	local hidden = rarityOf(slot.trainer).hidden == true and not ownsAny(slot.trainer.id)
 	tipName.Text = if hidden then "???" else slot.trainer.name
 	tipPerk.Text = if hidden then "Hidden until you own one. Who is it?" else slot.trainer.perkText
-	-- (over the lower part of the slot's own tile, in mockup px: the cell's column / row times its size)
-	local cell = slot.cell
-	local column, row = (slot.order - 1) % 4, (slot.order - 1) // 4
-	local cellW = (GRID_W - CELL_GAP * 3) / 4
-	local px = math.max(cell.AbsoluteSize.X / cellW, 0.01) -- (pixels per mockup px)
-	local cellH = cell.AbsoluteSize.Y / px
-	local x = math.clamp(column * (cellW + CELL_GAP) + cellW / 2, 75, GRID_W - 75)
-	tooltip.Position = UDim2.fromOffset(x, row * (cellH + CELL_GAP) + cellH - SLOT_TEXT - 3)
+	-- over the lower part of the slot's own tile (in the Agency frame's mockup px)
+	local gridW = 4 * slotPx + 3 * CELL_GAP
+	local k = math.max(agencyFrame.AbsoluteSize.X, 1) / math.max(gridW, 1) -- (screen pixels per mockup px)
+	local rel = (slot.cell.AbsolutePosition - agencyFrame.AbsolutePosition) / k
+	local size = slot.cell.AbsoluteSize.X / k
+	tooltip.Position = UDim2.fromOffset(math.clamp(rel.X + size / 2, 75, gridW - 75), rel.Y + size - 3)
 	tooltip.Visible = true
 	tipShownAt = os.clock()
 	local at = tipShownAt
 	task.delay(2.5, function() if tipShownAt == at then hideTip() end end)
 end
 
--- (prompt 47, 22 Oct) the slots are the one trainer tile (Shared/UI/TrainerTile) in rarity mode: his name, his portrait (a
--- black silhouette with a rim in the rarity color until you own him; Secret and Eternal "???" too), the rarity name and
--- the chance; a gold check when owned, "x2" bottom-right
 local TrainerTile = require(Shared.UI.TrainerTile)
 -- (prompt 47) the portraits and stage backgrounds load once at join, so the first reveal never shows an empty card
 task.spawn(function()
@@ -193,25 +196,6 @@ task.spawn(function()
 	for _, art in pairs(Trainers.StageArt or {}) do table.insert(ids, art.hex) table.insert(ids, art.evo) end
 	pcall(function() game:GetService("ContentProvider"):PreloadAsync(ids) end)
 end)
-for order, trainer in ipairs(Trainers.List) do
-	local cell = New("Frame", { Name = trainer.id, LayoutOrder = order, BackgroundTransparency = 1, Parent = grid })
-	local tile = TrainerTile.New({ Name = "Tile", px = 92, Size = UDim2.fromScale(1, 1), Parent = cell })
-	local count = Kit.Text({ Name = "Count", Text = "", Font = "Chunky", TextSize = 12, AnchorPoint = Vector2.new(1, 1), Position = UDim2.new(1, -6, 1, -4),
-		Size = UDim2.fromOffset(40, 15), TextXAlignment = Enum.TextXAlignment.Right, ZIndex = 12, Parent = tile.button })
-	local slot = { cell = cell, tile = tile, count = count, trainer = trainer, order = order }
-	slots[trainer.id] = slot
-	tile.button.Activated:Connect(function()
-		Kit.SelectFeedback(tile.button) -- (prompt 54: bounce + select sound)
-		if tooltip.Visible and tipName.Text ~= "" and os.clock() - tipShownAt < 2.5 and tooltip:GetAttribute("For") == trainer.id then hideTip() return end
-		tooltip:SetAttribute("For", trainer.id)
-		showTip(slot)
-	end)
-	tile.button.MouseEnter:Connect(function()
-		tooltip:SetAttribute("For", trainer.id)
-		showTip(slot)
-	end)
-	tile.button.MouseLeave:Connect(function() if tooltip:GetAttribute("For") == trainer.id then hideTip() end end)
-end
 local function refreshRows()
 	for id, slot in pairs(slots) do
 		local rarity = rarityOf(slot.trainer)
@@ -221,95 +205,106 @@ local function refreshRows()
 		slot.count.Text = if n >= 2 then "x" .. n else ""
 	end
 end
+-- the 8 tiles at this size (made again when the room changes: the words inside are sized from it)
+local function buildSlots(px: number)
+	if px == slotPx then return end
+	slotPx = px
+	for _, slot in pairs(slots) do slot.cell:Destroy() end
+	table.clear(slots)
+	for order, trainer in ipairs(Trainers.List) do
+		local cell = New("Frame", { Name = trainer.id, LayoutOrder = order, BackgroundTransparency = 1, Parent = grid })
+		local tile = TrainerTile.New({ Name = "Tile", px = px, Size = UDim2.fromScale(1, 1), Parent = cell })
+		local countSize = math.max(10, math.floor(px * 0.13))
+		local count = Kit.Text({ Name = "Count", Text = "", Font = "Chunky", TextSize = countSize, AnchorPoint = Vector2.new(1, 1), Position = UDim2.new(1, -6, 1, -4),
+			Size = UDim2.fromOffset(countSize * 3, countSize + 3), TextXAlignment = Enum.TextXAlignment.Right, ZIndex = 12, Parent = tile.button })
+		local slot = { cell = cell, tile = tile, count = count, trainer = trainer, order = order }
+		slots[trainer.id] = slot
+		tile.button.Activated:Connect(function()
+			Kit.SelectFeedback(tile.button) -- (prompt 54: bounce + select sound)
+			if tooltip.Visible and tipName.Text ~= "" and os.clock() - tipShownAt < 2.5 and tooltip:GetAttribute("For") == trainer.id then hideTip() return end
+			tooltip:SetAttribute("For", trainer.id)
+			showTip(slot)
+		end)
+		tile.button.MouseEnter:Connect(function()
+			tooltip:SetAttribute("For", trainer.id)
+			showTip(slot)
+		end)
+		tile.button.MouseLeave:Connect(function() if tooltip:GetAttribute("For") == trainer.id then hideTip() end end)
+	end
+	if ClientData.IsLoaded() then refreshRows() end
+end
 
--- RIGHT (kit_agency_stand.png): the pity counter in a dark pill with a thin teal bar, then the red ROLL CTA ("525 COINS",
--- the only red thing here), flat X3 and AUTO (teal edge when on), a flat gear (the auto-delete toggles), then MY TRAINERS,
--- "Following 1 / 3" and the +1 slot pass. On a keyboard: E / R / T keycaps (and keys) while the Agency tab is open.
+-- UNDER the panel (in the window's group, not the panel): the pity pill and the button row
 local UserInputService = game:GetService("UserInputService")
 local ContextActionService = game:GetService("ContextActionService")
 local FLAT = Color3.fromHex("#1A1A1F")
 local FLAT_EDGE = Color3.fromHex("#2E2E36")
 local TEAL = Color3.fromHex("#2FD4C4")
-local right = New("Frame", { Name = "Right", BackgroundTransparency = 1, Position = UDim2.fromOffset(GRID_W + 14, 0), Size = UDim2.new(1, -(GRID_W + 14), 1, 0),
-	Parent = agencyFrame })
-local pityPill = New("Frame", { Name = "PityPill", BackgroundColor3 = Color3.fromHex("#111114"), Size = UDim2.new(1, 0, 0, 44), Parent = right }, {
-	New("UICorner", { CornerRadius = UDim.new(0, 12) }),
+local INK_TEXT = Color3.fromHex("#0A090B")
+local controls = New("Frame", { Name = "AgencyControls", BackgroundTransparency = 1, AnchorPoint = Vector2.new(0.5, 0), Size = UDim2.fromOffset(ROW_W, CONTROLS_H - 8),
+	Visible = false, Parent = modal.group })
+local pityPill = New("Frame", { Name = "PityPill", BackgroundColor3 = Color3.fromHex("#111114"), BackgroundTransparency = 0.05, AnchorPoint = Vector2.new(0.5, 0),
+	Position = UDim2.fromScale(0.5, 0), Size = UDim2.fromOffset(300, 28), Parent = controls }, {
+	New("UICorner", { CornerRadius = UDim.new(1, 0) }),
 	New("UIStroke", { Color = FLAT_EDGE, Thickness = 1 }),
 })
--- (prompt 47, mockup 02b_roll_closeup) one thick bar: a dark hex track, the teal fill, the words on it
-pityPill.Size = UDim2.new(1, 0, 0, 40)
--- (owner, 23 Oct, chrome reset: no mesh on a bar inside the panel)
-local pityFill = New("Frame", { Name = "Fill", BackgroundColor3 = Color3.new(1, 1, 1), Position = UDim2.fromOffset(4, 4), Size = UDim2.new(0, 0, 1, -8), ZIndex = 2,
-	Parent = pityPill }, {
-	New("UICorner", { CornerRadius = UDim.new(0, 9) }),
-	New("UIGradient", { Rotation = 90, Color = ColorSequence.new(Color3.fromHex("#6FF0E2"), Color3.fromHex("#1FB5A6")) }),
+local pity = Kit.Text({ Name = "Pity", Text = "", Font = "Strong", TextSize = 12, Position = UDim2.fromOffset(0, 2), Size = UDim2.new(1, 0, 0, 16), Parent = pityPill })
+Kit.Fit(pity, 12, 8)
+-- (prompt 52) a thin teal bar under the words (the old thick block is gone)
+local pityTrack = New("Frame", { Name = "Track", BackgroundColor3 = Color3.fromHex("#2A2A31"), BorderSizePixel = 0, AnchorPoint = Vector2.new(0.5, 0),
+	Position = UDim2.new(0.5, 0, 0, 19), Size = UDim2.new(1, -44, 0, 4), Parent = pityPill }, { New("UICorner", { CornerRadius = UDim.new(1, 0) }) })
+local pityFill = New("Frame", { Name = "Fill", BackgroundColor3 = TEAL, BorderSizePixel = 0, Size = UDim2.fromScale(0, 1), Parent = pityTrack }, {
+	New("UICorner", { CornerRadius = UDim.new(1, 0) }),
 })
 local function setPity(k: number)
 	k = math.clamp(k, 0, 1)
-	pityFill.Size = UDim2.new(k, -8 * k, 1, -8)
+	pityFill.Size = UDim2.fromScale(k, 1)
+	pityFill.Visible = k > 0.005
 end
-local pity = Kit.Text({ Name = "Pity", Text = "", Font = "Chunky", TextSize = 14, Size = UDim2.fromScale(1, 1), ZIndex = 3, Parent = pityPill })
-do
-	local stroke = pity:FindFirstChildOfClass("UIStroke") or New("UIStroke", { Parent = pity })
-	stroke.Color, stroke.Thickness = Color3.fromHex("#0A090B"), 1.8
-end
+local row = New("Frame", { Name = "Row", BackgroundTransparency = 1, Position = UDim2.fromOffset(0, 34), Size = UDim2.new(1, 0, 0, ROW_H), Parent = controls }, {
+	New("UIListLayout", { FillDirection = Enum.FillDirection.Horizontal, Padding = UDim.new(0, 6), HorizontalAlignment = Enum.HorizontalAlignment.Center,
+		VerticalAlignment = Enum.VerticalAlignment.Center, SortOrder = Enum.SortOrder.LayoutOrder }),
+})
 
 keyboard = UserInputService.KeyboardEnabled and not UserInputService.TouchEnabled
-local function keycap(parent: GuiObject, key: string)
-	local cap = New("Frame", { Name = "Key", BackgroundColor3 = Color3.fromHex("#0B0B0D"), AnchorPoint = Vector2.new(0.5, 0.5), Position = UDim2.fromOffset(4, 4),
-		Size = UDim2.fromOffset(20, 20), Visible = keyboard, ZIndex = 8, Parent = parent }, {
-		New("UICorner", { CornerRadius = UDim.new(0, 5) }),
-		New("UIStroke", { Color = Color3.fromHex("#4A4A54"), Thickness = 1 }),
-	})
-	Kit.Text({ Text = key, Font = "Title", TextSize = 12, Size = UDim2.fromScale(1, 1), ZIndex = 9, Parent = cap })
-	return cap
-end
--- two lines on a button: the big word and the small value under it
+-- two lines on a button (as in the reference): the big word in the heavy italic, the small value under it
 local function twoLines(button: GuiObject, big: string, small: string, bigSize: number)
-	-- (prompt 45: the chunky font, like ROLL; prompt 47: its position was lost inside that comment, so the word floated
-	-- above the button. Both lines chunky with a dark stroke, like mockup 02b_roll_closeup)
-	local top = Kit.Text({ Name = "Big", Text = big, Font = "Chunky", TextSize = bigSize, Position = UDim2.new(0, 0, 0, 5), Size = UDim2.new(1, 0, 0.55, -3),
+	local top = Kit.Text({ Name = "Big", Text = big, Font = "Title", KeepItalic = true, TextSize = bigSize, Position = UDim2.new(0, 0, 0, 3), Size = UDim2.new(1, 0, 0.55, -2),
 		ZIndex = 6, Parent = button })
-	local bottom = Kit.Text({ Name = "Small", Text = small, Font = "Chunky", TextSize = 13, Position = UDim2.new(0, 0, 0.55, 0), Size = UDim2.new(1, 0, 0.35, 0),
+	top:SetAttribute("KeepFont", true)
+	local stroke = top:FindFirstChildOfClass("UIStroke") or New("UIStroke", { Parent = top })
+	stroke.Color, stroke.Thickness = INK_TEXT, 1.5
+	local bottom = Kit.Text({ Name = "Small", Text = small, Font = "Strong", TextSize = 12, Position = UDim2.new(0, 0, 0.55, 0), Size = UDim2.new(1, 0, 0.3, 0),
 		ZIndex = 6, Parent = button })
-	for _, label in ipairs({ top, bottom }) do
-		top:SetAttribute("KeepFont", true)
-		local stroke = label:FindFirstChildOfClass("UIStroke") or New("UIStroke", { Parent = label })
-		stroke.Color, stroke.Thickness = Color3.fromHex("#0A090B"), if label == top then 2.2 else 1.5
-	end
+	bottom:SetAttribute("KeepFont", true)
 	return top, bottom
 end
--- a FLAT button (no bevel, no gloss, darker): X3, AUTO, the gear
-local function flatButton(name: string, width: number)
-	local b = New("TextButton", { Name = name, Text = "", AutoButtonColor = false, BackgroundColor3 = FLAT, Size = UDim2.fromOffset(width, 64), Parent = right }, {
-		New("UICorner", { CornerRadius = UDim.new(0, 12) }),
+-- a FLAT button (no bevel, no gloss, darker): X3, AUTO, MY TRAINERS, the gear
+local function flatButton(name: string, width: number, order: number)
+	local b = New("TextButton", { Name = name, LayoutOrder = order, Text = "", AutoButtonColor = false, BackgroundColor3 = FLAT, Size = UDim2.fromOffset(width, ROW_H),
+		Parent = row }, {
+		New("UICorner", { CornerRadius = UDim.new(0, 10) }),
 	})
 	local edge = New("UIStroke", { Name = "Edge", Color = FLAT_EDGE, Thickness = 1.5, ApplyStrokeMode = Enum.ApplyStrokeMode.Border, Parent = b })
 	Theme.BindPress(b)
 	return b, edge
 end
-local ROW_Y = 54
-local rollButton = Theme.Button("Red", { Name = "Roll", Position = UDim2.fromOffset(0, ROW_Y), Size = UDim2.fromOffset(150, 64), Parent = right }, {})
-local _rollBig, rollSmall = twoLines(rollButton, "ROLL", "", 24)
-keycap(rollButton, "E")
-local x3Button, x3Edge = flatButton("X3", 66)
-x3Button.Position = UDim2.fromOffset(158, ROW_Y)
-local x3Big, x3Small = twoLines(x3Button, "X3", "", 18)
-keycap(x3Button, "R")
-local autoButton, autoEdge = flatButton("Auto", 66)
-autoButton.Position = UDim2.fromOffset(232, ROW_Y)
-local _autoBig, autoSmall = twoLines(autoButton, "AUTO", "OFF", 16)
-keycap(autoButton, "T")
-local gearButton = flatButton("Gear", 44)
-gearButton.Position = UDim2.fromOffset(306, ROW_Y)
-local gearIcon = Pieces.Icon("settings", Colors.Text, { AnchorPoint = Vector2.new(0.5, 0.5), Position = UDim2.fromScale(0.5, 0.5), Size = UDim2.fromOffset(24, 24),
+local rollButton = Theme.Button("Red", { Name = "Roll", LayoutOrder = 1, Size = UDim2.fromOffset(140, ROW_H), Parent = row }, {})
+local _rollBig, rollSmall = twoLines(rollButton, "ROLL", "", 22)
+local x3Button, x3Edge = flatButton("X3", 70, 2)
+local x3Big, x3Small = twoLines(x3Button, "X3", "", 20)
+local autoButton, autoEdge = flatButton("Auto", 70, 3)
+local _autoBig, autoSmall = twoLines(autoButton, "AUTO", "OFF", 18)
+local myTrainers = flatButton("MyTrainers", 96, 4)
+Kit.Text({ Name = "Label", Text = "MY TRAINERS", Font = "Title", KeepItalic = true, TextSize = 14, TextWrapped = true, Position = UDim2.fromOffset(6, 0),
+	Size = UDim2.new(1, -12, 1, 0), ZIndex = 6, Parent = myTrainers }):SetAttribute("KeepFont", true)
+local gearButton = flatButton("Gear", 44, 5)
+local gearIcon = Pieces.Icon("settings", Colors.Text, { AnchorPoint = Vector2.new(0.5, 0.5), Position = UDim2.fromScale(0.5, 0.5), Size = UDim2.fromOffset(22, 22),
 	ZIndex = 6, Parent = gearButton })
 gearIcon:SetAttribute("KeepColor", true)
-local priceLine = Kit.Text({ Name = "PriceLine", Text = "", Font = "Body", TextSize = 10, TextColor3 = Colors.Muted, Position = UDim2.fromOffset(0, ROW_Y + 70),
-	Size = UDim2.new(1, -4, 0, 28), TextXAlignment = Enum.TextXAlignment.Left, TextYAlignment = Enum.TextYAlignment.Top, TextWrapped = true, Parent = right })
--- the gear's popover: the auto-delete toggles
-local popover = New("Frame", { Name = "AutoDelete", BackgroundColor3 = Color3.fromHex("#0E0E11"), AnchorPoint = Vector2.new(1, 0),
-	Position = UDim2.new(1, 0, 0, ROW_Y + 70), Size = UDim2.fromOffset(250, 84), Visible = false, ZIndex = 15, Parent = right }, {
+-- the gear's popover: the auto-delete toggles (it opens upward, over the panel's bottom edge)
+local popover = New("Frame", { Name = "AutoDelete", BackgroundColor3 = Color3.fromHex("#0E0E11"), AnchorPoint = Vector2.new(1, 1),
+	Position = UDim2.new(1, 0, 0, 28), Size = UDim2.fromOffset(250, 84), Visible = false, ZIndex = 15, Parent = controls }, {
 	New("UICorner", { CornerRadius = UDim.new(0, 10) }),
 	New("UIStroke", { Color = Colors.Gold, Thickness = 1, Transparency = 0.3 }),
 })
@@ -332,24 +327,6 @@ gearButton.Activated:Connect(function()
 	Audio.PlayUI("Click")
 	popover.Visible = not popover.Visible
 end)
--- bottom: my trainers, slots, the +1 slot pass
-local myTrainers = Kit.Button("Quiet", "My trainers", { Name = "MyTrainers", AnchorPoint = Vector2.new(0, 1), Position = UDim2.new(0, 0, 1, 0), Parent = right },
-	{ width = 130, height = 44, textSize = 13 })
-local slotButton = Kit.Button("Quiet", "+1 slot", { Name = "ExtraSlot", AnchorPoint = Vector2.new(1, 1), Position = UDim2.new(1, -4, 1, 0), Parent = right },
-	{ width = 118, height = 44, textSize = 12 })
-local slotsLine = Kit.Text({ Name = "Slots", Text = "", Font = "Body", TextSize = 11, TextColor3 = Colors.Muted, AnchorPoint = Vector2.new(0, 1),
-	Position = UDim2.new(0, 136, 1, -14), Size = UDim2.fromOffset(90, 16), TextXAlignment = Enum.TextXAlignment.Left, Parent = right })
-slotButton.Visible = PASS ~= nil and PASS.id ~= nil
-if PASS and PASS.id then
-	task.spawn(function()
-		UIBus.WaitForGameplay() -- (prompt 11: once the player is playing, not on join)
-		local ok, info = pcall(function() return MarketplaceService:GetProductInfo(PASS.id, Enum.InfoType.GamePass) end)
-		if ok and info and info.PriceInRobux then Kit.SetButton(slotButton, nil, "R$ " .. Kit.Format(info.PriceInRobux) .. " · +1 slot") end
-	end)
-end
-slotButton.Activated:Connect(function()
-	if PASS and PASS.id and not player:GetAttribute("Pass_" .. Trainers.ExtraSlotPass) then MarketplaceService:PromptGamePassPurchase(player, PASS.id) end
-end)
 myTrainers.Activated:Connect(function()
 	Audio.PlayUI("Click")
 	showTab("My")
@@ -370,13 +347,63 @@ do
 	end)
 end
 
+-- (prompt 52) the window's size for the screen it's on (mockup px): MY TRAINERS lays itself out in the room (TrainersPanel),
+-- the Agency's tiles take the height left over by the controls under the panel
+local function rootUnits(): Vector2
+	local size = modal.root.Size
+	if size.X.Scale == 0 then return Vector2.new(size.X.Offset, size.Y.Offset) end -- (Studio's TestPhoneSize)
+	local camera = workspace.CurrentCamera
+	local viewport = if camera then camera.ViewportSize else Kit.Base
+	return Vector2.new(viewport.X * size.X.Scale, viewport.Y * size.Y.Scale)
+end
+local function layoutWindow()
+	local units = rootUnits()
+	local under = math.max(16, Kit.UnderTopbar(modal.root))
+	local maxW = (units.X - 16) / Kit.PanelScale
+	local maxH = math.min((units.Y - under - 16) / Kit.PanelScale, 560)
+	local group, panelFrame, body = modal.group, modal.panel, modal.body
+	if tab == "My" then
+		body.Position = UDim2.fromOffset(14, Kit.TitleHeight)
+		local bodyH = math.floor(maxH - Kit.TitleHeight - 14)
+		local bodyW = myPanel.layout(bodyH, maxW - 28)
+		group.Size = UDim2.fromOffset(bodyW + 28, bodyH + Kit.TitleHeight + 14)
+		panelFrame.AnchorPoint, panelFrame.Position, panelFrame.Size = Vector2.zero, UDim2.new(), UDim2.fromScale(1, 1)
+	else
+		body.Position = UDim2.fromOffset(14, AGENCY_TOP)
+		local tile = math.clamp(math.floor((maxH - CONTROLS_H - AGENCY_TOP - 14 - CELL_GAP) / 2), 70, 165)
+		if 4 * tile + 3 * CELL_GAP + 28 > maxW then tile = math.floor((maxW - 28 - 3 * CELL_GAP) / 4) end
+		local panelW = 4 * tile + 3 * CELL_GAP + 28
+		local panelH = AGENCY_TOP + 2 * tile + CELL_GAP + 14
+		group.Size = UDim2.fromOffset(math.max(panelW, ROW_W), panelH + CONTROLS_H)
+		panelFrame.AnchorPoint, panelFrame.Position, panelFrame.Size = Vector2.new(0.5, 0), UDim2.fromScale(0.5, 0), UDim2.fromOffset(panelW, panelH)
+		controls.Position = UDim2.new(0.5, 0, 0, panelH + 8)
+		buildSlots(tile)
+	end
+end
+Kit.OnScale(function() task.defer(function() if modal.isOpen() then layoutWindow() end end) end)
+-- per screen: the title, the coins (the Agency only), the controls under the panel, the size
+local titleList = titleRow and titleRow:FindFirstChildOfClass("UIListLayout")
+function onTab(id: string)
+	local agency = id == "Agency"
+	modal.title.TextSize = if agency then 26 else 30
+	if modal.closeButton then modal.closeButton.Visible = true end
+	if modal.coins then modal.coins.Visible = agency end
+	if titleList then titleList.Padding = UDim.new(0, if agency then 14 else 10) end
+	controls.Visible = agency
+	popover.Visible = false
+	hideTip()
+	if not agency then myPanel.closeOverlays() end
+	layoutWindow()
+end
+Kit.OnTopbar(function() if modal.isOpen() then layoutWindow() end end)
+
 local autoOn = false
 local autoLoop -- (below)
 local function setAuto(on: boolean)
 	autoOn = on
 	autoSmall.Text = if on then "ON" else "OFF"
 	-- (prompt 47) AUTO ON: green
-	autoSmall.TextColor3 = if on then Color3.fromHex("#4BE07A") else Colors.Text
+	autoSmall.TextColor3 = if on then Color3.fromHex("#4BE07A") else Colors.Muted
 	autoEdge.Color = if on then Color3.fromHex("#4BE07A") else FLAT_EDGE
 	autoEdge.Thickness = if on then 2.5 else 1.5
 end
@@ -390,13 +417,13 @@ local function refresh()
 	local coins = data().coins or 0
 	-- (prompt 27c) a free roll from the rebalance gift: "FREE" instead of the price
 	local free = (s.freeRolls or 0) > 0
-	rollSmall.Text = if free then "FREE" else Kit.Format(p)
-	rollSmall.TextColor3 = Colors.Gold
+	rollSmall.Text = if free then "FREE" else Kit.Format(p) .. " COINS"
+	rollSmall.TextColor3 = Colors.Text
 	Theme.SetButtonStyle(rollButton, if free or coins >= p then "Red" else "Disabled")
 	if multiOpen() then
 		x3Big.Text = "X3"
 		x3Small.Text = Kit.Format(p * Trainers.MultiRoll)
-		x3Small.TextColor3 = Colors.Gold
+		x3Small.TextColor3 = Colors.Muted
 		x3Big.TextColor3 = if coins >= p * Trainers.MultiRoll then Colors.Text else Colors.Muted
 	else
 		x3Big.Text = "X3"
@@ -404,15 +431,7 @@ local function refresh()
 		x3Big.TextColor3 = Colors.Muted
 	end
 	x3Edge.Color = FLAT_EDGE
-	priceLine.Text = "One roll = " .. Kit.Format(p) .. " coins (about " .. Trainers.RollMinutes .. " min of training). Coins only. Auto stops on "
-		.. Trainers.AutoStopRarity .. " or better."
 	for rarityId, t in pairs(deleteToggles) do t.set(s.autoDelete[rarityId] == true) end
-	local slotsCount = player:GetAttribute("TrainerSlots") or 1
-	local following = player:GetAttribute("Trainers")
-	local n = 0
-	if type(following) == "string" then for _ in string.gmatch(following, "[^,]+") do n += 1 end end
-	slotsLine.Text = "Following " .. n .. " / " .. slotsCount
-	slotButton.Visible = PASS ~= nil and PASS.id ~= nil and player:GetAttribute("Pass_" .. Trainers.ExtraSlotPass) ~= true
 	refreshRows()
 end
 
@@ -688,10 +707,15 @@ local function makeCard(entry, index: number)
 	New("ImageLabel", { Name = "Hex", BackgroundTransparency = 1, Image = Theme.HexImage, ScaleType = Enum.ScaleType.Tile,
 		TileSize = UDim2.fromOffset(RR.hexTile.X, RR.hexTile.Y), ImageColor3 = edge:Lerp(Color3.new(1, 1, 1), 0.35), ImageTransparency = RR.hexTransparency,
 		Size = UDim2.fromScale(1, 1), ZIndex = 5, Parent = card }, { New("UICorner", { CornerRadius = UDim.new(0, RR.corner) }) })
+	-- (owner, 23 Oct) the rays and the burst are bigger than the card: they sit in a frame inset by ~0.3 of the corner
+	-- radius (ClipsDescendants clips square), so no square corner shows past the rounded edge
+	local cardInset = math.ceil(RR.corner * 0.3)
+	local cardClip = New("Frame", { Name = "Clip", BackgroundTransparency = 1, ClipsDescendants = true, Position = UDim2.fromOffset(cardInset, cardInset),
+		Size = UDim2.new(1, -2 * cardInset, 1, -2 * cardInset), ZIndex = 5, Parent = card })
 	-- the sunburst from his chest (turning on Legendary+)
 	local artMid = (RR.pad + RR.art * 0.42) / h
 	local rays = New("Frame", { Name = "Rays", BackgroundTransparency = 1, AnchorPoint = Vector2.new(0.5, 0.5), Position = UDim2.fromScale(0.5, artMid),
-		Size = UDim2.fromOffset(RR.width * 2.2, RR.width * 2.2), ZIndex = 5, Parent = card })
+		Size = UDim2.fromOffset(RR.width * 2.2, RR.width * 2.2), ZIndex = 5, Parent = cardClip })
 	for i = 0, RR.rays - 1 do
 		New("Frame", { BackgroundColor3 = edge, BorderSizePixel = 0, AnchorPoint = Vector2.new(0.5, 0.5), Position = UDim2.fromScale(0.5, 0.5),
 			Size = UDim2.new(0, 22, 1, 0), Rotation = i * 180 / RR.rays, BackgroundTransparency = RR.raysTransparency, ZIndex = 5, Parent = rays }, {
@@ -699,7 +723,7 @@ local function makeCard(entry, index: number)
 				NumberSequenceKeypoint.new(1, 1) }) }),
 		})
 	end
-	AlterFX.Image(card, "ember", { Name = "Radial", AnchorPoint = Vector2.new(0.5, 0.5), Position = UDim2.fromScale(0.5, artMid), Size = UDim2.new(1.3, 0, 0, RR.art * 1.05),
+	AlterFX.Image(cardClip, "ember", { Name = "Radial", AnchorPoint = Vector2.new(0.5, 0.5), Position = UDim2.fromScale(0.5, artMid), Size = UDim2.new(1.3, 0, 0, RR.art * 1.05),
 		ImageColor3 = accent, ImageTransparency = 0.55, ZIndex = 5 })
 	TrainerPortrait.Art(trainer.id, { AnchorPoint = Vector2.new(0.5, 0), Position = UDim2.new(0.5, 0, 0, RR.pad), Size = UDim2.new(RR.artWidth, 0, 0, RR.art),
 		ZIndex = 6, Parent = card })
@@ -1364,6 +1388,7 @@ modal.gui:GetPropertyChangedSignal("Enabled"):Connect(function()
 		bindKeys(false)
 		popover.Visible = false
 		hideTip()
+		myPanel.closeOverlays()
 	end
 end)
 menuButton.Activated:Connect(function()

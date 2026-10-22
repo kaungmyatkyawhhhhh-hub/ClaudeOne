@@ -463,8 +463,19 @@ function Kit.DetailIn(detail: GuiObject)
 	end
 	detail.Position = home + UDim2.fromOffset(8, 0)
 	Theme.Tween(detail, { Position = home }, 0.15, Enum.EasingStyle.Quad)
-	Theme.Fade(detail, false, 0)
-	Theme.Fade(detail, true, 0.15)
+	-- (23 Oct) the fade is a cover in the panel's own color that clears. Theme.Fade kept the transparencies it recorded the
+	-- first time, so a later pick got the first pick's look back (a dim mini tile on MY TRAINERS). A see-through detail
+	-- only slides.
+	if detail.BackgroundTransparency >= 1 then return end
+	local cover = detail:FindFirstChild("DetailCover")
+	if not cover then
+		cover = New("Frame", { Name = "DetailCover", BorderSizePixel = 0, Size = UDim2.fromScale(1, 1), ZIndex = 60, Parent = detail })
+		local corner = detail:FindFirstChildOfClass("UICorner")
+		if corner then corner:Clone().Parent = cover end
+	end
+	cover.BackgroundColor3 = detail.BackgroundColor3
+	cover.BackgroundTransparency = 0
+	Theme.Tween(cover, { BackgroundTransparency = 1 }, 0.15, Enum.EasingStyle.Quad)
 end
 
 function Kit.RewardTile(color: Color3, props: { [string]: any }?)

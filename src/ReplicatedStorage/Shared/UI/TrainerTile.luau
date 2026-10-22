@@ -17,6 +17,10 @@
 --   TrainerTile.New({ Name, LayoutOrder, Size, Position, AnchorPoint, Parent, px = its width in mockup px }) -> tile
 --   tile:Set({ id, s, l, equipped, noLevel, caption }); tile.cell (the frame to place), tile.button (taps)
 -- (owner, prompt 48: the "hidden" undiscovered stage, dark and glitching, is gone: every stage shows)
+-- (prompt 52, 23 Oct: the owner's references ref_agency / ref_my_trainers / ref_evolutions) the one tile of all three
+-- screens: a 4 px border in the stage (or rarity) color with a soft glow, the background filling the whole tile (the
+-- stage art; on the Agency the rarity's hex, a bright burst and turning light rays), the stage / rarity word big in its
+-- color (LIMITLESS a rainbow, MYTHIC and ETERNAL their two colors), the LV or chance big and white.
 local RunService = game:GetService("RunService")
 
 local Shared = script.Parent.Parent
@@ -169,20 +173,40 @@ function TrainerTile.New(props)
 		ZIndex = 2, Parent = self.cell }, {
 		New("UICorner", { CornerRadius = UDim.new(0, radius) }),
 	})
-	self.border = New("UIStroke", { Name = "Border", Color = Color3.new(1, 1, 1), Thickness = math.max(2, px * 0.03), ApplyStrokeMode = Enum.ApplyStrokeMode.Border,
+	self.border = New("UIStroke", { Name = "Border", Color = Color3.new(1, 1, 1), Thickness = math.max(2.5, px * 0.035), ApplyStrokeMode = Enum.ApplyStrokeMode.Border,
 		Parent = self.button })
 	-- (prompt 47) the highlight that runs round the border (the border's color is this gradient)
 	self.spin = New("UIGradient", { Name = "Spin", Parent = self.border })
 	self.hex = New("ImageLabel", { Name = "Hex", BackgroundTransparency = 1, Image = Theme.HexImage, ScaleType = Enum.ScaleType.Tile,
-		TileSize = UDim2.fromOffset(math.floor(px * 0.2), math.floor(px * 0.115)), ImageTransparency = 0.6, Size = UDim2.fromScale(1, 1), ZIndex = 2, Parent = self.button })
+		TileSize = UDim2.fromOffset(math.floor(px * 0.2), math.floor(px * 0.115)), ImageTransparency = 0.6, Size = UDim2.fromScale(1, 1), ZIndex = 2, Parent = self.button }, {
+		New("UICorner", { CornerRadius = UDim.new(0, radius) }),
+	})
+	-- (owner, 23 Oct) ClipsDescendants clips to a square, so the moving / oversized layers (the stage effect, the burst, the
+	-- rays, the effects) sit in a frame inset by ~0.3 of the corner radius: its square corners fall inside the rounded edge
+	-- (the rounded background shows in that thin rim). A CanvasGroup per tile would re-render ~25 animated tiles a frame.
+	local inset = math.ceil(radius * 0.3)
+	self.clip = New("Frame", { Name = "Clip", BackgroundTransparency = 1, ClipsDescendants = true, Position = UDim2.fromOffset(inset, inset),
+		Size = UDim2.new(1, -2 * inset, 1, -2 * inset), ZIndex = 3, Parent = self.button })
 	-- (prompt 47) the planner's stage backgrounds (hex = the base, evo = the effect)
 	self.bgImage = New("ImageLabel", { Name = "HexArt", BackgroundTransparency = 1, ScaleType = Enum.ScaleType.Crop, Size = UDim2.fromScale(1, 1), ZIndex = 2,
 		Visible = false, Parent = self.button }, { New("UICorner", { CornerRadius = UDim.new(0, radius) }) })
+	self.radial = AlterFX.Image(self.clip, "ember", { Name = "Radial", AnchorPoint = Vector2.new(0.5, 0.5), Position = UDim2.fromScale(0.5, 0.36),
+		Size = UDim2.fromScale(1.25, 1.25), SizeConstraint = Enum.SizeConstraint.RelativeXX, ImageTransparency = 0.35, ZIndex = 1 })
 	self.evoImage = New("ImageLabel", { Name = "EvoArt", BackgroundTransparency = 1, ScaleType = Enum.ScaleType.Crop, AnchorPoint = Vector2.new(0.5, 0.5),
-		Position = UDim2.fromScale(0.5, 0.5), Size = UDim2.fromScale(1, 1), ZIndex = 3, Visible = false, Parent = self.button })
-	self.radial = AlterFX.Image(self.button, "ember", { Name = "Radial", AnchorPoint = Vector2.new(0.5, 0.5), Position = UDim2.fromScale(0.5, 0.36),
-		Size = UDim2.fromScale(1.25, 1.25), SizeConstraint = Enum.SizeConstraint.RelativeXX, ImageTransparency = 0.35, ZIndex = 2 })
-	self.fxLayer = New("Frame", { Name = "Fx", BackgroundTransparency = 1, Size = UDim2.fromScale(1, 1), ZIndex = 3, Parent = self.button })
+		Position = UDim2.fromScale(0.5, 0.5), Size = UDim2.fromScale(1, 1), ZIndex = 2, Visible = false, Parent = self.clip })
+	self.fxLayer = New("Frame", { Name = "Fx", BackgroundTransparency = 1, Size = UDim2.fromScale(1, 1), ZIndex = 3, Parent = self.clip })
+	-- (prompt 52) the Agency's light rays: thin bars through his middle, bright at the centre, fading out
+	self.rays = New("Frame", { Name = "Rays", BackgroundTransparency = 1, AnchorPoint = Vector2.new(0.5, 0.5), Position = UDim2.fromScale(0.5, 0.42),
+		Size = UDim2.fromScale(1.6, 1.6), SizeConstraint = Enum.SizeConstraint.RelativeXX, Visible = false, ZIndex = 3, Parent = self.clip })
+	self.rayBars = {}
+	for i = 0, 5 do
+		local ray = New("Frame", { BackgroundColor3 = Color3.new(1, 1, 1), BorderSizePixel = 0, AnchorPoint = Vector2.new(0.5, 0.5), Position = UDim2.fromScale(0.5, 0.5),
+			Size = UDim2.new(if i % 2 == 0 then 0.13 else 0.07, 0, 1, 0), Rotation = i * 30, ZIndex = 3, Parent = self.rays }, {
+			New("UIGradient", { Rotation = 90, Transparency = NumberSequence.new({ NumberSequenceKeypoint.new(0, 1), NumberSequenceKeypoint.new(0.5, 0.35),
+				NumberSequenceKeypoint.new(1, 1) }) }),
+		})
+		table.insert(self.rayBars, ray)
+	end
 	self.hexTop = self.hex:Clone()
 	self.hexTop.Name = "HexTop"
 	self.hexTop.ImageTransparency = 0.65
@@ -195,10 +219,12 @@ function TrainerTile.New(props)
 	Kit.Fit(self.name, math.floor(px * 0.115), 7)
 	self.stage = chunky(self.button, "Stage", "", px * 0.14, nil, { Position = UDim2.fromScale(0.5, 0.63), Size = UDim2.fromScale(0.96, 0.16) })
 	Kit.Fit(self.stage, math.floor(px * 0.14), 7)
-	self.level = chunky(self.button, "Level", "", px * 0.13, nil, { Position = UDim2.fromScale(0.5, 0.8), Size = UDim2.fromScale(0.94, 0.15) })
-	Kit.Fit(self.level, math.floor(px * 0.13), 6, 2)
+	self.level = chunky(self.button, "Level", "", px * 0.14, nil, { Position = UDim2.fromScale(0.5, 0.8), Size = UDim2.fromScale(0.94, 0.15) })
+	Kit.Fit(self.level, math.floor(px * 0.14), 6, 2)
+	-- (prompt 52) LIMITLESS in a rainbow, MYTHIC / ETERNAL in their two colors (the text white under the gradient)
+	self.stageGradient = New("UIGradient", { Name = "Colors", Enabled = false, Parent = self.stage })
 	-- the 2 px near-black ring just inside the border
-	local ringInset = math.max(2, math.floor(px * 0.03))
+	local ringInset = math.max(2, math.floor(px * 0.035))
 	New("Frame", { Name = "InnerRing", BackgroundTransparency = 1, Position = UDim2.fromOffset(ringInset, ringInset), Size = UDim2.new(1, -2 * ringInset, 1, -2 * ringInset),
 		ZIndex = 9, Parent = self.button }, {
 		New("UICorner", { CornerRadius = UDim.new(0, math.max(2, radius - ringInset)) }),
@@ -243,25 +269,47 @@ function Tile:Set(info)
 		self.evoImage.SizeConstraint = Enum.SizeConstraint.RelativeXY
 	end
 	self.hex.Visible = not useArt
-	self.button.BackgroundColor3 = if rarityMode then color:Lerp(Color3.new(0, 0, 0), 0.82) else C(stage.base)
-	self.hex.ImageColor3 = if rarityMode then color:Lerp(Color3.new(1, 1, 1), 0.1) else C(stage.hex):Lerp(Color3.new(1, 1, 1), 0.15)
-	self.hex.ImageTransparency = if rarityMode then 0.7 else 0.6
+	-- (prompt 52) the Agency: the rarity's hex filling the tile, a bright burst behind him (brighter still for a silhouette)
+	-- and light rays
+	self.button.BackgroundColor3 = if rarityMode then color:Lerp(Color3.new(0, 0, 0), 0.62) else C(stage.base)
+	self.hex.ImageColor3 = if rarityMode then color:Lerp(Color3.new(1, 1, 1), 0.25) else C(stage.hex):Lerp(Color3.new(1, 1, 1), 0.15)
+	self.hex.ImageTransparency = if rarityMode then 0.5 else 0.6
 	self.hexTop.ImageColor3 = self.hex.ImageColor3
-	self.radial.ImageColor3 = color
-	self.radial.ImageTransparency = if useArt then 0.7 else 0.35
+	self.radial.ImageColor3 = if rarityMode then color:Lerp(Color3.new(1, 1, 1), 0.2) else color
+	self.radial.ImageTransparency = if useArt then 0.7 elseif rarityMode then (if info.silhouette then 0 else 0.15) else 0.35
+	self.rays.Visible = rarityMode
+	if rarityMode then
+		for _, ray in ipairs(self.rayBars) do
+			ray.BackgroundColor3 = color:Lerp(Color3.new(1, 1, 1), 0.45)
+			ray.BackgroundTransparency = if info.silhouette then 0.35 else 0.55
+		end
+	end
 	self.spin.Color = borderColors(color)
 	local nameHidden = rarityMode and info.silhouette and rarity and rarity.hidden
 	self.name.Text = if nameHidden then "???" else string.upper(trainer and trainer.name or "")
+	local twoColors = nil
 	if rarityMode then
 		self.stage.Text = string.upper(rarity and rarity.name or "")
 		self.stage.TextColor3 = color
 		self.level.Text = info.caption or ""
 		self.level.TextColor3 = Color3.new(1, 1, 1)
+		if rarity and rarity.color2 and rarity.id ~= "Secret" then twoColors = ColorSequence.new(C(rarity.color), C(rarity.color2)) end
 	else
 		self.stage.Text = stage.name
 		self.stage.TextColor3 = if stage.index == 1 then Color3.new(1, 1, 1) else color
 		self.level.Text = if info.caption then info.caption elseif info.noLevel then "" else "LV " .. (info.l or 1)
 		self.level.TextColor3 = Color3.new(1, 1, 1)
+		if stage.rainbow then
+			local keys = {}
+			local hues = { 0.95, 0.08, 0.15, 0.33, 0.52, 0.72 }
+			for i, h in ipairs(hues) do keys[i] = ColorSequenceKeypoint.new((i - 1) / (#hues - 1), Color3.fromHSV(h, 0.6, 1)) end
+			twoColors = ColorSequence.new(keys)
+		end
+	end
+	self.stageGradient.Enabled = twoColors ~= nil
+	if twoColors then
+		self.stageGradient.Color = twoColors
+		self.stage.TextColor3 = Color3.new(1, 1, 1)
 	end
 	self.check.Visible = info.equipped == true or (rarityMode and info.owned == true)
 	self.name.Visible, self.stage.Visible, self.level.Visible = not info.mini, not info.mini, not info.mini
@@ -288,6 +336,7 @@ function Tile:Paint(t: number)
 	local color = self.color or C(stage.color)
 	-- the highlight runs round the border
 	self.spin.Rotation = (t * 80) % 360
+	if self.rays.Visible then self.rays.Rotation = (t * 8) % 360 end
 	if info.equipped then
 		self.glowStroke.Color = GOLD
 		self.glowStroke.Thickness = math.max(4, self.px * 0.07)
