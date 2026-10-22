@@ -8,7 +8,7 @@
 --     become coins), MY TRAINERS (the window's second tab) and the +1 slot pass.
 --   * (prompt 28) Two tabs: AGENCY (the above) and MY TRAINERS (Shared/UI/TrainersPanel: slots, the trainers you own; it
 --     was the Inventory's Trainers tab). UIBus.OpenAgency("My") opens it on MY TRAINERS.
---   * The roll (tap to skip; prompt 48: rarity-scaled, see "The roll reveal" below): Common / Uncommon a quick drop (~0.6 s),
+--   * The roll (tap to skip; prompt 27b: rarity-scaled, see "The roll reveal" below): Common / Uncommon a quick drop (~0.6 s),
 --     Rare an orb that bursts into the card (~1.2 s), Epic bigger pulses and a purple tint (~1.8 s), Legendary and better
 --     the darkening, a white flash, rays, a shockwave and the name slamming in (~3 s). Layered sounds (Config.AlterThemes.Sounds).
 --   * Legendary and better: the whole server is told (a chat line + a toast); Secret and Eternal: a big banner too.
@@ -393,7 +393,7 @@ local function refresh()
 end
 
 ------------------------------------------------------------------------
--- The roll reveal (prompt 27, 22 Oct; prompt 48, 22 Oct: rarity-scaled, it replaced the card back + flip). A full-screen
+-- The roll reveal (prompt 27, 22 Oct; prompt 27b, 22 Oct: rarity-scaled, it replaced the card back + flip). A full-screen
 -- dark backdrop hides the Agency, a soft spotlight in the middle. The card: the trainer's full body big on the rarity glow
 -- with light rays, the rarity pill, his NAME (Luckiest Guy, white with the rarity color outline), his boost, his line in a
 -- speech bubble, and "NEW!" (gold) or "x2 · 2/3 to IRON-BORN" with a small bar. "Tap to continue" pulses at the bottom.
@@ -654,13 +654,12 @@ local function makeCard(result, index: number, total: number)
 			ZIndex = 8, Parent = front })
 		Kit.GoldText(new)
 	else
-		-- (prompt 33; prompt 48: Golden is gone) his BASE copies toward the next evolution: 3 make an IRON-BORN (a stage
-		-- you haven't reached yet is "???", like everywhere else)
+		-- (prompt 33; prompt 27b: Golden is gone) his BASE copies toward the next evolution: 3 make an IRON-BORN (always
+		-- the real name: the owner's queued prompts drop the "???" stages)
 		local need = Trainers.EvolveCount
 		local count = math.max(1, result.count or 1)
 		local have = math.min(count, need)
-		local nextStage = Trainers.Stages[2]
-		local nextName = if state().discovered[nextStage.id] then nextStage.name else "???"
+		local nextName = Trainers.Stages[2].name
 		local text = if count >= need then "x" .. count .. " · READY: EVOLVE TO " .. nextName else "x" .. count .. " · " .. have .. "/" .. need .. " to " .. nextName
 		local line = Kit.Text({ Name = "Evolve", Text = text, Font = "Strong", TextSize = 11, TextColor3 = GOLD, AnchorPoint = Vector2.new(0.5, 1),
 			Position = UDim2.new(0.5, 0, 1, -18), Size = UDim2.new(1, -12, 0, 14), ZIndex = 7, Parent = front })

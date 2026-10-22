@@ -34,7 +34,7 @@ end
 
 ------------------------------------------------------------------------
 -- The trainers: one per rarity. perk (while equipped; added up over all equipped trainers, then capped by BoostCap) = his
--- boost at BASE, LV 1; stages and levels multiply it, up to x5 at LIMITLESS LV 20 (CopyMultiplier; prompt 48, 22 Oct: the
+-- boost at BASE, LV 1; stages and levels multiply it, up to x5 at LIMITLESS LV 20 (CopyMultiplier; prompt 27b, 22 Oct: the
 -- old x16 stages made a LIMITLESS Atlas +2424%; the old BASE boosts were 5, 10, 15, 25, 40, 70, 110, 150%):
 --   gains = +EXP share, coins = +coins share, maxStamina = +max stamina share, staminaRegen = +stamina refill speed share,
 --   progress = +Growth Spurt / alter progress share (the goal's EXP counts that much more: Config.GrowthSpurts / Config.Alters).
@@ -259,7 +259,7 @@ end
 -- * Levels: the EQUIPPED (following) trainers gain trainer EXP from your reps (RepXp: more on heavier weights); every level
 --   adds a share of MaxLevelBonus to that trainer's boost (LV 1 +0%, LV 20 +25%). Lv 1 -> 20 again at every stage.
 -- * Evolutions: 3 copies of the same trainer at the same stage -> 1 at the next stage (the boost x1, x1.5, x2, x3, x4;
---   prompt 48: it was x1 .. x16), keeping the highest level of the 3. No level needed. One LIMITLESS = 81 BASE copies.
+--   prompt 27b: it was x1 .. x16), keeping the highest level of the 3. No level needed. One LIMITLESS = 81 BASE copies.
 -- * So one LIMITLESS LV 20 = x5 his BASE boost: Atlas +150% EXP and coins, Coach Sam +25% EXP.
 -- * A player only knows the names of the stages they've reached (discovered); the next one is "???" until then.
 ------------------------------------------------------------------------

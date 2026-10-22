@@ -24,7 +24,7 @@ for i = 1, 4 do
 	for _, g in gear do whistle = whistle or g.kind == "Whistle" end
 	H.check(whistle, T.List[i].id .. " wears a whistle")
 end
--- (prompt 48: the BASE LV 1 boosts, a max LIMITLESS is x5)
+-- (prompt 27b: the BASE LV 1 boosts, a max LIMITLESS is x5)
 H.check(T.ById.RookieCoach.perk.gains == 0.05 and T.ById.CardioCoach.perk.coins == 0.07, "Common +5% EXP, Uncommon +7% coins")
 H.check(T.ById.CardioCoach.perk.staminaRegen == 0.10 and math.abs(T.Bonus({ { id = "CardioCoach", s = 1, l = 1 } }).staminaRegen - 0.10) < 1e-9, "Uncommon +10% stamina regen (owner, prompt 25)")
 H.check(T.ById.MoneyCoach.perk.gains == 0.09 and T.ById.MoneyCoach.perk.maxStamina == 0.06, "Rare +9% EXP +6% max stamina")
@@ -108,7 +108,7 @@ H.check(#uids == 2 and uids[1] == 1 and uids[2] == 2, "equipped copies: each onc
 H.check(#T.CleanEquipped(st, 1) == 1, "never more than the slots")
 H.check(#T.CleanEquipped(T.Migrate(nil), 2) == 0, "bad data: nothing")
 
-print("Boosts (prompt 33: stage x level; prompt 48: a max LIMITLESS = x5 his BASE)")
+print("Boosts (prompt 33: stage x level; prompt 27b: a max LIMITLESS = x5 his BASE)")
 local b = T.Bonus({ { id = "PumpCoach", s = 1, l = 1 }, { id = "RookieCoach", s = 2, l = 20 } })
 H.check(math.abs(b.gains - (0.12 * 1 + 0.05 * 1.5 * 1.25)) < 1e-9, "boosts add up: BASE LV 1 = his boost, x1.5 at IRON-BORN, +25% at LV 20")
 for _, trainer in ipairs(T.List) do

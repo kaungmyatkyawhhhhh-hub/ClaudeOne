@@ -240,7 +240,7 @@ function TrainersPanel.Build(parent: Instance)
 	evolveButton.Size = UDim2.new(1, 0, 0, 40)
 	local equipButton = Kit.Button("Quiet", "Equip", { Name = "Equip", AnchorPoint = Vector2.new(1, 0), Position = UDim2.new(1, 0, 0, 212), Parent = col },
 		{ width = 108, height = 30, textSize = 13 })
-	-- (prompt 48) the following trainers' real total, after the cap: "TOTAL +180% EXP (MAX +400%)", the other kinds under it
+	-- (prompt 27b) the following trainers' real total, after the cap: "TOTAL +180% EXP (MAX +400%)", the other kinds under it
 	local totalMain = chunky(col, { Name = "Total", Position = UDim2.fromOffset(0, 210), Size = UDim2.new(1, -114, 0, 18), TextXAlignment = Enum.TextXAlignment.Left,
 		TextColor3 = Colors.Gold }, 13)
 	Kit.Fit(totalMain, 13, 8)
