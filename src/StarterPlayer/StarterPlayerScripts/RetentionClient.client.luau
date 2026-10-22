@@ -74,11 +74,12 @@ Remotes.PlayerEvent.OnClientEvent:Connect(function(kind, info)
 			Audio.PlayUI("LevelUp")
 		end
 	elseif kind == "GymLocked" then
-		local names = { Beach = "The beach gym", Pro = "The pro gym" }
+		local names = { Beach = "The beach gym", Pro = "The pro gym", Powerlifting = "The powerlifting gym" }
 		Notify.Show((names[info.gym] or "This gym") .. " opens at Growth Spurt " .. tostring(info.spurts) .. ".", nil, "gymlocked")
 	elseif kind == "MachineLocked" then
-		-- (prompt 36) a Pro copy of a starter machine: it starts where the starter one ends
-		Notify.Show(string.format("%s starts at %s. Needs %s level %d: train on the starter machines first.", tostring(info.name), tostring(info.weight),
+		-- (prompt 36) a Pro copy of a starter machine: it starts where the starter one ends (prompt 58: the Powerlifting
+		-- ones where the Pro ones end)
+		Notify.Show(string.format("%s starts at %s. Needs %s level %d: train on the lighter machines first.", tostring(info.name), tostring(info.weight),
 			tostring(info.muscle), tonumber(info.level) or 0), nil, "machinelocked")
 	elseif kind == "ProGymLocked" then
 		Notify.Show("Reach Growth Spurt " .. tostring(info.spurts) .. " to enter the Pro Gym", nil, "progym")

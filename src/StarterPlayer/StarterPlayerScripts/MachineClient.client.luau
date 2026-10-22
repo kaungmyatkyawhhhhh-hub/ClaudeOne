@@ -2475,7 +2475,7 @@ local function pickFor(spot)
 		Remotes.MachineAction:FireServer("Dumbbell", { spot = spot, id = id })
 		local exercise = Machines.ById[id]
 		Remotes.PlayerAction:FireServer("SetSettings", { dumbbellLast = exercise and exercise.base or id })
-	end, spot:GetAttribute("DumbbellSet") == "Pro") -- (prompt 36: the Pro Gym's heavy rack)
+	end, spot:GetAttribute("DumbbellSet")) -- (prompt 36: the Pro Gym's heavy rack; prompt 58: the Powerlifting Gym's)
 end
 hud.changeButton.Activated:Connect(function()
 	if current and current.machine.dumbbell then pickFor(current.model) end

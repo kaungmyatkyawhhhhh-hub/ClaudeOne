@@ -42,6 +42,11 @@ return {
 	-- (picked 13 Oct from Roblox's licensed library at the owner's request: PSE = ProSoundEffects, APM = APM Music)
 	PumpFull = { ids = { 9126073011 }, volume = 0.22, pitch = 0.02, group = "Gameplay", maxLength = 1.2 }, -- PSE Synth Sparkle Bell Ding 3: the PUMP meter fills, PUMPED starts
 	BigRep = { ids = { 1837830196 }, volume = 0.3, pitch = 0.03, group = "Gameplay", maxLength = 1.2 }, -- APM BOOM Deep Boom 02: a BIG REP
+	-- (prompt 58) the Powerlifting Gym: reused licensed sounds (swap freely)
+	PRBell = { ids = { 9113421788 }, volume = 0.4, pitch = 0.02, group = "Gameplay", maxLength = 2.6 },   -- Bell Rings, resonant: the PR bell (everyone in the gym)
+	RecordCheer = { ids = { 9113137529 }, volume = 0.35, pitch = 0.03, group = "Gameplay", maxLength = 3.5 }, -- PSE Applause Nightclub 1: a new server record
+	GoodLift = { ids = { 9126073318 }, volume = 0.2, pitch = 0, group = "Gameplay", basePitch = 0.8, maxLength = 0.9 }, -- PSE Synth Sparkle Bell Ding 1, low: judge lights
+	PlateDrop = { ids = { 9116750726, 9116751108 }, volume = 0.6, pitch = 0.05, group = "Gameplay", basePitch = 0.72, range = { 12, 80 } }, -- Metal Plate Impact, low: a heavy pull set down
 	PersonalRecord = { ids = { 9039636793 }, volume = 0.22, pitch = 0, group = "Gameplay", maxLength = 2 }, -- APM Stargazing (sting c): NEW PR banner
 	Grew = { ids = { 9125807054 }, volume = 0.3, pitch = 0.03, group = "Gameplay", maxLength = 1.5 }, -- PSE Rising Whoosh Swooshing In 3: the 'you grew' moment
 	CrowdOoh = { ids = { 9120974378 }, volume = 0.28, pitch = 0.04, group = "Gameplay", range = { 16, 80 }, maxLength = 2.2 }, -- PSE Wrestling Crowd 3, a crowd surge (there is no licensed 'ooh'): a pose hits
@@ -117,6 +122,7 @@ return {
 		-- (owner, 14 Oct: several songs in every area: each area's own song first, then the owner's other tracks)
 		Starter = { 86451874359343, 131532099124744, 135822443550596 }, -- the starter gym
 		Pro = { 118959016267248, 113417603188158, 139777823649977 },    -- the pro gym
+		Powerlifting = { 139777823649977, 113417603188158, 1840007392 }, -- (prompt 58) the powerlifting gym (the owner's heavier tracks for now: swap freely)
 		Beach = { 1837324500, 95854242246323, 102866809292046 },         -- the beach, beach gym, posing stage, skate park
 		-- the streets, plaza and shops (21 Oct: + APM Hit The Street, City Lights (A) from Roblox's licensed library; swap freely)
 		Town = { 1840007392, 1840558258, 1840517437 },

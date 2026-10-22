@@ -2,6 +2,13 @@
 -- the rest are secondaries. Players only ever see muscle names, never shares.
 local Machines = {}
 
+-- Gyms open by Growth Spurt count. (prompt 58, owner 23 Oct: not a new gym every spurt) Starter, Beach at 1, NO gym at 2,
+-- the Pro Gym at 3 (was 2: players who had already been inside keep it, data.gymAccess, Machines.GymLevel), NO gym at 4,
+-- the Powerlifting Gym at 5; the Golden Era Gym at 7'0" later.
+Machines.GymUnlock = { Starter = 0, Beach = 1, Pro = 3, Powerlifting = 5, Seasonal = 0, Dumbbell = 0 }
+-- The gym names players read (signs, toasts, the growth spurt card's "Next:").
+Machines.GymNames = { Starter = "Starter Gym", Beach = "Beach Gym", Pro = "Pro Gym", Powerlifting = "Powerlifting Gym" }
+
 -- Weight tiers: 12 per machine, built from the shared progression below. A tier is usable when the machine's main
 -- muscle is at its unlockLevel (needed again after every Growth Spurt); nothing is bought (owner, 14 Oct).
 --   gains = gains multiplier, unlockLevel = main muscle level needed (the only gate: machines and weights are FREE,
@@ -19,6 +26,7 @@ Machines.Progression = {
 -- color = Theme.Bumper key ("Steel" = small metal change plate). Sizes in studs. Thin like calibrated plates, so the
 -- heaviest tier fits the sleeves (tests/machines checks every tier fits Machines.SleeveRoom).
 Machines.Plates = {
+	[100] = { thickness = 0.28, diameter = 2.3, color = "Black" }, -- (prompt 58) the Powerlifting Gym's big bumper
 	[55] = { thickness = 0.2, diameter = 2.3, color = "Red" },
 	[45] = { thickness = 0.17, diameter = 2.3, color = "Blue" },
 	[35] = { thickness = 0.15, diameter = 2.05, color = "Yellow" },
@@ -35,7 +43,7 @@ function Machines.StackWidth(tier): number
 	return width
 end
 Machines.Brand = "M WEIGHTS" -- printed on every plate face (the owner's gym brand)
-Machines.PlateOrder = { 55, 45, 35, 25, 10, 5 } -- heaviest first (inside on the sleeve, bottom of a stack)
+Machines.PlateOrder = { 100, 55, 45, 35, 25, 10, 5 } -- heaviest first (inside on the sleeve, bottom of a stack)
 
 -- (prompt 36) the Pro Gym's copies of the starter machines go on from the starter top weight: 8 more tiers, the same
 -- step from one tier to the next (+15% EXP), the same rule (the main muscle's level; the first one is the starter top's)
@@ -44,6 +52,14 @@ Machines.ProProgression = {
 	unlockLevel = { 95, 106, 118, 130, 142, 154, 166, 178 },
 	cost = { 0, 0, 0, 0, 0, 0, 0, 0 },
 	coins = { 9, 10, 11, 12, 13, 14, 15, 16 },
+}
+-- (prompt 58) the Powerlifting Gym's lifts go on from the Pro top weight the same way: 8 more tiers, +15% EXP a tier,
+-- the main muscle's level (the first one is the Pro top's)
+Machines.PowerliftingProgression = {
+	gains = { 21.7, 25, 28.7, 33, 38, 43.7, 50.2, 57.8 },
+	unlockLevel = { 178, 190, 202, 214, 226, 238, 250, 262 },
+	cost = { 0, 0, 0, 0, 0, 0, 0, 0 },
+	coins = { 16, 17, 18, 19, 20, 21, 22, 23 },
 }
 
 -- rows: { weight, plates per side, label? }; the first row is the empty bar / bodyweight / lightest stack
@@ -126,6 +142,23 @@ Machines.TierSets = {
 		for _, tier in ipairs(set) do tier.unit = "mph" end
 		return set
 	end)(),
+	-- (prompt 58) the Powerlifting Gym: from the Pro top weight on, the same steps (bars 20, squat / deadlift 30, bodyweight
+	-- 15, dumbbells 10), loaded with the big 100 lb bumpers
+	PLBarbell = tierSet({
+		{ 455, { 100, 100, 5 } }, { 475, { 100, 100, 10, 5 } }, { 495, { 100, 100, 25 } }, { 515, { 100, 100, 35 } }, { 535, { 100, 100, 45 } },
+		{ 555, { 100, 100, 55 } }, { 575, { 100, 100, 55, 10 } }, { 595, { 100, 100, 55, 10, 10 } },
+	}, nil, Machines.PowerliftingProgression),
+	PLHeavyBarbell = tierSet({
+		{ 665, { 100, 100, 100, 10 } }, { 695, { 100, 100, 100, 25 } }, { 725, { 100, 100, 100, 35, 5 } }, { 755, { 100, 100, 100, 55 } },
+		{ 785, { 100, 100, 100, 55, 10, 5 } }, { 815, { 100, 100, 100, 55, 25, 5 } }, { 845, { 100, 100, 100, 100 } }, { 875, { 100, 100, 100, 100, 10, 5 } },
+	}, nil, Machines.PowerliftingProgression),
+	PLBodyweight = tierSet({
+		{ 205, { 100, 100, 5 }, "+205" }, { 220, { 100, 100, 10, 10 }, "+220" }, { 235, { 100, 100, 35 }, "+235" }, { 250, { 100, 100, 45, 5 }, "+250" },
+		{ 265, { 100, 100, 55, 10 }, "+265" }, { 280, { 100, 100, 55, 25 }, "+280" }, { 295, { 100, 100, 55, 35, 5 }, "+295" }, { 310, { 100, 100, 100, 10 }, "+310" },
+	}, nil, Machines.PowerliftingProgression),
+	PLDumbbell = tierSet({
+		{ 150, {} }, { 160, {} }, { 170, {} }, { 180, {} }, { 190, {} }, { 200, {} }, { 210, {} }, { 220, {} },
+	}, nil, Machines.PowerliftingProgression),
 	-- Cable stacks and dumbbell-style moves: lighter numbers, same progression.
 	Cable = tierSet({
 		{ 10, {} }, { 20, { 10 } }, { 30, { 25, 5 } }, { 40, { 35, 5 } }, { 50, { 45, 5 } }, { 60, { 55, 5 } },
@@ -340,12 +373,60 @@ Machines.ProDumbbells = {}
 for _, exercise in ipairs(Machines.Dumbbells) do
 	local copy = proCopy(exercise)
 	copy.name = exercise.name -- (the picker's title says PRO DUMBBELLS)
-	copy.gym, copy.openAt = "Pro", 2 -- (the rack stands in the Pro Gym: its +10%, open with it)
+	copy.gym, copy.openAt = "Pro", Machines.GymUnlock.Pro -- (the rack stands in the Pro Gym: its +10%, open with it)
+	copy.dumbbellSet = "Pro"
 	table.insert(Machines.ProDumbbells, copy)
 	table.insert(Machines.List, copy)
 end
+
+-- (prompt 58, owner 23 Oct) The Powerlifting Gym (opens at Growth Spurt 5): competition versions of the big three and a
+-- few accessories so every group trains there, heavier again (Machines.PowerliftingProgression, from the Pro top weight).
+-- base = the starter id (quests, gear perks, rivals and spotting count it as that lift); lift = the record board's lift
+-- (Config/Powerlifting). Locked below the first weight's level like the Pro copies (MachineService).
+local PL_COPIES = {
+	{ id = "PLSquat", from = "SquatRack", name = "Comp Squat", tiers = "PLHeavyBarbell", lift = "Squat" },
+	{ id = "PLMonolift", from = "SquatRack", name = "Monolift Squat", tiers = "PLHeavyBarbell", lift = "Squat" },
+	{ id = "PLBench", from = "FlatBench", name = "Comp Bench", tiers = "PLBarbell", lift = "Bench" },
+	{ id = "PLDeadlift", from = "Deadlift", name = "Comp Deadlift", tiers = "PLHeavyBarbell", lift = "Deadlift" },
+	{ id = "PLBlockPull", from = "Deadlift", name = "Block Pull", tiers = "PLHeavyBarbell" },
+	{ id = "PLPress", from = "OverheadPress", name = "Strict Press", tiers = "PLBarbell" },
+	{ id = "PLRow", from = "BarbellRow", name = "Pendlay Row", tiers = "PLBarbell" },
+	{ id = "PLPullUp", from = "PullUpBar", name = "Weighted Pull-Up", tiers = "PLBodyweight" },
+	{ id = "PLCrunch", from = "CrunchBench", name = "Weighted Crunch", tiers = "PLBodyweight" },
+}
+Machines.PowerliftingCopies = {}
+for _, def in ipairs(PL_COPIES) do
+	for _, machine in ipairs(Machines.List) do
+		if machine.id == def.from then
+			local copy = table.clone(machine)
+			copy.id, copy.name, copy.base, copy.lift = def.id, def.name, machine.id, def.lift
+			copy.tiers = Machines.TierSets[def.tiers]
+			copy.gym = "Powerlifting"
+			table.insert(Machines.PowerliftingCopies, copy)
+		end
+	end
+end
+for _, copy in ipairs(Machines.PowerliftingCopies) do table.insert(Machines.List, copy) end
+-- its dumbbell rack (spots with DumbbellSet = "Powerlifting"): 150 to 220 lb
+Machines.PowerliftingDumbbells = {}
+for _, exercise in ipairs(Machines.Dumbbells) do
+	local copy = table.clone(exercise)
+	copy.id, copy.base = "PL" .. exercise.id, exercise.id
+	copy.tiers = Machines.TierSets.PLDumbbell
+	copy.gym, copy.openAt, copy.dumbbellSet = "Powerlifting", Machines.GymUnlock.Powerlifting, "Powerlifting"
+	table.insert(Machines.PowerliftingDumbbells, copy)
+	table.insert(Machines.List, copy)
+end
+-- the exercises a dumbbell rack offers, by its spots' DumbbellSet attribute (none = the normal ones)
+Machines.DumbbellSets = { Pro = Machines.ProDumbbells, Powerlifting = Machines.PowerliftingDumbbells }
+function Machines.DumbbellSetList(set: any)
+	return if type(set) == "string" and Machines.DumbbellSets[set] then Machines.DumbbellSets[set] else Machines.Dumbbells
+end
+
 -- (prompt 36) a small gains bonus for training in a newer gym (gameplay plan: +10% per gym), on that gym's machines
-Machines.GymGains = { Pro = 1.1 }
+-- (prompt 58: the Powerlifting Gym is the next step. The beach gym has no machines of its own: copies of the starter
+-- ones, so no bonus there)
+Machines.GymGains = { Pro = 1.1, Powerlifting = 1.2 }
 
 -- Beach gym (town hub, opens at Growth Spurt 1): no machines of its own (owner, 8 Oct night): it has copies of the REAL
 -- machines (same models, configs, tiers, EXP; the same MachineId, so unlocked weights, "NEW" tags and quests are shared
@@ -375,8 +456,29 @@ for _, machine in ipairs(Machines.List) do
 	Machines.ById[machine.id] = machine
 end
 
--- Gyms open by Growth Spurt count (the pro gym opens at Growth Spurt 2).
-Machines.GymUnlock = { Starter = 0, Beach = 1, Pro = 2, Seasonal = 0, Dumbbell = 0 }
+-- (Machines.GymUnlock: at the top) The Growth Spurt count a player's GYMS open with: their Growth Spurts, or more when a gym
+-- stays open for them from before a ladder change (prompt 58: data.gymAccess.Pro for players who had been in the Pro
+-- Gym when it opened at Growth Spurt 2). Use it for every gym / machine gate (not for the spurt goal).
+function Machines.GymLevel(data): number
+	local level = type(data) == "table" and tonumber(data.growthSpurts) or 0
+	local access = type(data) == "table" and data.gymAccess
+	if type(access) == "table" then
+		for gym, on in pairs(access) do
+			if on == true and Machines.GymUnlock[gym] then level = math.max(level, Machines.GymUnlock[gym]) end
+		end
+	end
+	return level
+end
+
+-- The next gym that opens after this many Growth Spurts: its key, its name and the spurt (nil when none is left).
+function Machines.NextGym(spurts: number): (string?, string?, number?)
+	local best, bestAt = nil, math.huge
+	for gym, at in pairs(Machines.GymUnlock) do
+		if Machines.GymNames[gym] and at > spurts and at < bestAt then best, bestAt = gym, at end
+	end
+	if not best then return nil, nil, nil end
+	return best, Machines.GymNames[best], bestAt
+end
 
 -- The Growth Spurts an exercise is open at anywhere (a copy in an earlier gym counts: openAt).
 function Machines.OpenAt(machine): number

@@ -56,6 +56,7 @@ local SLEEVE_START = 3.0 -- the collar sits at the end of the bar shaft (shaft =
 -- attribute overrides it (the leg press / hack squat horns sit closer in)
 
 local GOLD_PLATE = Color3.fromHex("#D4A93A") -- (prompt 47) the Pro Gym's plates
+local RED_PLATE = Color3.fromHex("#B3201B")  -- (prompt 58) the Powerlifting Gym's bumpers (red with a black rim)
 local function plateModel(lb)
 	local template = Assets and Assets.Plates:FindFirstChild("Plate" .. lb)
 	if template then return template:Clone() end
@@ -183,6 +184,9 @@ local function updatePlates(model, tier)
 	-- (prompt 47) every machine in the Pro Gym loads gold plates (the starter and beach ones keep their colors)
 	local proGym = workspace:FindFirstChild("ProGym")
 	local gold = proGym ~= nil and model:IsDescendantOf(proGym)
+	-- (prompt 58) and every machine in the Powerlifting Gym red bumpers
+	local plGym = workspace:FindFirstChild("PowerliftingGym")
+	local red = plGym ~= nil and model:IsDescendantOf(plGym)
 	local sleeveStart = model:GetAttribute("SleeveStart")
 	sleeveStart = if type(sleeveStart) == "number" then sleeveStart else SLEEVE_START
 	local start = sleeveStart + 0.2
@@ -209,6 +213,13 @@ local function updatePlates(model, tier)
 					if part:IsA("BasePart") then
 						part.Color = GOLD_PLATE:Lerp(Color3.new(0, 0, 0), if part.Name == "Body" then 0 else 0.25)
 						part.Material = Enum.Material.Metal
+					end
+				end
+			elseif red then
+				for _, part in ipairs(plate:GetDescendants()) do
+					if part:IsA("BasePart") then
+						part.Color = if part.Name == "Body" then RED_PLATE else Color3.fromHex("#141414")
+						part.Material = Enum.Material.SmoothPlastic
 					end
 				end
 			end
@@ -470,9 +481,9 @@ local function enter(player, model)
 	-- (not while spotting someone: Exit first)
 	local spotOk, SpotService = pcall(require, script.Parent.SpotService)
 	if spotOk and SpotService.IsSpotting(player) then return end
-	-- gyms open with Growth Spurts (the pro gym at 2)
+	-- gyms open with Growth Spurts (the pro gym at 3, the powerlifting gym at 5; a gym kept from before counts: GymLevel)
 	local openAt, gym = Machines.GymOpenAt(machine, model)
-	if PlayerData.Get(player).growthSpurts < openAt then
+	if Machines.GymLevel(PlayerData.Get(player)) < openAt then
 		Remotes.PlayerEvent:FireClient(player, "GymLocked", { gym = gym, spurts = openAt })
 		return
 	end
@@ -605,6 +616,9 @@ local function lift(player)
 	local quality = (pumped and Pump.Multiplier or 1) * (big and Gains.BigRep.Multiplier or 1)
 	-- (prompt 36) a newer gym's machines give a little more (Machines.GymGains: the Pro Gym +10%)
 	quality *= Machines.GymGains[machine.gym] or 1
+	-- (prompt 58) the Powerlifting Gym's MEET: more on the competition platform while it runs (PowerliftingService)
+	local plOk, PowerliftingService = pcall(require, script.Parent.PowerliftingService)
+	if plOk and PowerliftingService.ExpBonus then quality *= PowerliftingService.ExpBonus(session.model) end
 	-- worn PUMP SHOP gear helps the machines in its area (prompt 19, Config/PumpShop.GearMultiplier)
 	local gear = PumpShop.GearMultiplier(data.cosmetics and data.cosmetics.equipped, machine, Muscles.ById[machine.muscles[1].id].group)
 	local xp = Gains.PerRep(data, machine, tierIndex, BoostService.Gains(player) * gear, quality) -- (none on cardio: it trains stamina)
@@ -670,6 +684,9 @@ local function lift(player)
 		pr = Machines.WeightText(tier)
 		player:SetAttribute("AuraBurst", workspace:GetServerTimeNow()) -- (every client bursts this player's aura once: AuraClient)
 	end
+
+	-- (prompt 58) the Powerlifting Gym: the PR bell, the record board, the judge lights
+	if plOk and PowerliftingService.OnLift then task.spawn(PowerliftingService.OnLift, player, machine, session.model, tier, pr ~= nil) end
 
 	session.model:SetAttribute("Reps", (session.model:GetAttribute("Reps") or 0) + 1)
 	-- lift screams (ScreamService): a PR, the last rep of a set, a heavy rep (not on the treadmill)
@@ -739,8 +756,9 @@ local function pickDumbbell(player, arg)
 	local exercise = type(id) == "string" and Machines.ById[id]
 	if not exercise or not exercise.dumbbell or typeof(spot) ~= "Instance" or not spot:IsA("Model") or not spot:GetAttribute("Dumbbell")
 		or not CollectionService:HasTag(spot, "Machine") then return end
-	-- (prompt 36) a Pro rack's spots (DumbbellSet = "Pro") take the Pro exercises, every other rack the normal ones
-	if (spot:GetAttribute("DumbbellSet") == "Pro") ~= (exercise.base ~= nil) then return end
+	-- (prompt 36) a Pro rack's spots (DumbbellSet = "Pro") take the Pro exercises, the Powerlifting rack's its own (prompt
+	-- 58), every other rack the normal ones
+	if spot:GetAttribute("DumbbellSet") ~= exercise.dumbbellSet then return end
 	local session = sessions[player]
 	if session then
 		if session.model ~= spot then return end
@@ -837,7 +855,7 @@ function MachineService.Start()
 	Players.PlayerRemoving:Connect(leave)
 
 	-- Studio testing: Workspace attribute "TestMachine" = a machine model's name (or its MachineId) puts the first player on
-	-- it (to check every pose; Growth Spurts raised to 2 so every gym is open); "Gym/Id" (e.g. "Beach/BicepCurl") picks the
+	-- it (to check every pose; Growth Spurts raised so every gym is open); "Gym/Id" (e.g. "Beach/BicepCurl") picks the
 	-- copy standing in that gym and leaves the Growth Spurts alone (to check the gym locks); "" gets them off.
 	if RunService:IsStudio() then
 		workspace:GetAttributeChangedSignal("TestMachine"):Connect(function()
@@ -852,7 +870,8 @@ function MachineService.Start()
 					else model.Name == wanted or model:GetAttribute("MachineId") == wanted
 				if match then
 					local data = PlayerData.Get(player)
-					if not gym and data and data.growthSpurts < 2 then data.growthSpurts = 2 end -- (the pro gym too)
+					local need = Machines.GymUnlock.Powerlifting
+					if not gym and data and data.growthSpurts < need then data.growthSpurts = need end -- (every gym)
 					enter(player, model)
 					return
 				end

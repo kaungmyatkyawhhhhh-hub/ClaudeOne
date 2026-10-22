@@ -15,7 +15,7 @@
 -- level, the top bar's), reps = n (total reps: the clock for the "a few minutes in" unlocks), heavier = true (a heavier
 -- weight unlocked on any machine), ready = "spurt" | "alter" (a Growth Spurt / Body Alter ready now), alterTier = true
 -- (the next alter starts a new tier).
--- Places: "Gym:Beach" / "Gym:Pro" (the gym: its nearest machine), "Tag:<tag>" (the nearest model with that tag:
+-- Places: "Gym:Beach" / "Gym:Pro" / "Gym:Powerlifting" (the gym: its nearest machine), "Tag:<tag>" (the nearest model with that tag:
 -- TrainerDesk = the Trainer Agency, ArmWrestleTable, PumpShopCounter), "Stage" (the posing stage), "Coach".
 local Guides = {}
 
@@ -83,15 +83,19 @@ Guides.List = {
 		lines = { "GENETICS are open! See what your body was born for, and reroll with DNA tokens." } },
 	{ id = "Spotting", need = { reps = 400 }, reward = 25,
 		lines = { "Tip: walk up to someone lifting and tap SPOT to help them. You both lift harder." } },
-	-- Growth Spurt 2
-	{ id = "ProGym", need = { spurts = 2 }, big = true, reward = 25, place = "Gym:Pro", label = "PRO GYM",
-		lines = { "The PRO GYM is open! Heavy machines for serious lifters." } },
+	-- Growth Spurt 2 (prompt 58: no new gym here)
 	{ id = "Trainers", need = { spurts = 2 }, tile = "Trainers", reward = 25,
 		lines = { "TRAINERS are open! Hire a coach who lifts with you and boosts your gains." } },
 	{ id = "TrainerAgency", need = { spurts = 2 }, big = true, place = "Tag:TrainerDesk", label = "TRAINER AGENCY",
 		lines = { "Roll for trainers at the Trainer Agency desk. Some of them are really rare." } },
 	{ id = "ArmWrestle", need = { spurts = 2 }, big = true, reward = 25, place = "Tag:ArmWrestleTable", label = "ARM WRESTLING",
 		lines = { "Arm wrestling is open! Sit at a table and challenge anyone in the server." } },
+	-- Growth Spurt 3 (prompt 58: the Pro Gym moved here from 2)
+	{ id = "ProGym", need = { spurts = 3 }, big = true, reward = 25, place = "Gym:Pro", label = "PRO GYM",
+		lines = { "The PRO GYM is open! Heavy machines for serious lifters." } },
+	-- Growth Spurt 5 (prompt 58)
+	{ id = "PowerliftingGym", need = { spurts = 5 }, big = true, reward = 50, place = "Gym:Powerlifting", label = "POWERLIFTING GYM",
+		lines = { "The POWERLIFTING GYM is open! The heaviest bars in town.", "Set a record and your name goes on the big board." } },
 	-- later
 	{ id = "Auras", need = { spurts = 3 }, tile = "Inventory", reward = 25,
 		lines = { "You earned your first AURA! Wear it in Inventory > Auras." } },

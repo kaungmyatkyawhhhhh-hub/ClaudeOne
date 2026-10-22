@@ -19,7 +19,7 @@ GrowthSpurts.Stages = {
 	{ height = 66, requiredLevel = 92, bonus = 1.75 },
 	{ height = 72, requiredLevel = 132, bonus = 2 },
 	{ height = 78, requiredLevel = 191, bonus = 2.5 }, -- (prompt 36, 22 Oct: 164 -> 191, the Pro Gym's heavier tiers; 45 min again)
-	{ height = 84, requiredLevel = 216, bonus = 3 }, -- (prompt 36: 178 -> 216)
+	{ height = 84, requiredLevel = 238, bonus = 3 }, -- (prompt 36: 178 -> 216; prompt 58: 216 -> 238, the Powerlifting Gym at Spurt 5 had made it 41 min: 45 again)
 }
 
 -- Beyond the table: keep growing until MaxHeight, and keep adding level + bonus. (From here the bonus mostly runs
@@ -132,6 +132,21 @@ end
 -- (prompt 11, 21 Oct) Small rewards on the way to each Growth Spurt: at these shares of the goal bar a popup, a sound and
 -- a few coins (MilestoneCoinMinutes minutes of coins at your stage, Config.PumpShop.Rate), so players see progress.
 -- Server/SpurtMilestoneService; the first spurt's milestones are the funnel steps 13a / 13b / 13c (Server/Analytics).
+-- (prompt 58, owner 23 Oct: not a new gym every spurt) What each Growth Spurt opens, shown under the "Growth Spurt!"
+-- moment (StatsClient) so a spurt without a new gym still feels big. Short, in caps, joined with " · ".
+GrowthSpurts.Unlocks = {
+	[1] = { "BEACH GYM", "POSES", "CREWS", "LOCAL SHOW" },
+	[2] = { "TRAINERS", "ARM WRESTLING", "REGIONAL SHOW" },
+	[3] = { "PRO GYM", "AURAS", "PUMP SHOP" },
+	[4] = { "NATIONAL SHOW" },
+	[5] = { "POWERLIFTING GYM", "PRO CARD QUALIFIER" },
+	[6] = { "UNIVERSE CHAMPIONSHIP", "BODY ALTERS" },
+}
+function GrowthSpurts.UnlockText(spurts: number): string?
+	local list = GrowthSpurts.Unlocks[spurts]
+	return if list then table.concat(list, "  ·  ") else nil
+end
+
 GrowthSpurts.Milestones = { 25, 50, 75 }
 GrowthSpurts.MilestoneCoinMinutes = 0.5
 

@@ -66,7 +66,7 @@ local function teleport(player, target)
 	end
 	-- (prompt 39) a place with no model (the posing stage): its spot, facing it
 	local point = GoTo.Point(target)
-	local model = if point then nil else GoTo.Find(target, root.Position, data.growthSpurts or 0)
+	local model = if point then nil else GoTo.Find(target, root.Position, data)
 	if not point and (not model or not model:IsDescendantOf(Workspace)) then
 		answer(player, false)
 		return

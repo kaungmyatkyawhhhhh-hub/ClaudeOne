@@ -396,6 +396,18 @@ local function onPlayerAdded(player)
 			data.machinesUsed[oldId] = nil
 		end
 	end
+	-- (prompt 58, owner 23 Oct) the Pro Gym moved from Growth Spurt 2 to 3: a player at Growth Spurt 2 who had already
+	-- trained in it keeps it (data.gymAccess.Pro, Machines.GymLevel). Once per save (gymLadder = the prompt that set it).
+	if data.gymLadder ~= 58 then
+		data.gymLadder = 58
+		if type(data.gymAccess) ~= "table" then data.gymAccess = {} end
+		if (data.growthSpurts or 0) == 2 and PlayerData.UsedProGym(data) then
+			data.gymAccess.Pro = true
+			print("[PlayerData] " .. player.Name .. " keeps the Pro Gym (trained there before it moved to Growth Spurt 3)")
+		end
+	end
+	-- Studio testing: "TestProAccess" (checked) with FreshPlayer: play as such a player (kept the Pro Gym at Growth Spurt 2)
+	if fresh and workspace:GetAttribute("TestProAccess") == true then data.gymAccess.Pro = true end
 	-- Studio testing: set a "ReplayTutorial" attribute (checked) on Workspace to see the genetics reveal and
 	-- the tutorial again. Ignored on live servers.
 	if RunService:IsStudio() and workspace:GetAttribute("ReplayTutorial") then
@@ -425,6 +437,22 @@ local function onPlayerAdded(player)
 	player:SetAttribute("DataLoaded", true)
 	setStrength(player, data)
 	loadedEvent:Fire(player, data)
+end
+
+-- (prompt 58) did this save train in the Pro Gym? A rep on (or a weight picked on) a Pro-only machine: the Pro copies, the
+-- Pro dumbbells and the sub-muscle machines, except the three the beach gym also has (Bicep Curl, Lateral Raise, Shrugs).
+local BEACH_SHARED = { BicepCurl = true, LateralRaise = true, Shrugs = true }
+function PlayerData.UsedProGym(data): boolean
+	local Machines = require(Config.Machines)
+	for _, list in ipairs({ data.machinesUsed, data.machines }) do
+		if type(list) == "table" then
+			for id in pairs(list) do
+				local machine = Machines.ById[id]
+				if machine and machine.gym == "Pro" and not BEACH_SHARED[id] then return true end
+			end
+		end
+	end
+	return false
 end
 
 local function onPlayerRemoving(player)

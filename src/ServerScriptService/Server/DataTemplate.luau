@@ -23,6 +23,10 @@ function DataTemplate.new()
 		dnaTokens = 0,
 		dnaWeek = { week = 0, bought = 0 }, -- DNA tokens bought with coins this week (each costs 10% more; Config/PumpShop)
 		growthSpurts = 0, -- (owner, 9 Oct, release) new players start at Growth Spurt 0 (4'0")
+		-- (prompt 58) gyms kept open from before a ladder change ([gym] = true: the Pro Gym for players who trained there when it
+		-- opened at Growth Spurt 2; Machines.GymLevel) and the ladder change already applied to this save (PlayerData)
+		gymAccess = {},
+		gymLadder = 0,
 		-- Body Alters (prompt 21, Config.Alters): highest done, the skin worn (any up to highest), the biggest physique ever
 		-- (best = { muscles = { [id] = level }, spurts, alter, exp }: the statue and the Total board use it)
 		alter = { highest = 0, equipped = 0 },

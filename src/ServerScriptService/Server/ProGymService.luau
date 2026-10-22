@@ -1,8 +1,8 @@
--- The pro gym (opens at Growth Spurt 2) is built in Studio right next to the starter gym (Workspace.ProGym, made with
+-- The pro gym (opens at Growth Spurt 3 since prompt 58; was 2: players who trained there then keep it, Machines.GymLevel) is built in Studio right next to the starter gym (Workspace.ProGym, made with
 -- tools/builders/Gyms.luau): they share a wall with a big glass window, so everyone can watch the pro gym, and a glass
 -- door. You walk in (no teleport): ProGymClient slides the door open for players who have unlocked it and keeps the
 -- door's invisible Blocker solid for everyone else. The server double-checks: a player who gets into the pro gym
--- before Growth Spurt 2 is put back outside the door, once (a per-player debounce), with "Reach Growth Spurt 2 to enter
+-- before Growth Spurt 3 is put back outside the door, once (a per-player debounce), with "Reach Growth Spurt 3 to enter
 -- the Pro Gym" (at most every 3 s). MachineService checks the gym on every machine too.
 -- (Bug, 13 Oct: the zone still had the old pre-8-Oct size, MinX 37, so the strip by the door in the STARTER gym counted as
 -- inside, and the "outside" spot (x 39.7) was in it too: standing there teleported you every 0.5 s. The zone is now
@@ -42,7 +42,7 @@ local function check(player, unlock)
 	local humanoid = character and character:FindFirstChildOfClass("Humanoid")
 	if not data or not root or not humanoid or root.Anchored then return end
 	if not ProGymService.IsInside(root.Position) then return end
-	if data.growthSpurts < unlock then
+	if Machines.GymLevel(data) < unlock then
 		local now = os.clock()
 		if now - (lastPutBack[player] or 0) < ProGymService.Debounce then return end
 		lastPutBack[player] = now
@@ -68,7 +68,7 @@ function ProGymService.Start()
 		warn("[ProGymService] Workspace.ProGym is missing: build it in Studio with tools/builders/Gyms.luau")
 		return
 	end
-	local unlock = Machines.GymUnlock.Pro or 2
+	local unlock = Machines.GymUnlock.Pro
 	-- the zone = the pro gym floor's footprint; the outside spot just past the glass door, clear of it
 	local floor = Workspace.ProGym:FindFirstChild("Shell") and Workspace.ProGym.Shell:FindFirstChild("Floor")
 		or Workspace.ProGym:FindFirstChild("Floor", true)

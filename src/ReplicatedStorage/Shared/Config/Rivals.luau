@@ -2,7 +2,7 @@
 -- machines like the other regulars (GymGoerService; tag GymNpc, attribute Gym). Talk to one (prompt "Challenge") for a
 -- short challenge card, accept, then beat his record: a full set on his lift at a heavier weight, or an arm wrestling
 -- match against him (pick him at any arm wrestling table). RivalService checks it all on the server.
--- Gyms already open by Growth Spurt (beach at 1, pro at 2), so a rival is an EXTRA goal: beating one gives coins and a
+-- Gyms already open by Growth Spurt (beach at 1, pro at 3 since prompt 58), so a rival is an EXTRA goal: beating one gives coins and a
 -- title and points you to the next rival; it never opens a gym. The numbers rise in the order the gyms open:
 -- starter < beach < pro.
 -- Size: every rival has ONE size, set when he is built (look.scale here; Dante: GymGoerService's giant, 8'0"), and
@@ -47,7 +47,7 @@ Rivals.List = {
 			lose = "Good try! Train those forearms and come back.",
 			beaten = "Ready for a rematch anytime.",
 		},
-		next = "Next rival: Dante in the pro gym (opens at Growth Spurt 2).",
+		next = "Next rival: Dante in the pro gym (opens at Growth Spurt 3).",
 	},
 	{
 		id = "Dante", name = "Dante", gym = "Pro", gymName = "Pro gym",

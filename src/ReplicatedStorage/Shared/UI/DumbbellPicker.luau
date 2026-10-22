@@ -2,8 +2,9 @@
 -- 3 per row, scrolling: a dumbbell icon, the exercise name and the muscles it trains (names only). The last exercise you
 -- picked (settings.dumbbellLast) comes first with a gold LAST tag; while changing exercise on a spot the one you're
 -- doing has the gold border (CURRENT). Tapping a card picks it and closes the window.
---   DumbbellPicker.Open(currentId?, onSpot, onPick(id), pro?)   onSpot: changing exercise on your spot (shows CURRENT);
---     pro: the Pro Gym's heavy rack (prompt 36: its spots carry DumbbellSet = "Pro"), the Pro versions of the exercises
+--   DumbbellPicker.Open(currentId?, onSpot, onPick(id), set?)   onSpot: changing exercise on your spot (shows CURRENT);
+--     set: the rack's DumbbellSet ("Pro": the Pro Gym's heavy rack, prompt 36; "Powerlifting": prompt 58), its versions of
+--     the exercises (Machines.DumbbellSetList); nil = the normal ones
 --   DumbbellPicker.Close()
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 
@@ -44,13 +45,13 @@ local function muscleLine(exercise): string
 	return table.concat(names, " · ")
 end
 
-local function fill(currentId: string?, onSpot: boolean, pro: boolean?)
+local function fill(currentId: string?, onSpot: boolean, set: string?)
 	for _, child in ipairs(list:GetChildren()) do
 		if child:IsA("GuiObject") then child:Destroy() end
 	end
 	local settings = ClientData.Get().settings or {}
 	local last = settings.dumbbellLast
-	for index, exercise in ipairs(if pro then Machines.ProDumbbells else Machines.Dumbbells) do
+	for index, exercise in ipairs(Machines.DumbbellSetList(set)) do
 		local isCurrent = onSpot and exercise.id == currentId
 		local isLast = (exercise.base or exercise.id) == last
 		local card = Kit.Card({ Name = exercise.id, LayoutOrder = if isLast then 0 else index, Clickable = true,
@@ -79,11 +80,12 @@ local function fill(currentId: string?, onSpot: boolean, pro: boolean?)
 	list.CanvasPosition = Vector2.zero
 end
 
-function DumbbellPicker.Open(currentId: string?, onSpot: boolean, onPick: (string) -> (), pro: boolean?)
+local SET_TITLES = { Pro = "Pro dumbbells", Powerlifting = "Heavy dumbbells" }
+function DumbbellPicker.Open(currentId: string?, onSpot: boolean, onPick: (string) -> (), set: string?)
 	if not modal then build() end
 	onPicked = onPick
-	modal.setTitle(if onSpot then "Change exercise" elseif pro then "Pro dumbbells" else "Dumbbells")
-	fill(currentId, onSpot, pro)
+	modal.setTitle(if onSpot then "Change exercise" else SET_TITLES[set or ""] or "Dumbbells")
+	fill(currentId, onSpot, set)
 	modal.open()
 	Audio.PlayUI("Whoosh")
 end

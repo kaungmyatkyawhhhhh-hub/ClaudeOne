@@ -2,11 +2,12 @@
 -- client's glowing path (Shared/UI/GuidePath, which had this logic) and the server's teleport (GoToService), so both pick
 -- the same machine and the same spot.
 --   GoTo.Valid(target) -> boolean                         target = a MachineId or "Coach" (the Coach NPC, tagged "Coach")
---   GoTo.Find(target, from: Vector3, spurts: number) -> Model?
+--   GoTo.Find(target, from: Vector3, spurts: number | data) -> Model?   (pass the player's data: a gym kept open from
+--       before a ladder change counts, Machines.GymLevel; prompt 58)
 --       the gym has several of each machine: the nearest one nobody is using (any one if all are busy), only in gyms the
 --       player has opened (spurts = their Growth Spurts); a dumbbell exercise = any dumbbell Train spot
 --   GoTo.Spot(model) -> Vector3   on the floor, just outside the machine on the side facing the middle of its gym
--- (prompt 39) Places too, for the unlock guides: "Gym:<Beach|Pro>" (the nearest free machine in that gym, once it's open),
+-- (prompt 39) Places too, for the unlock guides: "Gym:<Beach|Pro|Powerlifting>" (the nearest free machine in that gym, once it's open),
 -- "Tag:<tag>" (the nearest model with that tag: TrainerDesk = the Trainer Agency, ArmWrestleTable, PumpShopCounter; a
 -- tagged part counts as its model) and "Stage" (the posing stage: GoTo.Point gives its spot, there's no model).
 local CollectionService = game:GetService("CollectionService")
@@ -38,7 +39,9 @@ function GoTo.Point(target: string): Vector3?
 	return nil
 end
 
-function GoTo.Find(target: string, from: Vector3, spurts: number): Model?
+function GoTo.Find(target: string, from: Vector3, spurts: any): Model?
+	if type(spurts) == "table" then spurts = Machines.GymLevel(spurts) end
+	spurts = tonumber(spurts) or 0
 	if target == "Coach" then
 		return CollectionService:GetTagged("Coach")[1]
 	end

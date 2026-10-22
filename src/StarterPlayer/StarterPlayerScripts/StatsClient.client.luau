@@ -327,7 +327,7 @@ function refreshScreen()
 	elseif currentTab == "Lifts" then
 		for _, row in pairs(liftRows) do
 			local machine = row.machine
-			local open = Machines.GymOpenAt(machine) <= (data.growthSpurts or 0)
+			local open = Machines.GymOpenAt(machine) <= Machines.GymLevel(data)
 			row.card.Visible = open
 			local state = data.machines and data.machines[machine.id]
 			local bestTier = state and state.best and machine.tiers[state.best]
@@ -474,9 +474,17 @@ Remotes.PlayerEvent.OnClientEvent:Connect(function(kind, info)
 	Kit.Text({ Text = "Growth Spurt!", Font = "Title", TextSize = 40, TextColor3 = Colors.Gold, Size = UDim2.new(1, 0, 0, 50), Parent = banner })
 	Kit.Text({ Text = string.format("You're now %s. Gains x%.2f forever!", GrowthSpurts.FormatHeight(info.height), info.bonus), Font = "Title", TextSize = 17,
 		Position = UDim2.fromOffset(0, 50), Size = UDim2.new(1, 0, 0, 22), Parent = banner })
+	-- (prompt 58) what this spurt opens, so a spurt without a new gym still feels big: "TRAINERS · ARM WRESTLING · ..."
+	local unlocks = GrowthSpurts.UnlockText(info.spurts or 0)
+	if unlocks then
+		banner.Size = UDim2.fromOffset(460, 104)
+		local line = Kit.Text({ Name = "Unlocks", Text = "NEW: " .. unlocks, Font = "Title", TextSize = 16, TextColor3 = Colors.Gold,
+			Position = UDim2.fromOffset(0, 78), Size = UDim2.new(1, 0, 0, 22), Parent = banner })
+		Kit.Fit(line, 16, 11)
+	end
 	Theme.Fade(banner, true)
 	Theme.Tween(banner, { Position = UDim2.fromScale(0.5, 0.5) })
-	task.delay(2.8, function()
+	task.delay(if unlocks then 4 else 2.8, function()
 		local tween = Theme.Fade(banner, false, 0.4)
 		if tween then tween.Completed:Connect(function() banner:Destroy() end) else banner:Destroy() end
 	end)

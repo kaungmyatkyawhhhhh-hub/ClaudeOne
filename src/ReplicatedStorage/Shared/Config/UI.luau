@@ -111,7 +111,8 @@ UI.LoadingTips = {
 	"Trainers follow you around and give a small boost while they do.",
 	"Titles are earned, never bought. Some of them are secret.",
 	"Running on a treadmill raises your max stamina.",
-	"The pro gym opens at Growth Spurt 2. Watch through the glass until then.",
+	"The pro gym opens at Growth Spurt 3. Watch through the glass until then.",
+	"The Powerlifting Gym opens at Growth Spurt 5. Its record board shows the heaviest lifts in the server.",
 }
 
 -- The main menu's UPDATES window: newest first (date, title, a few short lines). Add an entry for each update and change

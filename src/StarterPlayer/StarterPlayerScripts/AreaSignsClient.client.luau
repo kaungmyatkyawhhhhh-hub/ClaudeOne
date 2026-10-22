@@ -1,7 +1,8 @@
 --!strict
 -- AreaSignsClient: signs of areas that unlock with Growth Spurts (tagged "AreaSign" by the builders, attributes Gym =
 -- a Machines.GymUnlock key and Title). While the area is locked for you the sign shows its title plus
--- "Opens at Growth Spurt N"; once it's open it shows just the title. Local only (each player sees their own state).
+-- "Unlocks at Growth Spurt N" (prompt 58: was "Opens at"); once it's open it shows just the title. A gym kept open from
+-- before a ladder change counts (Machines.GymLevel). Local only (each player sees their own state).
 local CollectionService = game:GetService("CollectionService")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 
@@ -19,13 +20,13 @@ local function refresh(sign: Instance)
 	local gym = sign:GetAttribute("Gym")
 	local need = typeof(gym) == "string" and Machines.GymUnlock[gym] or 0
 	local data = ClientData.Get()
-	local spurts = data and data.growthSpurts or 0
+	local spurts = if data then Machines.GymLevel(data) else 0
 	local locked = spurts < need
 	title.Text = tostring(sign:GetAttribute("Title") or title.Text)
 	if locked then
 		title.Size = UDim2.fromScale(0.94, 0.56)
 		title.Position = UDim2.fromScale(0.03, 0.04)
-		rule.Text = "Opens at Growth Spurt " .. tostring(need)
+		rule.Text = "Unlocks at Growth Spurt " .. tostring(need)
 		rule.Size = UDim2.fromScale(0.94, 0.34)
 		rule.Position = UDim2.fromScale(0.03, 0.62)
 		rule.Visible = true
@@ -42,7 +43,7 @@ end
 
 CollectionService:GetInstanceAddedSignal(TAG):Connect(refresh)
 ClientData.Changed:Connect(function(path: any)
-	if typeof(path) ~= "table" or path[1] == "growthSpurts" then
+	if typeof(path) ~= "table" or path[1] == "growthSpurts" or path[1] == "gymAccess" then
 		refreshAll()
 	end
 end)

@@ -90,7 +90,7 @@ local function mainMuscle(machine)
 end
 local function lockText(machine, model): string?
 	local need = Machines.GymOpenAt(machine, model)
-	if (ClientData.Get().growthSpurts or 0) < need then return "Growth Spurt " .. need end
+	if Machines.GymLevel(ClientData.Get()) < need then return "Growth Spurt " .. need end
 	return nil
 end
 local function isNew(machineId: string): boolean

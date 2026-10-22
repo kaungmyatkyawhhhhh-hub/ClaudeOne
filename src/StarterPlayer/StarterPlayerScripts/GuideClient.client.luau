@@ -234,7 +234,7 @@ local function point(run)
 				local rootPart = character and character:FindFirstChild("HumanoidRootPart") :: BasePart?
 				local spot = GoTo.Point(guide.place)
 				if not spot and rootPart then
-					local model = GoTo.Find(guide.place, rootPart.Position, data.growthSpurts or 0)
+					local model = GoTo.Find(guide.place, rootPart.Position, data)
 					spot = model and model:GetPivot().Position
 				end
 				if rootPart and spot and (rootPart.Position - spot).Magnitude < 16 then

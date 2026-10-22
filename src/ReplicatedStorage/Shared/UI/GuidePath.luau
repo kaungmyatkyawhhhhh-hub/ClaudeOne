@@ -52,7 +52,7 @@ local GoTo = require(script.Parent.Parent.GoTo)
 local function machineModel(machineId)
 	local root = player.Character and player.Character:FindFirstChild("HumanoidRootPart")
 	local ClientData = require(script.Parent.Parent.ClientData)
-	return GoTo.Find(machineId, if root then root.Position else Vector3.zero, ClientData.Get().growthSpurts or 0)
+	return GoTo.Find(machineId, if root then root.Position else Vector3.zero, ClientData.Get())
 end
 local approachPoint = GoTo.Spot
 

@@ -543,6 +543,12 @@ local function refresh()
 	local needs = needsText(missing, progress)
 	player:SetAttribute("SpurtNeeds", if needs ~= "" then needs else nil)
 	local percent = math.floor((need > 0 and have / need or 0) * 100)
+	-- (prompt 58) the gym the next Growth Spurt opens ("Next: Powerlifting Gym"; not every spurt opens one)
+	local nextGym = nil
+	if not alterMode and not progress.maxed then
+		local gym, gymName, at = Machines.NextGym(data.growthSpurts)
+		if gym and at == data.growthSpurts + 1 and Machines.GymLevel(data) < at then nextGym = gymName end
+	end
 	-- the machine strip (prompt 53: not while the tutorial runs, only the tutorial on screen)
 	stripGui.Enabled = started and currentMachine ~= nil and not progress.maxed and not UIBus.InTutorial()
 	if ready then
@@ -552,7 +558,7 @@ local function refresh()
 		setStripBar(1)
 	else
 		stripTitle.Text = (if alterMode then "NEXT: " .. string.upper(nextName) else "GROWTH SPURT " .. (data.growthSpurts + 1)) .. " · " .. percent .. "%"
-		stripNeeds.Text = if needs ~= "" then "Needs " .. needs else ""
+		stripNeeds.Text = if needs ~= "" then "Needs " .. needs elseif nextGym then "Next: " .. nextGym else ""
 		stripNeeds.TextColor3 = Colors.Red
 		setStripBar(percent / 100)
 	end
@@ -620,14 +626,14 @@ local function refresh()
 	elseif ready then
 		tileText.Text = "TAP TO GROW"
 		bigText.Text = "TAP TO GROW"
-		tileLabel.Text = "Growth Spurt " .. (data.growthSpurts + 1) .. " ready"
+		tileLabel.Text = "Growth Spurt " .. (data.growthSpurts + 1) .. " ready" .. (if nextGym then " · " .. nextGym else "")
 		styleTile("Quiet", true)
 		cardOutline(GROW_ACCENT, true) -- (prompt 58: the outline glows; it was the loud gold button pulsing)
 		bigText.TextColor3 = GROW_ACCENT
 		Kit.Fit(bigText, 28, 16) -- (the chrome style changed its font: measured again)
 	else
 		tileText.Text = "GROWTH SPURT " .. (data.growthSpurts + 1)
-		tileLabel.Text = '<font color="' .. GOLD_HEX .. '">' .. percent .. "%</font>" .. (if needs ~= "" then " · Needs " .. needs else " · tap for your physique")
+		tileLabel.Text = '<font color="' .. GOLD_HEX .. '">' .. percent .. "%</font>" .. (if nextGym then " · Next: " .. nextGym elseif needs ~= "" then " · Needs " .. needs else " · tap for your physique")
 		styleTile("Quiet", true)
 		cardOutline(GROW_ACCENT, false)
 	end

@@ -1,6 +1,6 @@
 -- ProGymClient: the glass door between the starter gym and the pro gym (Workspace.ProGym.GlassWall.GlassDoor).
--- Unlocked (Growth Spurt 2+): the door's invisible Blocker stops colliding for you, and the glass leaves slide open
--- while you're near. Locked: the door stays shut (the lock and "Unlocks at Growth Spurt 2" sign show on it) and walking
+-- Unlocked (Growth Spurt 3+ since prompt 58, or kept from when it opened at 2: Machines.GymLevel): the door's invisible Blocker stops colliding for you, and the glass leaves slide open
+-- while you're near. Locked: the door stays shut (the lock and "Unlocks at Growth Spurt 3" sign show on it) and walking
 -- up to it shows a small corner note. (The sign itself is an AreaSign: AreaSignsClient shows its rule only while locked.) Everything here is local; ProGymService double-checks on the server.
 local Players = game:GetService("Players")
 local RunService = game:GetService("RunService")
@@ -49,7 +49,7 @@ end
 
 local function unlocked()
 	local data = ClientData.Get()
-	return data and data.growthSpurts ~= nil and data.growthSpurts >= (Machines.GymUnlock.Pro or 2)
+	return data ~= nil and data.growthSpurts ~= nil and Machines.GymLevel(data) >= Machines.GymUnlock.Pro
 end
 
 local amount, lastNote = 0, 0
@@ -77,7 +77,7 @@ RunService.Heartbeat:Connect(function(dt)
 	local distance = root and (root.Position - center).Magnitude or math.huge
 	if not open and distance < NOTE_RANGE and os.clock() - lastNote > 8 then
 		lastNote = os.clock()
-		Notify.Show("Reach Growth Spurt " .. (Machines.GymUnlock.Pro or 2) .. " to enter the Pro Gym", nil, "progym")
+		Notify.Show("Reach Growth Spurt " .. Machines.GymUnlock.Pro .. " to enter the Pro Gym", nil, "progym")
 	end
 	local target = (open and distance < OPEN_RANGE) and 1 or 0
 	if amount == target then return end

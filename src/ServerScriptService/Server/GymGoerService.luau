@@ -94,7 +94,11 @@ local function gymMachines(gym)
 			local inStarter = model:IsDescendantOf(Workspace:FindFirstChild("Gym") or proGym or Workspace)
 			local beachGym = Workspace:FindFirstChild("Town") and Workspace.Town:FindFirstChild("BeachGym")
 			local inBeach = beachGym ~= nil and model:IsDescendantOf(beachGym)
-			if (gym == "Pro" and inPro) or (gym == "Starter" and inStarter and not inPro) or (gym == "Beach" and inBeach) then
+			-- (prompt 58) the Powerlifting Gym (Workspace.PowerliftingGym)
+			local plGym = Workspace:FindFirstChild("PowerliftingGym")
+			local inPowerlifting = plGym ~= nil and model:IsDescendantOf(plGym)
+			if (gym == "Pro" and inPro) or (gym == "Starter" and inStarter and not inPro) or (gym == "Beach" and inBeach)
+				or (gym == "Powerlifting" and inPowerlifting) then
 				table.insert(list, model)
 			end
 		end
@@ -219,9 +223,10 @@ local function train(state)
 	local arrived = walkTo(state, approach.Position)
 	reserved[model] = nil
 	if not arrived or playerWants(model) or not MachineService.IsFree(model) then return false end
-	-- pro regulars lift heavy, starter regulars lift moderate
+	-- pro and powerlifting regulars lift heavy, starter regulars lift moderate
 	local tiers = #machine.tiers
-	local tier = gym == "Pro" and rng:NextInteger(tiers - 3, tiers) or rng:NextInteger(3, math.max(4, math.floor(tiers / 2)))
+	local heavy = gym == "Pro" or gym == "Powerlifting"
+	local tier = heavy and rng:NextInteger(math.max(1, tiers - 3), tiers) or rng:NextInteger(3, math.max(4, math.floor(tiers / 2)))
 	play(state, nil)
 	if not MachineService.NpcEnter(state.npc, model, tier) then return false end
 	state.machine = model
@@ -230,7 +235,7 @@ local function train(state)
 		for _ = 1, rng:NextInteger(6, 10) do
 			if state.machine ~= model then return true end -- a player took it (MachineService stepped us off)
 			MachineService.NpcLift(state.npc, model)
-			task.wait(gym == "Pro" and 1.5 or 1.3)
+			task.wait(heavy and 1.5 or 1.3)
 			-- a player standing by the machine gets it
 			if playerWants(model) then
 				yieldSince = yieldSince or os.clock()
@@ -376,7 +381,7 @@ end
 
 -- The regulars show what to aim for: every NPC has the Robloxian 2.0 body (NpcService) and muscle blobs grown to a preset
 -- (pro gym big, starter gym medium), keeping their own clothes and hair.
-local NPC_GROWTH = { Starter = 0.5, Pro = 0.9, Beach = 0.6 }
+local NPC_GROWTH = { Starter = 0.5, Pro = 0.9, Beach = 0.6, Powerlifting = 1.0 }
 
 -- One regular is the giant (owner, 9 Oct): 8'0" (owner: taller than any player can get; players cap at 7'0") with the
 -- mass monster physique, built like a maxed player (every muscle at 5.5x that Growth Spurt's goal, so every muscle is at its mass monster size; the
