@@ -47,6 +47,7 @@ Social.Crew = {
 	TagLength = { 2, 4 },   -- letters and numbers only
 	CreateCost = 0,         -- coins
 	Refresh = 120,          -- seconds between crew score / top crews updates
+	TopCount = 25,          -- crews in TOP CREWS (owner, 23 Oct: was 5)
 }
 
 -- Arm wrestling strength from a player's muscle looks ({ [muscleId] = look g }, Muscles.LookG: 1 = the full look):

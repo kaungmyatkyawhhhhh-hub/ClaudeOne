@@ -595,8 +595,8 @@ local function refreshScores()
 			pcall(scoreStore.SetAsync, scoreStore, crewId, total)
 		end
 	end
-	-- top 5 crews for the Crew panel
-	local ok, pages = pcall(function() return scoreStore:GetSortedAsync(false, 5) end)
+	-- the top crews for the Crew panel (Social.Crew.TopCount; a crew's record is read once per server, then cached)
+	local ok, pages = pcall(function() return scoreStore:GetSortedAsync(false, Social.Crew.TopCount) end)
 	if ok and pages then
 		local top = {}
 		for _, entry in ipairs(pages:GetCurrentPage()) do
