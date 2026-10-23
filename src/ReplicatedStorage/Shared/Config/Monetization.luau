@@ -43,19 +43,20 @@ Monetization.Products = {
 	{ key = "QuestReroll", id = productId(Products.QuestReroll), name = "Quest Reroll", text = "Swap one daily quest for a new one.", store = false, price = 19 },
 	{ key = "ServerBoost", id = nil, tab = "Boosts", name = "Server Boost", text = "2x gains for everyone in the server for 30 minutes. Your name goes on the board." },
 	-- (prompt 60) DNA tokens as a pack of 3 (cheaper per token than 3 singles); shown next to the single everywhere tokens are sold
-	{ key = "DnaTokenPack", id = productId(0), tab = "Boosts", name = "DNA Token x3", text = "Three genetics rerolls.", dnaTokens = 3, price = 249, art = "product_dna_token" },
+	{ key = "DnaTokenPack", id = 3721356358, tab = "Boosts", name = "DNA Token x3", text = "Three genetics rerolls.", dnaTokens = 3, price = 249, art = "product_dna_token" },
 	-- (prompt 60) STARTER PACK: once per player (data.starterPack); contents in Monetization.StarterPack
-	{ key = "StarterPack", id = productId(0), tab = "Boosts", name = "Starter Pack", text = "Coins, 3 Protein Shakes, a DNA Token, 30 min 2x EXP and the STARTER title.",
+	{ key = "StarterPack", id = 3721356162, tab = "Boosts", name = "Starter Pack", text = "Coins, 3 Protein Shakes, a DNA Token, 30 min 2x EXP and the STARTER title.",
 		price = 49, art = "product_shake_bundle", once = true },
 	-- (prompt 57) the PUMP SHOP's specials, bought there (store = false): x1 and x5 of each (consumable, into the inventory)
-	{ key = "Supp_MassGainer_1", id = productId(0), store = false, name = "Mass Gainer", supplement = "MassGainer", count = 1, price = 25 },
-	{ key = "Supp_MassGainer_5", id = productId(0), store = false, name = "Mass Gainer x5", supplement = "MassGainer", count = 5, price = 99 },
-	{ key = "Supp_ElitePreWorkout_1", id = productId(0), store = false, name = "Elite Pre-Workout", supplement = "ElitePreWorkout", count = 1, price = 25 },
-	{ key = "Supp_ElitePreWorkout_5", id = productId(0), store = false, name = "Elite Pre-Workout x5", supplement = "ElitePreWorkout", count = 5, price = 99 },
-	{ key = "Supp_WheyIsolate_1", id = productId(0), store = false, name = "Whey Isolate", supplement = "WheyIsolate", count = 1, price = 25 },
-	{ key = "Supp_WheyIsolate_5", id = productId(0), store = false, name = "Whey Isolate x5", supplement = "WheyIsolate", count = 5, price = 99 },
-	{ key = "Supp_BcaaRecovery_1", id = productId(0), store = false, name = "BCAA Recovery", supplement = "BcaaRecovery", count = 1, price = 25 },
-	{ key = "Supp_BcaaRecovery_5", id = productId(0), store = false, name = "BCAA Recovery x5", supplement = "BcaaRecovery", count = 5, price = 99 },
+	-- (prompt 63: ids from the owner, 23 Oct; same for DnaTokenPack and StarterPack above)
+	{ key = "Supp_MassGainer_1", id = 3721356862, store = false, name = "Mass Gainer", supplement = "MassGainer", count = 1, price = 25 },
+	{ key = "Supp_MassGainer_5", id = 3721356950, store = false, name = "Mass Gainer x5", supplement = "MassGainer", count = 5, price = 99 },
+	{ key = "Supp_ElitePreWorkout_1", id = 3721357276, store = false, name = "Elite Pre-Workout", supplement = "ElitePreWorkout", count = 1, price = 25 },
+	{ key = "Supp_ElitePreWorkout_5", id = 3721357343, store = false, name = "Elite Pre-Workout x5", supplement = "ElitePreWorkout", count = 5, price = 99 },
+	{ key = "Supp_WheyIsolate_1", id = 3721357465, store = false, name = "Whey Isolate", supplement = "WheyIsolate", count = 1, price = 25 },
+	{ key = "Supp_WheyIsolate_5", id = 3721357767, store = false, name = "Whey Isolate x5", supplement = "WheyIsolate", count = 5, price = 99 },
+	{ key = "Supp_BcaaRecovery_1", id = 3721357940, store = false, name = "BCAA Recovery", supplement = "BcaaRecovery", count = 1, price = 25 },
+	{ key = "Supp_BcaaRecovery_5", id = 3721358083, store = false, name = "BCAA Recovery x5", supplement = "BcaaRecovery", count = 5, price = 99 },
 }
 
 -- What the passes do (read by MonetizationService).
