@@ -47,6 +47,13 @@ local function share(data): number
 	local progress = GrowthSpurts.Progress(data, Muscles.Groups, Machines.TrainableMuscles(data.growthSpurts or 0))
 	return GrowthSpurts.Share(progress, Muscles.Groups)
 end
+-- the locked toast with your progress (walking up to the door, or tapping its shutter: prompt 62)
+local function lockedNote(data)
+	lastNote = os.clock()
+	local ok, s = pcall(share, data)
+	local title, sub = Guides.LockedLines(LOCK, data, if ok then s else nil)
+	Notify.Toast(title, sub, "lock", Colors.Gold, "pllocked")
+end
 local acc = 0
 RunService.Heartbeat:Connect(function(dt)
 	acc += dt
@@ -58,6 +65,13 @@ RunService.Heartbeat:Connect(function(dt)
 		local found = g and g:FindFirstChild("LoadingDoor")
 		if not (found and found:FindFirstChild("Blocker")) then return end
 		door, blocker, shutter, wasOpen = found, found.Blocker, found:FindFirstChild("Shutter"), nil
+		local tap = blocker:FindFirstChildOfClass("ClickDetector") -- (prompt 62: a tap on the door)
+		if tap then
+			tap.MouseClick:Connect(function()
+				local data = ClientData.Get()
+				if data and not wasOpen and os.clock() - lastNote > 1.5 then lockedNote(data) end
+			end)
+		end
 	end
 	local data = ClientData.Get()
 	if not data then return end
@@ -65,6 +79,8 @@ RunService.Heartbeat:Connect(function(dt)
 	if open ~= wasOpen then
 		wasOpen = open
 		blocker.CanCollide = not open
+		local tap = blocker:FindFirstChildOfClass("ClickDetector")
+		if tap then tap.MaxActivationDistance = if open then 0 else 40 end
 		if shutter then
 			shutter.LocalTransparencyModifier = if open then 1 else 0
 			for _, d in ipairs(shutter:GetDescendants()) do
@@ -75,10 +91,7 @@ RunService.Heartbeat:Connect(function(dt)
 	end
 	local root = player.Character and player.Character:FindFirstChild("HumanoidRootPart")
 	if not open and root and (root.Position - blocker.Position).Magnitude < NOTE_RANGE and os.clock() - lastNote > 8 then
-		lastNote = os.clock()
-		local ok, s = pcall(share, data)
-		local title, sub = Guides.LockedLines(LOCK, data, if ok then s else nil)
-		Notify.Toast(title, sub, "lock", Colors.Gold, "pllocked")
+		lockedNote(data)
 	end
 end)
 

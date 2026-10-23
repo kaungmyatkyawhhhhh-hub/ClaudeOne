@@ -11,6 +11,10 @@
 --     The tallest have a red light on top.
 --   * A river across the valley (x 640..700) with stone banks and a lit suspension bridge on the main avenue, and a park.
 --   * Lamp heads and bridge lights carry NightColor too (glow at night, plain by day).
+--   * (prompt 62, owner: "the windows look into a grey void") warmer, varied facades (brick, sandstone, terracotta, cream,
+--     teal / navy glass), glass curtain-wall towers, a taller middle skyline so buildings rise into the window view, and
+--     low green-grey hills on the horizon and both sides. The Pro Gym also thins the haze while you're inside
+--     (GymMoodClient), so the city reads clearly.
 -- Run: require(this).Run() (rebuilds it: the old one is replaced). Deterministic (Random seed 58).
 local ProGymCity = {}
 
@@ -19,8 +23,9 @@ local rng = Random.new(58)
 
 local ASPHALT = Color3.fromHex("#2B2D31")
 local LINE = Color3.fromHex("#C9C2A8")
-local BODY = { Color3.fromHex("#C9CCD1"), Color3.fromHex("#D8CFC0"), Color3.fromHex("#9BA3AD"), Color3.fromHex("#5C6670"),
-	Color3.fromHex("#B7B0A2"), Color3.fromHex("#7F8C99"), Color3.fromHex("#E2E0DA") }
+local BODY = { Color3.fromHex("#9A4A3A"), Color3.fromHex("#C8A879"), Color3.fromHex("#B8653F"), Color3.fromHex("#E6DCC6"),
+	Color3.fromHex("#7D8A96"), Color3.fromHex("#D8CFC0"), Color3.fromHex("#A85C48"), Color3.fromHex("#5C6670"), Color3.fromHex("#C9B48E") }
+local GLASS_TOWER = { Color3.fromHex("#2F4A6B"), Color3.fromHex("#3F7F8C"), Color3.fromHex("#30495E"), Color3.fromHex("#4D6B85") }
 local GLASS_DAY = Color3.fromHex("#34475B")
 local WARM = { Color3.fromHex("#FFE4B0"), Color3.fromHex("#F5D79A"), Color3.fromHex("#FFF1D6") }
 local COOL = { Color3.fromHex("#DCE8FF"), Color3.fromHex("#C9DBF5") }
@@ -71,10 +76,12 @@ local function streetLight(x: number, z: number, armDir: number)
 end
 
 local function building(x: number, z: number, w: number, d: number, h: number)
-	local color = BODY[rng:NextInteger(1, #BODY)]
+	local glassTower = h > 70 and rng:NextNumber() < 0.55
+	local color = if glassTower then GLASS_TOWER[rng:NextInteger(1, #GLASS_TOWER)] else BODY[rng:NextInteger(1, #BODY)]
 	local b = Instance.new("Model")
 	b.Name = "Building"
-	part({ Name = "Body", Size = Vector3.new(w, h, d), CFrame = CFrame.new(x, FLOOR + h / 2, z), Color = color, Parent = b })
+	part({ Name = "Body", Size = Vector3.new(w, h, d), CFrame = CFrame.new(x, FLOOR + h / 2, z), Color = color, Parent = b,
+		Material = if glassTower then Enum.Material.Glass else Enum.Material.SmoothPlastic, Reflectance = if glassTower then 0.2 else 0 })
 	part({ Name = "Roof", Size = Vector3.new(w + 0.6, 0.8, d + 0.6), CFrame = CFrame.new(x, FLOOR + h + 0.4, z), Color = Color3.fromHex("#3E4349"), Parent = b })
 	-- one window band per floor (wrapping all four sides), fewer on the tall ones so a tower stays cheap
 	local floorH = math.max(5, h / 9)
@@ -187,7 +194,7 @@ function ProGymCity.Run()
 			local x0, z0, x1, z1 = bx - w / 2, bz - d / 2, bx + w / 2, bz + d / 2
 			if inValley(bx, bz, math.max(w, d) / 2 + 2) and not blocked(x0, z0, x1, z1) and rng:NextNumber() < 0.66 then
 				local far = math.clamp((bx - 170) / 1100, 0, 1)
-				local h = rng:NextNumber(14, 30) + far * far * rng:NextNumber(30, 150)
+				local h = rng:NextNumber(16, 34) + far * rng:NextNumber(20, 60) + far * far * rng:NextNumber(30, 150)
 				-- a few landmark towers on the skyline
 				if far > 0.55 and rng:NextNumber() < 0.08 then h += rng:NextNumber(60, 110) end
 				-- right under the windows stay low so the street shows
@@ -197,6 +204,20 @@ function ProGymCity.Run()
 				count += 1
 			end
 		end
+	end
+	-- low hills on the horizon and both sides (big flattened balls, green-grey so the haze softens them)
+	local HILL = { Color3.fromHex("#5E7F55"), Color3.fromHex("#6B8A5E"), Color3.fromHex("#52704B") }
+	local hills = Instance.new("Model")
+	hills.Name = "Hills"
+	hills.Parent = root
+	local function hill(x, z, w, h)
+		part({ Name = "Hill", Shape = Enum.PartType.Ball, Size = Vector3.new(w, w, w), CFrame = CFrame.new(x, FLOOR - w / 2 + h, z), Color = HILL[rng:NextInteger(1, #HILL)],
+			Material = Enum.Material.Grass, Parent = hills })
+	end
+	for z = -760, 360, 160 do hill(1560 + rng:NextNumber(-40, 40), z, rng:NextNumber(340, 460), rng:NextNumber(60, 120)) end
+	for x = 300, 1500, 200 do
+		hill(x + rng:NextNumber(-40, 40), -780, rng:NextNumber(300, 420), rng:NextNumber(40, 90))
+		hill(x + rng:NextNumber(-40, 40), 330, rng:NextNumber(300, 420), rng:NextNumber(40, 90))
 	end
 	root.Parent = folder
 	local parts = 0
