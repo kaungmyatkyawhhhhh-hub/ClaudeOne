@@ -6,6 +6,7 @@
 --   game.ServerStorage.Admin:Invoke("trainer", "LuigiRED", "Atlas")    -- (BASE)
 --   game.ServerStorage.Admin:Invoke("trainer", "LuigiRED", "Atlas", 5) -- (stage 1 BASE .. 5 LIMITLESS)
 --   game.ServerStorage.Admin:Invoke("trainers")                        -- (every trainer's id and name)
+--   game.ServerStorage.Admin:Invoke("shirtless", "LuigiRED")           -- (takes off a top left over from the old wardrobe)
 -- The player: their name or display name (any case, the start is enough if only one player matches) or "all" (everyone
 -- in this server). Only players in the same server. Every gift prints a line in the server output.
 local Players = game:GetService("Players")
@@ -13,6 +14,7 @@ local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local ServerStorage = game:GetService("ServerStorage")
 
 local Trainers = require(ReplicatedStorage.Shared.Config.Trainers)
+local Body = require(ReplicatedStorage.Shared.Config.Body)
 local PlayerData = require(script.Parent.PlayerData)
 
 local AdminService = {}
@@ -24,6 +26,7 @@ local HELP = table.concat({
 	'  ("coins", "<player or all>", amount)',
 	'  ("trainer", "<player or all>", "<trainer>", stage 1-5)',
 	'  ("trainers")  list the trainers',
+	'  ("shirtless", "<player or all>")  take off a top from the old wardrobe',
 }, "\n")
 
 -- players by name / display name (exact first, then the start if only one matches), or everyone for "all"
@@ -94,6 +97,35 @@ local function giveTrainer(target, trainerText, stage)
 	return table.concat(lines, "\n")
 end
 
+-- (owner, 23 Oct) a top left over from the old wardrobe (settings.top, or a worn gym fit) back to shirtless
+local function shirtless(target)
+	local players, err = findPlayers(target)
+	if not players then return "shirtless: " .. err end
+	local lines = {}
+	for _, player in ipairs(players) do
+		local data = PlayerData.Get(player)
+		if not data then
+			table.insert(lines, player.Name .. ": data not loaded")
+		else
+			local was = tostring(data.settings and data.settings.top)
+			local settings = table.clone(data.settings or {})
+			settings.top = Body.DefaultTop
+			PlayerData.SetTable(player, "settings", settings)
+			local fit = nil
+			if type(data.cosmetics) == "table" and type(data.cosmetics.equipped) == "table" and data.cosmetics.equipped.Fit then
+				local cosmetics = table.clone(data.cosmetics)
+				cosmetics.equipped = table.clone(cosmetics.equipped)
+				fit, cosmetics.equipped.Fit = cosmetics.equipped.Fit, nil
+				PlayerData.SetTable(player, "cosmetics", cosmetics)
+			end
+			require(script.Parent.BodyService).PublishData(player, data)
+			pcall(function() require(script.Parent.CosmeticService).Rebuild(player) end)
+			table.insert(lines, string.format("%s: top %s -> %s%s", player.Name, was, Body.DefaultTop, if fit then ", gym fit " .. tostring(fit) .. " off" else ""))
+		end
+	end
+	return table.concat(lines, "\n")
+end
+
 local function listTrainers()
 	local lines = {}
 	for _, trainer in ipairs(Trainers.List) do
@@ -114,6 +146,8 @@ function AdminService.Run(command, ...)
 		result = giveTrainer(...)
 	elseif command == "trainers" then
 		result = listTrainers()
+	elseif command == "shirtless" then
+		result = shirtless(...)
 	else
 		result = HELP
 	end

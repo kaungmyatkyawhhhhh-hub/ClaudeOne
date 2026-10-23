@@ -46,6 +46,10 @@ SideMenu.Arrow = Vector2.new(24, 46)
 SideMenu.FaceDarken = 0.5
 SideMenu.LipDarken = 0.66
 SideMenu.Lip = 4
+-- (prompt 65, owner 23 Oct: the chrome reset made the nav ~20% bigger; back down) the whole nav (tiles, icons, labels,
+-- badges, the gaps) is drawn at this share by one UIScale, but a tile is never under MinTapPx screen px (phone taps)
+SideMenu.NavScale = 0.8
+SideMenu.MinTapPx = 44
 
 local changed = Instance.new("BindableEvent")
 SideMenu.Changed = changed.Event -- fires when the menu's size or position changes
@@ -57,6 +61,19 @@ local hiddenAll = false
 local collapsed = false      -- what the player chose (saved)
 local columns = 2
 local gridTop = SideMenu.Top -- where the grid's top edge is now (mockup px from the top of the safe area)
+local navScaler: UIScale? = nil
+
+-- the screen's own scale (Studio's TestPhoneSize: that phone's, not the blown-up window's)
+local function screenScale(): number
+	local phone = if game:GetService("RunService"):IsStudio() then workspace:GetAttribute("TestPhoneSize") else nil
+	if typeof(phone) == "Vector2" and phone.X > 100 and phone.Y > 100 then return Kit.ScaleFor(phone) end
+	return Kit.Scale()
+end
+-- the nav's share: NavScale, raised just enough that a tile stays MinTapPx on screen
+local function navScale(): number
+	local onScreen = SideMenu.TileSize * screenScale()
+	return math.clamp(math.max(SideMenu.NavScale, SideMenu.MinTapPx / onScreen), SideMenu.NavScale, 1)
+end
 
 local function shownEntries()
 	local list = {}
@@ -90,10 +107,13 @@ local function layout(animate: boolean?)
 	if not bar then return end
 	local list = shownEntries()
 	local size, gap = SideMenu.TileSize, SideMenu.Gap
+	-- (prompt 65) inside the bar everything is in tile px; on screen it's s times that
+	local s = navScale()
+	if navScaler then navScaler.Scale = s end
 	local footH = 0
 	for _, f in ipairs(footers) do if f.frame.Visible then footH += gap + f.height end end
 	-- (room for the centered grid: clear of the top bar at the top and the same at the bottom; the footer rows too)
-	local room = math.max(size, root.AbsoluteSize.Y / Kit.Scale() - 2 * math.max(SideMenu.Top, SideMenu.BottomRoom) - footH)
+	local room = math.max(size, (root.AbsoluteSize.Y / Kit.Scale() - 2 * math.max(SideMenu.Top, SideMenu.BottomRoom)) / s - footH)
 	local maxRows = math.max(1, math.floor((room + gap) / (size + gap)))
 	columns = math.max(2, math.ceil(#list / maxRows))
 	local rows = math.max(1, math.ceil(#list / columns))
@@ -120,10 +140,10 @@ local function layout(animate: boolean?)
 	local isFolded = folded()
 	-- vertically centered on the screen (the rows above make sure it fits); folding only moves it sideways
 	local screenH = root.AbsoluteSize.Y / Kit.Scale()
-	gridTop = (screenH - gridH) / 2
+	gridTop = (screenH - gridH * s) / 2
 	bar.AnchorPoint, arrow.AnchorPoint = Vector2.new(0, 0.5), Vector2.new(0, 0.5)
-	local barPos = UDim2.new(0, isFolded and (-gridW - SideMenu.Left) or SideMenu.Left, 0.5, 0)
-	local arrowPos = UDim2.new(0, isFolded and SideMenu.Left or (SideMenu.Left + gridW + gap), 0.5, 0)
+	local barPos = UDim2.new(0, isFolded and (-gridW * s - SideMenu.Left) or SideMenu.Left, 0.5, 0)
+	local arrowPos = UDim2.new(0, isFolded and SideMenu.Left or (SideMenu.Left + (gridW + gap) * s), 0.5, 0)
 	bar.Visible = not hiddenAll
 	arrow.Visible = not hiddenAll and not training
 	if animate then
@@ -156,6 +176,8 @@ local function ensure()
 	gui.ScreenInsets = Enum.ScreenInsets.DeviceSafeInsets
 	root = Kit.Root(gui)
 	bar = New("Frame", { Name = "MenuBar", BackgroundTransparency = 1, Parent = root })
+	navScaler = New("UIScale", { Name = "NavScale", Scale = SideMenu.NavScale, Parent = bar }) -- (prompt 65; set in layout)
+	workspace:GetAttributeChangedSignal("TestPhoneSize"):Connect(function() task.defer(layout) end)
 	-- the "<" tab: folds the tiles away and brings them back
 	arrow = New("TextButton", { Name = "MenuArrow", Text = "", AutoButtonColor = false, Size = UDim2.fromOffset(SideMenu.Arrow.X, SideMenu.Arrow.Y),
 		BackgroundColor3 = Colors.Pill, BackgroundTransparency = 0.15, Parent = root }, {
@@ -339,7 +361,8 @@ function SideMenu.Right()
 	ensure()
 	local s = Kit.Scale()
 	if folded() then return math.floor((SideMenu.Left + SideMenu.Arrow.X) * s) end
-	return math.floor((SideMenu.Left + bar.Size.X.Offset + SideMenu.Gap + SideMenu.Arrow.X) * s)
+	local n = navScale()
+	return math.floor((SideMenu.Left + (bar.Size.X.Offset + SideMenu.Gap) * n + SideMenu.Arrow.X) * s)
 end
 
 function SideMenu.VisibleRight()
@@ -351,7 +374,7 @@ end
 -- Screen px (from the top of the safe area) of the grid's bottom edge.
 function SideMenu.Bottom()
 	ensure()
-	return math.floor((gridTop + bar.Size.Y.Offset) * Kit.Scale())
+	return math.floor((gridTop + bar.Size.Y.Offset * navScale()) * Kit.Scale())
 end
 
 function SideMenu.Add(id, labelText, iconFactory, _order)
