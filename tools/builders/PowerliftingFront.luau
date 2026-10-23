@@ -3,7 +3,7 @@
 -- Edit: require(this).Run(). Before it: ServerStorage.PowerliftingBackup_23Oct_p62 (the whole gym) and
 -- ServerStorage.PowerliftingFrontRemoved_23Oct (the 6 Main Street buildings that stood in front of it; this run adds the old
 -- front pieces, the alley and the old signs there too).
---   * Front (x -175..-65, outer face z -3): red-brown brick base, a row of 9 tall industrial windows (steel frames, glass
+--   * Front (x -175..-65, outer face z -3): red-brown brick base, a row of 8 tall industrial windows (steel frames, glass
 --     that glows at night: NightWindow) between brick piers, steel I-beam columns, a steel beam at y 20, ribbed dark steel
 --     above it, the lit POWERLIFTING / GYM ARC sign board (NightSign) with a red neon edge, white industrial wall lamps
 --     (NightLight), a steel side door, bollards at the loading door.
