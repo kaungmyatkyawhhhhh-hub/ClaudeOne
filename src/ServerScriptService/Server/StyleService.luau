@@ -1,9 +1,10 @@
 -- StyleService (prompt 61, owner 23 Oct; every number in Config/Style): the PUMP SHOP's STYLE items, cosmetic only.
 -- Bought in the PUMP SHOP's STYLE tab (PumpShopService checks the place and calls StyleService.Buy; coins checked here),
 -- worn from there or the Inventory (PlayerAction "WearStyle", kind, target, variant). Bought once, kept forever.
---   * NAME TAG colour: the player attribute "NameColor" ("#hex" or "#hex1,#hex2"); a "NameTag" billboard over the head
+--   * NAME TAG colour: the player attribute "NameColor" ("#hex" or a gradient "#hex1,#hex2,..."); a "NameTag" billboard over the head
 --     shows the display name in it (Roblox's own name hides while one is worn)
 --   * TITLE colour: the player attribute "TitleColor" (TitleService colours the title's words with it)
+--   * AURA colours and ALTER tints are off sale since 23 Oct (owner): the ones bought keep working.
 --   * AURA colours: AuraService puts "<effect>@<colour>" on the character for the aura worn (AuraVFX turns the effect's
 --     colours to that hue)
 --   * ALTER tints: the player attribute "AlterTint" for the alter worn (BodyService.PublishData; MuscleRig tints the skin)
@@ -14,7 +15,6 @@ local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local Config = ReplicatedStorage.Shared.Config
 local Style = require(Config.Style)
 local Auras = require(Config.Auras)
-local Alters = require(Config.Alters)
 local Theme = require(ReplicatedStorage.Shared.UI.Theme)
 local PlayerData = require(script.Parent.PlayerData)
 local ActionService = require(script.Parent.ActionService)
@@ -33,26 +33,9 @@ local function stateOf(data)
 	return state
 end
 
--- the auras and alters this player has (their colour variants can be bought / worn)
-local function aurasOf(player): { any }
-	local AuraService = require(script.Parent.AuraService)
-	local list = {}
-	for _, aura in ipairs(Auras.List) do
-		if AuraService.Has(player, aura.id) then table.insert(list, aura) end
-	end
-	return list
-end
-local function altersOf(data): { any }
-	local list = {}
-	local highest = Alters.State(data).highest or 0
-	for n = 1, highest do
-		local alter = Alters.Get(n)
-		if alter and Style.AlterVariants[alter.id] then table.insert(list, alter) end
-	end
-	return list
-end
-local function itemFor(player, data, id: string)
-	for _, item in ipairs(Style.Items(aurasOf(player), altersOf(data))) do
+-- (owner, 23 Oct) only the 15 on sale can be bought (no aura / alter colours any more)
+local function itemFor(id: string)
+	for _, item in ipairs(Style.Items()) do
 		if item.id == id then return item end
 	end
 	return nil
@@ -82,7 +65,7 @@ local function nameTag(player)
 		New("UIStroke", { Color = Theme.Colors.Shadow, Thickness = 1.5, Transparency = 0.3 }),
 	})
 	if #colors > 1 then
-		New("UIGradient", { Color = ColorSequence.new(colors[1], colors[2]), Parent = text })
+		New("UIGradient", { Color = Style.Sequence(colors), Parent = text })
 	end
 end
 
@@ -133,7 +116,7 @@ function StyleService.Buy(player, id): (boolean, string?)
 	if not data or type(id) ~= "string" then return false end
 	local state = stateOf(data)
 	if state.owned[id] then return false end
-	local item = itemFor(player, data, id)
+	local item = itemFor(id)
 	if not item then return false end
 	if not PlayerData.SpendCoins(player, item.price) then return false, "Not enough coins: " .. item.name .. " costs " .. item.price .. "." end
 	state.owned[id] = true

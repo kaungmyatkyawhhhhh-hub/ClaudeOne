@@ -116,7 +116,7 @@ local function updateTag(player)
 	}, {
 		New("UITextSizeConstraint", { MinTextSize = Theme.TextSize.Small, MaxTextSize = 48 }),
 		New("UIStroke", { Color = Theme.Colors.Shadow, Thickness = 1, Transparency = 0.45 }), -- subtle, only for readability
-		if custom and #custom > 1 then New("UIGradient", { Color = ColorSequence.new(custom[1], custom[2]) }) else nil,
+		if custom and #custom > 1 then New("UIGradient", { Color = require(game:GetService("ReplicatedStorage").Shared.Config.Style).Sequence(custom) }) else nil,
 	})
 	tag:SetAttribute("CustomColor", custom ~= nil or nil)
 end

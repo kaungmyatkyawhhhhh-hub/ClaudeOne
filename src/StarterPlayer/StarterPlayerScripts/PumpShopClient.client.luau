@@ -157,7 +157,11 @@ for _, gear in ipairs(PumpShop.Gear) do
 	end
 end
 -- (prompt 61) STYLE: every item for the auras you have and the alters you reached
-local STYLE_KIND = { Name = "NAME TAG", Title = "TITLE", Aura = "AURA", Alter = "ALTER" }
+-- (owner, 23 Oct) 15 on sale (8 NAME TAG + 7 TITLE COLOUR, Config/Style); off sale ones you own are listed after them so
+-- you can still wear them (aura / alter colours: only the ones you bought). A tile shows your own name (or your title) in
+-- that colour, a gradient sliding slowly; a small label starts each section of the row.
+local STYLE_KIND = { Name = "NAME TAG", Title = "TITLE COLOUR", Aura = "AURA COLOUR", Alter = "ALTER TINT" }
+local Titles = require(Shared.Config.Titles)
 local STYLE_ICON = { Name = "sparkles", Title = "medal", Alter = "biceps-flexed" }
 local function styleState()
 	local state = data().style
@@ -177,7 +181,8 @@ local function styleEntries()
 		if alter then table.insert(alters, alter) end
 	end
 	local list = {}
-	for _, item in ipairs(Style.Items(auras, alters)) do
+	local owned_ = styleState().owned
+	for _, item in ipairs(Style.Items(auras, alters, if type(owned_) == "table" then owned_ else {})) do
 		table.insert(list, { key = item.id, id = item.id, section = "Style", style = item, name = item.name, color = Color3.fromHex(item.colors[1]),
 			icon = if item.aura then (item.aura.Icon or "sparkles") else STYLE_ICON[item.kind], price = function() return item.price end })
 	end
@@ -191,21 +196,6 @@ local function styleWorn(item): boolean
 	if item.kind == "Aura" then return type(state.aura) == "table" and state.aura[item.aura.id] == item.variant end
 	if item.kind == "Alter" then return type(state.alter) == "table" and state.alter[item.alter.id] == item.variant end
 	return false
-end
-local tryToken = 0
-local function tryStyle(item)
-	tryToken += 1
-	local mine = tryToken
-	if item.kind == "Aura" then
-		player:SetAttribute("AuraPreview", item.aura.vfx .. "@" .. item.variant)
-	elseif item.kind == "Alter" then
-		player:SetAttribute("AlterTintPreview", Color3.fromHex(Style.AlterTints[item.variant]))
-	end
-	task.delay(10, function()
-		if tryToken ~= mine then return end
-		player:SetAttribute("AuraPreview", nil)
-		player:SetAttribute("AlterTintPreview", nil)
-	end)
 end
 
 table.insert(entries.DnaLab, { key = "DnaToken", section = "DnaLab", name = "DNA Token", icon = DNA_ART, color = Colors.Gold,
@@ -530,15 +520,15 @@ local function showStrip(entry)
 			end, 1, level.price)
 		end
 	elseif entry.section == "Style" then
-		-- (prompt 61) the preview in its colour, TRY (aura / alter), BUY; owned: WEAR / TAKE OFF
+		-- (prompt 61) the preview in its colour, BUY; owned: WEAR / TAKE OFF
 		local item = entry.style
 		local hex = "#" .. Color3.fromHex(item.colors[1]):ToHex()
 		local function painted(text) return '<font color="' .. hex .. '">' .. text .. "</font>" end
 		stripLine.RichText = true
 		if item.kind == "Name" then
-			stripLine.Text = "Your name over your head: " .. painted(player.DisplayName) .. (if #item.colors > 1 then " (a two-colour gradient)" else "")
+			stripLine.Text = "Your name over your head: " .. painted(player.DisplayName) .. (if #item.colors > 1 then " (a gradient)" else "")
 		elseif item.kind == "Title" then
-			stripLine.Text = "Your title's words in " .. painted(item.variant) .. (if #item.colors > 1 then " (a two-colour gradient)" else "") .. "."
+			stripLine.Text = "Your title's words in " .. painted(item.variant) .. (if #item.colors > 1 then " (a gradient)" else "") .. "."
 		elseif item.kind == "Aura" then
 			stripLine.Text = "Your " .. item.aura.name .. " aura in " .. painted(item.variant) .. ". Same effect, new colour."
 		else
@@ -554,9 +544,6 @@ local function showStrip(entry)
 				addButton("Gold", "Wear", 150, function() wearIt(item.variant) end, 1)
 			end
 		else
-			if item.kind == "Aura" or item.kind == "Alter" then
-				addButton("Quiet", "Try", 100, function() tryStyle(item) end, 1)
-			end
 			addButton(if afford then "Green" else "Disabled", "Buy", 170, function() buy(entry, "Style", entry.key) end, 2, item.price)
 		end
 	elseif entry.product then
@@ -614,6 +601,7 @@ end
 
 -- the Champion gear's border: a gold highlight runs round it
 local spinning = {}
+local sliding = {} -- (owner, 23 Oct) a STYLE gradient on a tile slides slowly from side to side
 task.spawn(function()
 	while true do
 		task.wait(1 / 30)
@@ -621,9 +609,37 @@ task.spawn(function()
 			for gradient in pairs(spinning) do
 				if gradient.Parent then gradient.Rotation = (os.clock() * 90) % 360 else spinning[gradient] = nil end
 			end
+			local x = 0.35 * math.sin(os.clock() * 0.9)
+			for gradient in pairs(sliding) do
+				if gradient.Parent then gradient.Offset = Vector2.new(x, 0) else sliding[gradient] = nil end
+			end
 		end
 	end
 end)
+-- (owner, 23 Oct) a STYLE tile's art: your name (a title colour: your title) written big in that colour
+local function styleArt(tile: GuiObject, item)
+	local words = player.DisplayName
+	if item.kind == "Title" then
+		local titles = data().titles
+		local title = type(titles) == "table" and titles.equipped and Titles.ById[titles.equipped]
+		words = if title then title.name else "YOUR TITLE"
+	end
+	local colors = Style.Decode(table.concat(item.colors, ",")) or { Color3.new(1, 1, 1) }
+	local text = Kit.Text({ Name = "Art", Text = string.upper(words), Font = "Chunky", TextSize = 24, AnchorPoint = Vector2.new(0.5, 0.5), Position = UDim2.new(0.5, 0, 0, 36),
+		Size = UDim2.new(1, -14, 0, 40), TextColor3 = if #colors > 1 then Color3.new(1, 1, 1) else colors[1], ZIndex = 4, Parent = tile })
+	text.TextWrapped = true
+	Kit.Fit(text, 24, 11, 2)
+	if #colors > 1 then
+		sliding[New("UIGradient", { Color = Style.Sequence(colors), Parent = text })] = true
+	end
+end
+-- (owner, 23 Oct) a small section label in the STYLE row ("NAME TAG", "TITLE COLOUR"), written upwards
+local function sectionLabel(text: string, order: number)
+	local cell = New("Frame", { Name = "Label_" .. text, LayoutOrder = order, BackgroundTransparency = 1, Size = UDim2.fromOffset(20, TILE_H), Parent = grid })
+	local label = Kit.Text({ Name = "Text", Text = text, Font = "Chunky", TextSize = 12, TextColor3 = Colors.Muted, AnchorPoint = Vector2.new(0.5, 0.5),
+		Position = UDim2.fromScale(0.5, 0.5), Size = UDim2.fromOffset(TILE_H, 18), Rotation = -90, Parent = cell })
+	label.TextWrapped = false
+end
 
 -- (prompt 54, 23 Oct) the ALTERS tab works like the Inventory's Looks > Alters (Shared/UI/AltersPanel, shop mode): the
 -- tiles on the left (the path, bicep icons, ??? undiscovered), the picked one in a detail panel on the right with ALTER
@@ -716,6 +732,7 @@ function refresh()
 	end
 	table.clear(tilesByKey)
 	table.clear(spinning)
+	table.clear(sliding)
 	gearRows.Visible = false
 	local open = sectionOpen(tab)
 	lockNote.Visible = not open
@@ -792,12 +809,19 @@ function refresh()
 		for _, entry in ipairs(list) do entry.id = entry.key end
 	end
 	if not picked[tab] and list[1] then picked[tab] = list[1].key end
+	local lastKind = nil
 	for order, entry in ipairs(list) do
+		-- (owner, 23 Oct) STYLE: a label where each kind starts; off sale ones you own: "YOURS"
+		if entry.section == "Style" then
+			local kind = if entry.style.onSale then entry.style.kind else "Yours"
+			if kind ~= lastKind then sectionLabel(if kind == "Yours" then "YOURS" else STYLE_KIND[kind] or "", order * 2 - 1) end
+			lastKind = kind
+		end
 		local color = tileColor(entry)
 		local champion = false -- (prompt 59: no Champion gear on sale; its running gold border is kept for later)
 		local isPicked = picked[tab] == entry.key
 		-- (a cell per tile: the picked tile's glow sits beside it, outside the list layout)
-		local cell = New("Frame", { Name = entry.key, LayoutOrder = order, BackgroundTransparency = 1, Size = UDim2.fromOffset(TILE_W, TILE_H), Parent = grid })
+		local cell = New("Frame", { Name = entry.key, LayoutOrder = order * 2, BackgroundTransparency = 1, Size = UDim2.fromOffset(TILE_W, TILE_H), Parent = grid })
 		local tile = New("TextButton", { Name = "Tile", Text = "", AutoButtonColor = false, BackgroundColor3 = color:Lerp(Color3.new(0, 0, 0), 0.85), Size = UDim2.fromScale(1, 1),
 			ZIndex = 2, Parent = cell }, { New("UICorner", { CornerRadius = UDim.new(0, 12) }) })
 		local border = New("UIStroke", { Name = "Border", Color = if isPicked then Colors.Gold else color, Thickness = if isPicked then 2 else 1.5,
@@ -810,16 +834,20 @@ function refresh()
 			New("UICorner", { CornerRadius = UDim.new(0, 12) }),
 			New("UIGradient", { Rotation = 90, Transparency = NumberSequence.new(1, 0.25) }),
 		})
-		-- the icon, centred on a glow in its colour
+		-- the icon, centred on a glow in its colour (a name / title colour: your name or title written in it)
 		AlterFX.Image(tile, "ember", { Name = "Glow", AnchorPoint = Vector2.new(0.5, 0.5), Position = UDim2.new(0.5, 0, 0, 36), Size = UDim2.fromOffset(96, 96),
-			ImageColor3 = color, ImageTransparency = 0.4, ZIndex = 2 })
-		local holder = New("Frame", { Name = "Icon", BackgroundTransparency = 1, AnchorPoint = Vector2.new(0.5, 0.5), Position = UDim2.new(0.5, 0, 0, 36), Size = UDim2.fromOffset(52, 52),
-			ZIndex = 3, Parent = tile })
-		local icon = iconOf(entry)
-		if string.sub(icon, 1, 13) == "rbxassetid://" then
-			New("ImageLabel", { BackgroundTransparency = 1, Image = icon, ScaleType = Enum.ScaleType.Fit, Size = UDim2.fromScale(1, 1), ZIndex = 3, Parent = holder })
+			ImageColor3 = color, ImageTransparency = if entry.section == "Style" then 0.7 else 0.4, ZIndex = 2 })
+		if entry.section == "Style" and (entry.style.kind == "Name" or entry.style.kind == "Title") then
+			styleArt(tile, entry.style)
 		else
-			Kit.IconTile(icon, color, 52, { Size = UDim2.fromScale(1, 1), ZIndex = 3, Parent = holder })
+			local holder = New("Frame", { Name = "Icon", BackgroundTransparency = 1, AnchorPoint = Vector2.new(0.5, 0.5), Position = UDim2.new(0.5, 0, 0, 36), Size = UDim2.fromOffset(52, 52),
+				ZIndex = 3, Parent = tile })
+			local icon = iconOf(entry)
+			if string.sub(icon, 1, 13) == "rbxassetid://" then
+				New("ImageLabel", { BackgroundTransparency = 1, Image = icon, ScaleType = Enum.ScaleType.Fit, Size = UDim2.fromScale(1, 1), ZIndex = 3, Parent = holder })
+			else
+				Kit.IconTile(icon, color, 52, { Size = UDim2.fromScale(1, 1), ZIndex = 3, Parent = holder })
+			end
 		end
 		-- the name: white, stroked, one line (it shrinks to fit)
 		local name = Kit.Text({ Name = "Name", Text = string.upper(entry.name), Font = "Chunky", TextSize = 16, AnchorPoint = Vector2.new(0.5, 0), Position = UDim2.new(0.5, 0, 0, 64),

@@ -294,6 +294,11 @@ local function step()
 	elseif more then
 		more.Visible = false
 	end
+	-- (owner, 23 Oct) the row reserves its corner: the player attribute "BoostRowHeight" = how far up from the bottom of the
+	-- screen it reaches (Kit.Root px, the lift and the "x2" tags included; 0 = no tiles). MachineHud stacks STOP above it.
+	local count = shownCount + (if hidden > 0 then 1 else 0)
+	local height = if row.Visible and count > 0 then 10 + TILE + TIMER_H + 4 * SIZE else 0
+	if player:GetAttribute("BoostRowHeight") ~= height then player:SetAttribute("BoostRowHeight", height) end
 end
 
 -- hidden on the title screen; shown after PLAY

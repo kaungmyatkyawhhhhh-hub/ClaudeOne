@@ -110,4 +110,16 @@ function UIBus.AfterTutorial(fn)
 	end)
 end
 
+-- Studio test hook (only in Studio, players can never trigger it): Workspace attribute TestUIBus = "OpenInventory:Auras"
+-- fires UIBus.OpenInventory with "Auras" (any signal, one optional text argument; the clicks of a test can miss)
+if game:GetService("RunService"):IsStudio() then
+	workspace:GetAttributeChangedSignal("TestUIBus"):Connect(function()
+		local value = workspace:GetAttribute("TestUIBus")
+		if type(value) ~= "string" or value == "" then return end
+		local name, arg = string.match(value, "^([%w_]+):?(.*)$")
+		local target = name and UIBus[name]
+		if type(target) == "table" and target.Fire then target:Fire(if arg ~= "" then arg else nil) end
+	end)
+end
+
 return UIBus

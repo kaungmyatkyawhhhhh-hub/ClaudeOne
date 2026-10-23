@@ -354,14 +354,22 @@ function MachineHud.Build()
 		keepLook(scale)
 		panel.Position = UDim2.new(1, -right, 0, top)
 	end
+	-- (owner, 23 Oct) STOP (and EXERCISE above it) stack fully above the bottom-left boost row with a 10 px gap
+	-- (ActiveBoostsClient's "BoostRowHeight": 0 = no boosts running)
+	local function stopBottom(): number
+		local boosts = Players.LocalPlayer:GetAttribute("BoostRowHeight")
+		local reserve = if type(boosts) == "number" and boosts > 0 then boosts + 10 else 0
+		return math.max(placed.stopBottom, reserve)
+	end
 	local function apply()
 		if not placed then return end
 		rep.Position = UDim2.new(1, -placed.repRight, 1, -placed.repBottom)
 		local repCorner = rep:FindFirstChildOfClass("UICorner")
 		if repCorner then repCorner.CornerRadius = UDim.new(0, MachineHud.StackCorner) end
 		pump.Position = UDim2.new(1, -placed.repRight, 1, -(placed.repBottom + MachineHud.RepSize.Y + MachineHud.Gap))
-		hud.exitButton.Position = UDim2.new(0, corner, 1, -placed.stopBottom)
-		hud.changeButton.Position = UDim2.new(0, corner, 1, -(placed.stopBottom + 48))
+		local bottom = stopBottom()
+		hud.exitButton.Position = UDim2.new(0, corner, 1, -bottom)
+		hud.changeButton.Position = UDim2.new(0, corner, 1, -(bottom + 48))
 		placePanel()
 	end
 	-- the first measurement from the real controls (on a PC: the corners) is kept for good
@@ -385,6 +393,7 @@ function MachineHud.Build()
 		end
 	end
 	hud.placeForInput = placeForInput
+	Players.LocalPlayer:GetAttributeChangedSignal("BoostRowHeight"):Connect(function() if placed then apply() end end)
 	-- (owner, 23 Oct) while the controls show, the card checks its spot every frame (AUTO TRAIN, the needs line and the
 	-- controls settle a moment after you sit down; unchanged values cost nothing)
 	game:GetService("RunService").Heartbeat:Connect(function()

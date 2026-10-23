@@ -169,17 +169,24 @@ end
 -- "RARE · AURA" small and gray (the rarity in its colour), a graphite button (EQUIP / EQUIPPED: thin gold outline and
 -- gold words; a price or the pass when it's for sale), and a slim SHOW EFFECT switch in its colour. A "???" aura: the same
 -- panel, its theme dark and still, the orb a silhouette, "???".
+-- (owner, 23 Oct, after prompt 61) The tiles in the premium style of the Alters tiles: 4 columns filling the room left of the
+-- detail panel (the rest scrolls), each aura's own dark themed background with faint rings, a thin outline in its rarity
+-- colour, the orb centred on a soft glow, the name white and stroked, the rarity word small in its colour under it (an aura
+-- you don't have: its unlock condition as a slim gray line; "???" undiscovered). No buttons on the tiles: a tap picks it,
+-- EQUIP / EQUIPPED is in the detail panel. Equipped = a thin gold outline and a small EQUIPPED tag; a tiny dot in the
+-- corner = the STYLE colour it wears. The colours themselves (only the ones you already own: they're off sale) are small
+-- round swatches in the detail panel (Shared/UI/StyleChips): a tap previews it, the button wears it.
 ------------------------------------------------------------------------
 local AURA = { tiles = {}, picked = Auras.List[1].id }
 local DETAIL_W = 196
-local AURA_TILE = Vector2.new(146, 92)
+local AURA_TILE = Vector2.new(146, 112) -- (the width is a quarter of the grid: 4 columns)
 AURA.frame = New("Frame", { Name = "Auras", BackgroundTransparency = 1, Size = UDim2.fromScale(1, 1), Visible = false, Parent = modal.body }) -- (prompt 39b: its own tab)
 AURA.header = Kit.GoldText(Kit.Text({ Name = "Owned", Text = "", Font = "Chunky", TextSize = 17, Size = UDim2.new(1, -(DETAIL_W + 10), 0, 20),
 	TextXAlignment = Enum.TextXAlignment.Left, Parent = AURA.frame }))
 AURA.grid = New("ScrollingFrame", { Name = "Grid", Position = UDim2.fromOffset(0, 24), Size = UDim2.new(1, -(DETAIL_W + 10), 1, -24), BackgroundTransparency = 1,
 	BorderSizePixel = 0, ScrollBarThickness = 4, ScrollBarImageColor3 = Colors.Muted, AutomaticCanvasSize = Enum.AutomaticSize.Y, CanvasSize = UDim2.new(),
 	ScrollingDirection = Enum.ScrollingDirection.Y, Parent = AURA.frame }, {
-	New("UIGridLayout", { CellSize = UDim2.fromOffset(AURA_TILE.X, AURA_TILE.Y), CellPadding = UDim2.fromOffset(8, 10), SortOrder = Enum.SortOrder.LayoutOrder }),
+	New("UIGridLayout", { CellSize = UDim2.new(0.25, -8, 0, AURA_TILE.Y), CellPadding = UDim2.fromOffset(8, 8), SortOrder = Enum.SortOrder.LayoutOrder }),
 	New("UIPadding", { PaddingTop = UDim.new(0, 5), PaddingLeft = UDim.new(0, 5), PaddingBottom = UDim.new(0, 6), PaddingRight = UDim.new(0, 5) }),
 })
 -- the detail panel (right): the ALTERS detail's twin (AltersPanel: 196 wide, the same rows)
@@ -215,9 +222,10 @@ AURA.bigRarity = Kit.Text({ Name = "Rarity", Text = "", Font = "Chunky", TextSiz
 -- how to get it (not yours yet)
 AURA.bigHow = Kit.Fit(Kit.Text({ Name = "How", Text = "", Font = "Strong", TextSize = 11, TextColor3 = Color3.fromHex("#D9D2D5"), TextWrapped = true,
 	Position = UDim2.fromOffset(PAD, 131), Size = UDim2.new(1, -2 * PAD, 0, 26), ZIndex = 6, Parent = AURA.detail }), 11, 9, 2)
--- (prompt 61) the aura's STYLE colours (ORIGINAL + two), where "how to get it" is for an aura you don't have yet
-AURA.chips = require(Shared.UI.StyleChips).New(AURA.detail, { AnchorPoint = Vector2.new(0.5, 0), Position = UDim2.new(0.5, 0, 0, 131),
-	Size = UDim2.new(1, -2 * PAD, 0, 26), ZIndex = 6 })
+-- (prompt 61; owner 23 Oct) the aura's STYLE colours you own, as round swatches under the benefit pill (in the room "how to
+-- get it" uses for an aura you don't have); a tap previews it, the button wears it
+AURA.chips = require(Shared.UI.StyleChips).New(AURA.detail, { AnchorPoint = Vector2.new(0.5, 0), Position = UDim2.new(0.5, 0, 0, 129),
+	Size = UDim2.new(1, -2 * PAD, 0, 30), ZIndex = 6 }, { preview = function() AURA.preview() end, changed = function() refresh() end })
 -- the button: graphite with a thin outline (like the alters' WORN); EQUIPPED = a thin gold outline and gold words
 AURA.action = New("TextButton", { Name = "Action", Text = "", AutoButtonColor = false, BackgroundColor3 = Color3.fromHex("#232027"), AnchorPoint = Vector2.new(0.5, 1),
 	Position = UDim2.new(0.5, 0, 1, -38), Size = UDim2.new(1, -20, 0, 30), ZIndex = 6, Parent = AURA.detail }, {
@@ -324,6 +332,14 @@ function AURA.discovered(): { string }
 end
 function AURA.act(aura, button)
 	local kind = AURA.state(aura)
+	-- (owner, 23 Oct) a STYLE colour picked in the swatches that isn't the one worn: wear it (and equip the aura)
+	local chips = AURA.chips
+	local colourChange = chips and chips.frame.Visible and chips:Selected() ~= chips:Worn()
+	if colourChange then
+		Remotes.PlayerAction:FireServer("WearStyle", { kind = "Aura", target = aura.id, variant = chips:Selected() })
+		if kind == "equip" then Remotes.PlayerAction:FireServer("AuraEquip", aura.id) end
+		return
+	end
 	if kind == "equip" then
 		Remotes.PlayerAction:FireServer("AuraEquip", aura.id)
 	elseif kind == "equipped" then
@@ -351,27 +367,43 @@ function AURA.act(aura, button)
 end
 
 local RARITY_TABLE = Theme.RarityColor
+local PremiumKit = require(Shared.UI.PremiumKit)
+-- an aura's own colour (a near-black first colour: its brighter one)
+function AURA.colorOf(aura): Color3
+	local c = aura.colors[1]
+	local _, _, value = c:ToHSV()
+	return if value < 0.25 then aura.colors[2] or c else c
+end
 for index, aura in ipairs(Auras.List) do
 	local color = RARITY_TABLE[aura.rarity] or RARITY_TABLE.Common
-	local tile, api = Kit.RewardTile(color, { Name = aura.id, LayoutOrder = index, Parent = AURA.grid })
-	-- wide: the orb on the left, the words on the right
-	api.art.Image = aura.Icon
-	api.art.AnchorPoint = Vector2.new(0, 0.5)
-	api.art.Position = UDim2.new(0, 4, 0.5, 0)
-	api.art.Size = UDim2.fromOffset(66, 66)
-	for _, label in ipairs({ api.name, api.sub }) do
-		label.AnchorPoint = Vector2.new(0, 0)
-		label.Size = UDim2.new(1, -78, 0, 17)
-	end
-	api.name.Position = UDim2.fromOffset(72, 10)
-	api.name.Size = UDim2.new(1, -98, 0, 17) -- (clear of the check in the corner)
-	api.name.Text = string.upper(aura.name)
-	api.sub.Position = UDim2.fromOffset(72, 32)
-	api.sub.Size = UDim2.new(1, -78, 0, 13)
-	api.sub.Text = string.upper(aura.rarity)
-	api.sub.Visible = true
-	api.pill.AnchorPoint = Vector2.new(0, 1)
-	api.pill.Position = UDim2.new(0, 72, 1, -10)
+	local own = AURA.colorOf(aura)
+	local tile = New("TextButton", { Name = aura.id, LayoutOrder = index, Text = "", AutoButtonColor = false, BackgroundColor3 = own:Lerp(Color3.new(0, 0, 0), 0.86),
+		ZIndex = 2, Parent = AURA.grid }, { New("UICorner", { CornerRadius = UDim.new(0, 10) }) })
+	local border = New("UIStroke", { Name = "Border", Color = color, Thickness = 1.5, ApplyStrokeMode = Enum.ApplyStrokeMode.Border, Parent = tile })
+	PremiumKit.ThemedBackground(tile, 10, UDim2.new(0.5, 0, 0, 40), { 48, 80 })(own)
+	New("Frame", { Name = "Shade", BackgroundColor3 = Color3.new(0, 0, 0), AnchorPoint = Vector2.new(0, 1), Position = UDim2.fromScale(0, 1), Size = UDim2.fromScale(1, 0.5),
+		ZIndex = 1, Parent = tile }, { New("UICorner", { CornerRadius = UDim.new(0, 10) }), New("UIGradient", { Rotation = 90, Transparency = NumberSequence.new(1, 0.25) }) })
+	local glow = AlterFX.Image(tile, "ember", { Name = "Glow", AnchorPoint = Vector2.new(0.5, 0.5), Position = UDim2.new(0.5, 0, 0, 40), Size = UDim2.fromOffset(84, 84),
+		ImageColor3 = own, ImageTransparency = 0.45, ZIndex = 2 })
+	local orb = New("ImageLabel", { Name = "Orb", BackgroundTransparency = 1, Image = aura.Icon, ScaleType = Enum.ScaleType.Fit, AnchorPoint = Vector2.new(0.5, 0.5),
+		Position = UDim2.new(0.5, 0, 0, 40), Size = UDim2.fromOffset(58, 58), ZIndex = 3, Parent = tile })
+	local name = Kit.Text({ Name = "Name", Text = string.upper(aura.name), Font = "Chunky", TextSize = 14, AnchorPoint = Vector2.new(0.5, 1), Position = UDim2.new(0.5, 0, 1, -21),
+		Size = UDim2.new(1, -10, 0, 16), ZIndex = 4, Parent = tile })
+	name.TextWrapped = false
+	Kit.Fit(name, 14, 9)
+	local sub = Kit.Text({ Name = "Sub", Text = "", Font = "Chunky", TextSize = 10, AnchorPoint = Vector2.new(0.5, 1), Position = UDim2.new(0.5, 0, 1, -6),
+		Size = UDim2.new(1, -10, 0, 13), ZIndex = 4, Parent = tile })
+	sub.TextWrapped = false
+	Kit.Fit(sub, 10, 8)
+	-- EQUIPPED: a small tag (top right); the STYLE colour worn: a tiny dot (top left)
+	local tag = New("Frame", { Name = "Equipped", BackgroundColor3 = Color3.fromHex("#141317"), AnchorPoint = Vector2.new(1, 0), Position = UDim2.new(1, -4, 0, 4),
+		Size = UDim2.fromOffset(58, 14), Visible = false, ZIndex = 5, Parent = tile }, {
+		New("UICorner", { CornerRadius = UDim.new(1, 0) }),
+		New("UIStroke", { Color = Colors.Gold, Thickness = 1, ApplyStrokeMode = Enum.ApplyStrokeMode.Border }),
+	})
+	Kit.Text({ Name = "Text", Text = "EQUIPPED", Font = "Chunky", TextSize = 8, TextColor3 = Colors.Gold, Size = UDim2.fromScale(1, 1), ZIndex = 6, Parent = tag })
+	local dot = New("Frame", { Name = "ColourDot", BackgroundColor3 = Color3.new(1, 1, 1), Position = UDim2.fromOffset(6, 6), Size = UDim2.fromOffset(8, 8), Visible = false,
+		ZIndex = 5, Parent = tile }, { New("UICorner", { CornerRadius = UDim.new(1, 0) }), New("UIStroke", { Color = Color3.new(0, 0, 0), Thickness = 1 }) })
 	-- "???": a small spark going round an empty dark ring
 	local ring = New("Frame", { Name = "Mystery", BackgroundColor3 = Color3.fromHex("#0A090B"), AnchorPoint = Vector2.new(0.5, 0.5), Position = UDim2.new(0.5, 0, 0.42, 0),
 		Size = UDim2.fromOffset(50, 50), Visible = false, ZIndex = 3, Parent = tile }, {
@@ -382,12 +414,13 @@ for index, aura in ipairs(Auras.List) do
 		{ New("UICorner", { CornerRadius = UDim.new(1, 0) }) })
 	local question = Kit.Text({ Name = "Question", Text = "???", Font = "Chunky", TextSize = 15, TextColor3 = color, AnchorPoint = Vector2.new(0.5, 1),
 		Position = UDim2.new(0.5, 0, 1, -6), Size = UDim2.new(1, -10, 0, 17), Visible = false, ZIndex = 3, Parent = tile })
-	AURA.tiles[aura.id] = { tile = tile, api = api, aura = aura, ring = ring, spark = spark, question = question, overlay = Discovery.Overlay(tile) }
+	AURA.tiles[aura.id] = { tile = tile, border = border, glow = glow, orb = orb, name = name, sub = sub, tag = tag, dot = dot, rarity = color, aura = aura,
+		ring = ring, spark = spark, question = question, overlay = Discovery.Overlay(tile) }
 	tile.Activated:Connect(function()
 		local changed = AURA.picked ~= aura.id
 		AURA.picked = aura.id
 		refresh()
-		if changed then Kit.DetailIn(AURA.detail) end -- (prompt 54; the bounce + sound: Kit.RewardTile)
+		Kit.SelectFeedback(tile, if changed then AURA.detail else nil) -- (bounce + select sound; a new aura: the detail slides in)
 	end)
 end
 -- the sparks go round (only while the tab is open)
@@ -420,19 +453,32 @@ function AURA.refresh()
 		t.question.Visible = false
 		t.overlay.Visible = hidden
 		if fresh[aura.id] then Discovery.Reveal(t.tile, t.overlay) end
-		t.api.art.Visible = not hidden
-		t.api.name.Visible = not hidden
-		t.api.sub.Visible = not hidden
-		if look == "owned" then
-			t.api:SetState(if kind == "equipped" then "equipped" else "normal")
-			if kind == "equipped" then t.api:SetPill("Equipped", Color3.fromHex("#55525A")) else t.api:SetPill("Equip", Colors.Green) end
+		t.orb.Visible, t.glow.Visible, t.name.Visible = not hidden, not hidden, not hidden
+		local owned = look == "owned"
+		t.orb.ImageColor3 = if owned then Color3.new(1, 1, 1) else Color3.fromRGB(140, 138, 146)
+		t.glow.ImageTransparency = if owned then 0.45 else 0.75
+		-- under the name: the rarity in its colour, or (not yours) how to get it in a slim gray line
+		t.sub.Visible = not hidden
+		if owned then
+			t.sub.Text = string.upper(aura.rarity)
+			t.sub.TextColor3 = t.rarity
 		else
-			t.api:SetState("locked")
-			if hidden then t.api.pill.Visible = false else t.api:SetRequirement(if kind == "coins" or kind == "pass" then text else aura.short) end
+			t.sub.Text = string.upper(if kind == "coins" then text .. " coins" elseif kind == "pass" then text else aura.short or aura.how or "")
+			t.sub.TextColor3 = Color3.fromHex("#9A97A0")
 		end
-		t.api.pill.Size = UDim2.new(1, -80, 0, 22)
+		local equipped = kind == "equipped"
+		local pickedNow = AURA.picked == aura.id
+		t.tag.Visible = equipped
+		t.border.Color = if equipped or pickedNow then Colors.Gold elseif owned then t.rarity else Color3.fromHex("#3A3640")
+		t.border.Thickness = if pickedNow then 2 else 1.5
+		-- the STYLE colour it wears (owner, 23 Oct: only a tiny dot on the grid)
+		local styleData = ClientData.Get().style
+		local worn = owned and type(styleData) == "table" and type(styleData.aura) == "table" and styleData.aura[aura.id] or nil
+		local hue = worn and require(Shared.Config.Style).AuraHues[worn]
+		t.dot.Visible = hue ~= nil
+		if hue then t.dot.BackgroundColor3 = Color3.fromHex(hue.color) end
 		local pickScale = t.tile:FindFirstChild("PickScale") or New("UIScale", { Name = "PickScale", Parent = t.tile })
-		pickScale.Scale = if AURA.picked == aura.id then 1 else 0.97
+		pickScale.Scale = if pickedNow then 1 else 0.97
 	end
 	local aura = Auras.ById[AURA.picked] or Auras.List[1]
 	local look = looks[aura.id]
@@ -468,15 +514,19 @@ function AURA.refresh()
 	AURA.bigHow.Position = UDim2.fromOffset(PAD, if AURA.benefit.Visible then 131 else 109)
 	AURA.bigHow.Visible = look ~= "owned" and kind ~= "coins" and kind ~= "pass" -- (for sale: the button says it)
 	AURA.bigHow.Text = if hidden then "Keep playing to find it." else aura.how
-	-- (prompt 61) an aura you have: its colours
+	-- (prompt 61; owner 23 Oct) an aura you have: the STYLE colours you own, as swatches under the rarity line
 	local Style = require(Shared.Config.Style)
-	AURA.chips.frame.Position = UDim2.new(0.5, 0, 0, if AURA.benefit.Visible then 131 else 109)
+	AURA.chips.frame.Position = UDim2.new(0.5, 0, 0, if AURA.benefit.Visible then 129 else 107)
 	AURA.chips:Set(if look == "owned" and AURA.has(aura) then "Aura" else nil, aura.id, Style.AuraColors(aura), function(name)
 		return Style.AuraHues[name] and Style.AuraHues[name].color or "#FFFFFF"
-	end)
-	-- the button: EQUIP / EQUIPPED (gold) / the price / the pass / LOCKED
+	end, "#" .. color:ToHex())
+	-- the button: EQUIP / EQUIPPED (gold) / the price / the pass / LOCKED; a picked colour not worn yet: WEAR <COLOUR>
 	AURA.action.Visible = not hidden
 	local words = if kind == "coins" then text .. " coins" else text
+	if AURA.chips.frame.Visible and AURA.chips:Selected() ~= AURA.chips:Worn() then
+		words = "Wear " .. AURA.chips:Name(AURA.chips:Selected())
+		kind = "equip"
+	end
 	AURA.actionText.Text = string.upper(words)
 	AURA.actionText.TextColor3 = if kind == "equipped" then Colors.Gold elseif kind == "locked" then Colors.Faint else Colors.Text
 	AURA.actionEdge.Color = if kind == "equipped" then Colors.Gold else Color3.fromHex("#4A4652")
@@ -493,6 +543,10 @@ end
 function AURA.preview()
 	local aura = modal.isOpen() and tab == "Auras" and Auras.ById[AURA.picked] or nil
 	local want = aura and aura.vfx or nil
+	-- (prompt 61) the colour picked in the swatches (or the one it wears)
+	local chips = AURA.chips
+	local variant = if aura and chips and chips.frame.Visible then chips:Selected() else nil
+	if want and variant then want = want .. "@" .. variant end
 	if player:GetAttribute("AuraPreview") ~= want then player:SetAttribute("AuraPreview", want) end
 end
 modal.gui:GetPropertyChangedSignal("Enabled"):Connect(function() task.defer(AURA.preview) end)

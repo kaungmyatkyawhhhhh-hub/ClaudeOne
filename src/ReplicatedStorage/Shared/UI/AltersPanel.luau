@@ -137,13 +137,13 @@ function AltersPanel.Build(parent: Instance, opts: { [string]: any }?)
 			New("UIStroke", { Color = Colors.Gold, Thickness = 1.5, ApplyStrokeMode = Enum.ApplyStrokeMode.Border }),
 		})
 		Kit.Text({ Name = "Text", Text = "NEXT ALTER", Font = "Chunky", TextSize = 11, Size = UDim2.fromScale(1, 1), ZIndex = 5, Parent = nextPill })
-		local check = New("Frame", { Name = "Check", AnchorPoint = Vector2.new(1, 0), Position = UDim2.new(1, -5, 0, 5), Size = UDim2.fromOffset(18, 18),
-			BackgroundColor3 = Colors.Gold, Visible = false, ZIndex = 6, Parent = tile }, {
+		-- (owner, 23 Oct) the alter you wear: a small WORN tag (and the thin gold outline), like the auras' EQUIPPED
+		local check = New("Frame", { Name = "Worn", BackgroundColor3 = Color3.fromHex("#141317"), AnchorPoint = Vector2.new(1, 0), Position = UDim2.new(1, -4, 0, 4),
+			Size = UDim2.fromOffset(40, 14), Visible = false, ZIndex = 6, Parent = tile }, {
 			New("UICorner", { CornerRadius = UDim.new(1, 0) }),
-			New("UIStroke", { Color = Colors.Outline, Thickness = 1.5 }),
+			New("UIStroke", { Color = Colors.Gold, Thickness = 1, ApplyStrokeMode = Enum.ApplyStrokeMode.Border }),
 		})
-		require(script.Parent.Pieces).Icon("check", Colors.Ink, { AnchorPoint = Vector2.new(0.5, 0.5), Position = UDim2.fromScale(0.5, 0.5), Size = UDim2.fromOffset(12, 12),
-			ZIndex = 7, Parent = check }):SetAttribute("KeepColor", true)
+		Kit.Text({ Name = "Text", Text = "WORN", Font = "Chunky", TextSize = 8, TextColor3 = Colors.Gold, Size = UDim2.fromScale(1, 1), ZIndex = 7, Parent = check })
 		local overlay = Discovery.Overlay(tile)
 		local ring = overlay:FindFirstChild("Ring")
 		if ring then ring.Visible = false end -- (the silhouette takes the "?"'s place)
@@ -177,13 +177,46 @@ function AltersPanel.Build(parent: Instance, opts: { [string]: any }?)
 		Size = UDim2.new(1, -16, 0, 14), ZIndex = 4, Parent = detail }), 12, 10)
 	local wear = Kit.Button("Green", "Wear", { Name = "Wear", AnchorPoint = Vector2.new(0.5, 1), Position = UDim2.new(0.5, 0, 1, -6), ZIndex = 4, Visible = not shop,
 		Parent = detail }, { width = DETAIL_W - 20, height = 30, textSize = 16 })
-	-- (prompt 61) the Inventory: the alter's STYLE tints (ORIGINAL + two) above WEAR
-	local chips = if shop then nil else require(script.Parent.StyleChips).New(detail, { AnchorPoint = Vector2.new(0.5, 1), Position = UDim2.new(0.5, 0, 1, -42),
-		Size = UDim2.new(1, -16, 0, 26), ZIndex = 4 })
+	-- (prompt 61; owner 23 Oct) the Inventory: the alter's STYLE tints you own (off sale now) as round swatches in their own
+	-- row under the tier line; none owned: nothing there. A tap previews the tint on you for a few seconds, WEAR wears it.
+	local player = game:GetService("Players").LocalPlayer
+	local previewToken = 0
+	local chips = if shop then nil else require(script.Parent.StyleChips).New(detail, { Size = UDim2.new(1, -16, 0, 30), ZIndex = 4 }, {
+		preview = function(variant)
+			previewToken += 1
+			local mine = previewToken
+			local Style = require(script.Parent.Parent.Config.Style)
+			local hex = variant and Style.AlterTints[variant]
+			player:SetAttribute("AlterTintPreview", if hex then Color3.fromHex(hex) else nil)
+			task.delay(6, function()
+				if previewToken == mine then player:SetAttribute("AlterTintPreview", nil) end
+			end)
+		end,
+		changed = function() panel.refresh() end,
+	})
+	if not shop then
+		-- (owner, 23 Oct) the inventory detail lays out top to bottom with equal gaps (nothing can overlap the tier line)
+		local stack = New("Frame", { Name = "Stack", BackgroundTransparency = 1, Position = UDim2.fromOffset(0, 4), Size = UDim2.new(1, 0, 1, -44), ZIndex = 4, Parent = detail }, {
+			New("UIListLayout", { FillDirection = Enum.FillDirection.Vertical, Padding = UDim.new(0, 3), HorizontalAlignment = Enum.HorizontalAlignment.Center,
+				SortOrder = Enum.SortOrder.LayoutOrder }),
+		})
+		bigIcon.Size = UDim2.fromOffset(52, 52) -- (room for the swatch row above WEAR in the short Looks panel)
+		for order, gui in ipairs({ bigIcon, bigName, gains, tierText, chips.frame }) do
+			gui.AnchorPoint = Vector2.new(0, 0)
+			gui.LayoutOrder = order
+			gui.Parent = stack
+		end
+	end
 	wear.Activated:Connect(function()
 		local state = Alters.State(ClientData.Get())
 		local n = picked or state.equipped or 0
-		if n <= (state.highest or 0) and n ~= (state.equipped or 0) then
+		if n > (state.highest or 0) then return end
+		-- a tint picked in the swatches that isn't the one worn: wear it (and the alter)
+		if chips and chips.frame.Visible and chips:Selected() ~= chips:Worn() then
+			local alter = Alters.Get(n)
+			if alter then remotes.PlayerAction:FireServer("WearStyle", { kind = "Alter", target = alter.id, variant = chips:Selected() }) end
+		end
+		if n ~= (state.equipped or 0) then
 			remotes.PlayerAction:FireServer("EquipAlter", n)
 		end
 	end)
@@ -258,7 +291,7 @@ function AltersPanel.Build(parent: Instance, opts: { [string]: any }?)
 			-- the picked tile: a gold border (prompt 54); the worn one gold too in the inventory
 			t.tile.Border.Color = if pickedNow and not later then Colors.Gold elseif reached and n == worn and not shop then Colors.Gold
 				elseif reached then (if theme then theme.accent else Colors.Text) else Color3.fromHex("#2E2A30")
-			t.tile.Border.Thickness = if later then 2 else 3
+			t.tile.Border.Thickness = if later then 2 elseif reached and n == worn and not shop then 1.5 else 3
 			-- later ones are smaller and quiet
 			t.tile.Size = if later then UDim2.new(1, -14, 1, -14) else UDim2.fromScale(1, 1)
 			t.tile.BackgroundColor3 = if later then Color3.fromHex("#141216") else DARK
@@ -284,13 +317,16 @@ function AltersPanel.Build(parent: Instance, opts: { [string]: any }?)
 		detail.Border.Color = if not shop and reached and n == worn then Colors.Gold elseif theme and not later then theme.accent else Colors.Outline
 		if not shop then
 			wear.Visible = reached
-			if reached then
-				if n == worn then Kit.SetButton(wear, "Quiet", "Worn") else Kit.SetButton(wear, "Green", "Wear") end
-			end
 			if chips then
 				local Style = require(script.Parent.Parent.Config.Style)
 				local colours = alter and alter.id and Style.AlterVariants[alter.id]
-				chips:Set(if reached and n > 0 and colours then "Alter" else nil, alter and alter.id, colours, function(name) return Style.AlterTints[name] or "#FFFFFF" end)
+				chips:Set(if reached and n > 0 and colours then "Alter" else nil, alter and alter.id, colours, function(name) return Style.AlterTints[name] or "#FFFFFF" end,
+					"#" .. (if theme then theme.accent else Colors.Text):ToHex())
+			end
+			if reached then
+				local newTint = chips and chips.frame.Visible and chips:Selected() ~= chips:Worn()
+				if newTint then Kit.SetButton(wear, "Green", "Wear " .. chips:Name(chips:Selected()))
+				elseif n == worn then Kit.SetButton(wear, "Quiet", "Worn") else Kit.SetButton(wear, "Green", "Wear") end
 			end
 		else
 			local share = if reached then 1 elseif isNext then nextShare(progress) else 0
