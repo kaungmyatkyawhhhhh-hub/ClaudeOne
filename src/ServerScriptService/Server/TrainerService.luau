@@ -228,6 +228,30 @@ function TrainerService.Gift(player, id: string, freeRolls: number?)
 	return true
 end
 
+-- (prompt 64) the owner's console gift (AdminService): a copy of `id` at `stage` (1 = BASE .. 5 = LIMITLESS), LV 1, into a
+-- free slot if there is one, with the normal reveal on the client after a "A GIFT FOR YOU!" toast
+function TrainerService.AdminGive(player, id: string, stage: number?): (boolean, string?)
+	local trainer = Trainers.ById[id]
+	if not trainer then return false, "no trainer " .. tostring(id) end
+	if not PlayerData.Get(player) then return false, "data not loaded" end
+	stage = math.clamp(math.floor(tonumber(stage) or 1), 1, #Trainers.Stages)
+	local state = stateOf(player)
+	local copy = newCopy(state, id, stage)
+	local slots = slotsOf(player)
+	if #Trainers.CleanEquipped(state, slots) < slots then table.insert(state.equipped, copy.u) end
+	local same, any = 0, 0
+	for _, c in ipairs(state.copies) do
+		if c.id == id then
+			any += 1
+			if c.s == stage then same += 1 end
+		end
+	end
+	apply(player, state)
+	send(player, "AdminGift", { name = trainer.name, stage = Trainers.Stages[stage].name,
+		results = { { id = id, rarity = trainer.rarity, deleted = false, count = same, new = any == 1, stage = stage } } })
+	return true
+end
+
 -- (prompt 33) equip a copy into a slot (an empty slot past the list = add it; a copy already following moves there)
 local function equip(player, slot, uid)
 	slot, uid = tonumber(slot), tonumber(uid)

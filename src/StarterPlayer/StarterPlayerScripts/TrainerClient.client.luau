@@ -907,10 +907,14 @@ local function makeCard(entry, index: number)
 		else
 			local need = Trainers.EvolveCount
 			local count = math.max(1, result.count or 1)
-			local nextName = Trainers.Stages[2].name
-			dupeShare = math.min(count, need) / need
+			-- (prompt 64: a console gift can be any stage; rolls are BASE)
+			local stage = math.clamp(math.floor(tonumber(result.stage) or 1), 1, #Trainers.Stages)
+			local nextStage = Trainers.Stages[stage + 1]
+			local nextName = nextStage and nextStage.name
+			dupeShare = if nextName then math.min(count, need) / need else 1
 			-- (prompt 57: the ready line is shorter, so it fits at the text floor)
-			text = if count >= need then "X" .. count .. " · READY: " .. nextName else "X" .. count .. " · " .. count .. "/" .. need .. " TO " .. nextName
+			text = if not nextName then "X" .. count .. " · " .. Trainers.Stages[stage].name
+				elseif count >= need then "X" .. count .. " · READY: " .. nextName else "X" .. count .. " · " .. count .. "/" .. need .. " TO " .. nextName
 		end
 		dupePill = New("Frame", { Name = "Dupe", BackgroundColor3 = Color3.fromHex("#0B0A0D"), AnchorPoint = Vector2.new(0.5, 0), Position = colPos(y + 4),
 			Size = UDim2.fromOffset(g.colW * g.dupe, RR.dupe), ZIndex = 7, Parent = card }, {
@@ -1775,6 +1779,17 @@ remote.OnClientEvent:Connect(function(kind, info)
 			local giftCoins = Economy.Reward(ClientData.Get().growthSpurts, Economy.Rewards.GroupGift, gift.coins)
 			Notify.Reward("WELCOME, CREW MEMBER!", "+" .. Kit.Format(giftCoins) .. " coins, " .. gift.rolls .. " free roll, the CREW MEMBER title and Coach Lou",
 				"gift", Colors.Gold, "TitleUnlocked", "groupgift")
+			task.wait(1.5)
+			play(results, false)
+			if modal.isOpen() then refresh() end
+		end)
+	elseif kind == "AdminGift" then
+		-- (prompt 64) a trainer from the owner's console (AdminService): a toast, then the normal reveal, once really playing
+		local results = type(info.results) == "table" and info.results or {}
+		task.spawn(function()
+			UIBus.WaitForGameplay(1)
+			while UIBus.InTutorial and UIBus.InTutorial() do task.wait(1) end
+			Notify.Reward("A GIFT FOR YOU!", string.upper(tostring(info.name)) .. " · " .. tostring(info.stage), "gift", Colors.Gold, "TitleUnlocked", "admingift")
 			task.wait(1.5)
 			play(results, false)
 			if modal.isOpen() then refresh() end

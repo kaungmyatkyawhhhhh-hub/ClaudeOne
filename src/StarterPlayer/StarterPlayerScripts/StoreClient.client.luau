@@ -78,6 +78,9 @@ Remotes.PlayerEvent.OnClientEvent:Connect(function(kind, info)
 		Audio.PlayUI("SetComplete")
 	elseif kind == "ShakeFridge" then
 		Notify.Toast("Shake Fridge", "+1 Energy Shake", "cup-soda", Colors.Blue, "fridge")
+	elseif kind == "AdminGift" and type(info.coins) == "number" and info.coins > 0 then
+		-- (prompt 64) coins from the owner's console (AdminService)
+		Notify.Reward("A GIFT FOR YOU!", "+" .. Kit.Format(info.coins) .. " coins", "coin", Colors.Gold, "TitleUnlocked", "admincoins")
 	end
 end)
 
