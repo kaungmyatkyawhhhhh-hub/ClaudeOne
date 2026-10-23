@@ -18,7 +18,10 @@
 -- Run: require(this).Run() (rebuilds it: the old one is replaced). Deterministic (Random seed 58).
 local ProGymCity = {}
 
-local FLOOR = -72
+-- (prompt 62b) the city stands 6 studs over the valley floor (y -72): from far away Roblox draws the terrain at low
+-- detail, and that rough surface sits a few studs above the real floor, so the far streets showed as bare grey ground.
+-- Nobody walks there; from the gym the drop is 66 instead of 72.
+local FLOOR = -66
 local rng = Random.new(58)
 
 local ASPHALT = Color3.fromHex("#2B2D31")
