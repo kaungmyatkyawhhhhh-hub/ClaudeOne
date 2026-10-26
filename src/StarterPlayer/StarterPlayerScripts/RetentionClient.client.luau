@@ -65,6 +65,15 @@ Remotes.PlayerEvent.OnClientEvent:Connect(function(kind, info)
 	elseif kind == "Reracked" then
 		Notify.Show("Plate re-racked. +" .. tostring(info.coins) .. " coins.", nil, "rerack")
 		Audio.PlayUI("Click")
+	elseif kind == "AlterSkinBought" then
+		-- (owner, 26 Oct: alter skins for coins in the PUMP SHOP, ActionService.BuyAlterSkin)
+		local alter = require(Shared.Config.Alters).Get(tonumber(info.alter) or 0)
+		if info.failed then
+			if info.why == "coins" then Notify.Toast("Not enough coins", "Keep training: big lifts pay big coins", "coin", Colors.Red, "alterskin") end
+		elseif alter then
+			Notify.Toast(string.upper(alter.name) .. " SKIN!", "You're wearing it. Change it any time in Inventory > Alters", "sparkles", Colors.Gold, "alterskin")
+			Audio.PlayUI("LevelUp")
+		end
 	elseif kind == "DnaTokenBought" then
 		-- (a coin buy from the Shop or the Genetics screen, ActionService.BuyDnaToken)
 		if info.failed then

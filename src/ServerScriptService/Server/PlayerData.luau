@@ -818,7 +818,7 @@ function PlayerData.Alter(player): number?
 	data.stats.levelBase = (tonumber(data.stats.levelBase) or 0) + Muscles.AverageLevel(data.muscles) - Muscles.AverageLevel(kept) -- (26 Oct)
 	data.muscles = kept
 	local state = Alters.State(data)
-	data.alter = { highest = progress.next, equipped = progress.next, best = state.best }
+	data.alter = { highest = progress.next, equipped = progress.next, best = state.best, bought = state.bought }
 	replicate(player, { "muscles" }, data.muscles)
 	replicate(player, { "stats", "levelBase" }, data.stats.levelBase)
 	replicate(player, { "alter" }, data.alter)
@@ -834,9 +834,29 @@ function PlayerData.EquipAlter(player, n): boolean
 	if not data or type(n) ~= "number" or n % 1 ~= 0 then return false end
 	local Alters = require(Config.Alters)
 	local state = Alters.State(data)
-	if n < 0 or n > (state.highest or 0) then return false end
-	data.alter = { highest = state.highest or 0, equipped = n, best = state.best }
+	if n < 0 or not Alters.OwnsSkin(data, n) then return false end
+	data.alter = { highest = state.highest or 0, equipped = n, best = state.best, bought = state.bought }
 	replicate(player, { "alter" }, data.alter)
+	return true
+end
+
+-- (owner, 26 Oct) Buy an alter skin with coins (Config.Alters.SkinPrices) and wear it. Only skins that exist (textures),
+-- not owned yet; the coins are checked and taken here. Returns true, or false + the reason ("coins").
+function PlayerData.BuyAlterSkin(player, n): (boolean, string?)
+	local data = PlayerData.Get(player)
+	if not data or type(n) ~= "number" or n % 1 ~= 0 or n < 1 then return false end
+	local Alters = require(Config.Alters)
+	local alter, price = Alters.Get(n), Alters.SkinPrice(n)
+	if not alter or not alter.textures or not price or Alters.OwnsSkin(data, n) then return false end
+	if not PlayerData.SpendCoins(player, price) then return false, "coins" end
+	local state = Alters.State(data)
+	local bought = table.clone(type(state.bought) == "table" and state.bought or {})
+	bought[tostring(n)] = true
+	data.alter = { highest = state.highest or 0, equipped = n, best = state.best, bought = bought }
+	replicate(player, { "alter" }, data.alter)
+	task.spawn(function()
+		if PlayerData.IsPersistent(player) then save(player, false) end -- (a big buy: saved right away)
+	end)
 	return true
 end
 

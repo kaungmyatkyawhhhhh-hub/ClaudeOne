@@ -144,10 +144,18 @@ function AltersPanel.Build(parent: Instance, opts: { [string]: any }?)
 			New("UIStroke", { Color = Colors.Gold, Thickness = 1, ApplyStrokeMode = Enum.ApplyStrokeMode.Border }),
 		})
 		Kit.Text({ Name = "Text", Text = "WORN", Font = "Chunky", TextSize = 8, TextColor3 = Colors.Gold, Size = UDim2.fromScale(1, 1), ZIndex = 7, Parent = check })
+		-- (owner, 26 Oct) the shop: the skin's coin price on every skin you don't own yet
+		local priceTag = New("Frame", { Name = "Price", BackgroundColor3 = Color3.fromHex("#141317"), Position = UDim2.fromOffset(4, 4), Size = UDim2.fromOffset(48, 14),
+			Visible = false, ZIndex = 6, Parent = tile }, {
+			New("UICorner", { CornerRadius = UDim.new(1, 0) }),
+			New("UIStroke", { Color = Colors.Gold, Thickness = 1, ApplyStrokeMode = Enum.ApplyStrokeMode.Border }),
+		})
+		Kit.Text({ Name = "Text", Text = "", Font = "Number", TextSize = 9, TextColor3 = Colors.Gold, Size = UDim2.fromScale(1, 1), ZIndex = 7, Parent = priceTag })
 		local overlay = Discovery.Overlay(tile)
 		local ring = overlay:FindFirstChild("Ring")
 		if ring then ring.Visible = false end -- (the silhouette takes the "?"'s place)
-		tiles[n] = { tile = tile, bg = bg, icon = icon, name = name, bar = bar, setBar = setBar, nextPill = nextPill, check = check, alter = alter, overlay = overlay }
+		tiles[n] = { tile = tile, bg = bg, icon = icon, name = name, bar = bar, setBar = setBar, nextPill = nextPill, check = check, alter = alter, overlay = overlay,
+			priceTag = priceTag }
 		tile.Activated:Connect(function()
 			picked = n
 			panel.refresh()
@@ -210,7 +218,7 @@ function AltersPanel.Build(parent: Instance, opts: { [string]: any }?)
 	wear.Activated:Connect(function()
 		local state = Alters.State(ClientData.Get())
 		local n = picked or state.equipped or 0
-		if n > (state.highest or 0) then return end
+		if not Alters.OwnsSkin(ClientData.Get(), n) then return end
 		-- a tint picked in the swatches that isn't the one worn: wear it (and the alter)
 		if chips and chips.frame.Visible and chips:Selected() ~= chips:Worn() then
 			local alter = Alters.Get(n)
@@ -222,7 +230,8 @@ function AltersPanel.Build(parent: Instance, opts: { [string]: any }?)
 	end)
 
 	-- (prompt 54) the shop's detail: the goal, the progress bar with %, and its buttons
-	local goalText, setGoalBar, goalBar, pctText, action, mySkins
+	local goalText, setGoalBar, goalBar, pctText, action, mySkins, buy
+	local buyArmed = nil -- (the alter number a first BUY tap armed: a second tap within 3 s buys it)
 	if shop then
 		goalText = Kit.Text({ Name = "Goal", Text = "", Font = "Strong", TextSize = 11, TextColor3 = Color3.fromHex("#D9D2D5"), Position = UDim2.fromOffset(8, 131),
 			Size = UDim2.new(1, -16, 0, 14), ZIndex = 4, Parent = detail })
@@ -249,6 +258,23 @@ function AltersPanel.Build(parent: Instance, opts: { [string]: any }?)
 			if opts.onClose then opts.onClose() end
 			UIBus.OpenInventory:Fire("Alters")
 		end)
+		-- (owner, 26 Oct) BUY the skin for coins: the first tap asks "SURE?", a second tap within 3 s buys (ActionService.BuyAlterSkin)
+		buy = Kit.Button("Gold", "Buy", { Name = "Buy", AnchorPoint = Vector2.new(1, 1), Position = UDim2.new(1, -10, 1, -6), ZIndex = 4, Visible = false,
+			Parent = detail }, { width = DETAIL_W - 20, height = 32, textSize = 13 })
+		buy.Activated:Connect(function()
+			local n = buy:GetAttribute("Alter")
+			if type(n) ~= "number" then return end
+			if buyArmed ~= n then
+				buyArmed = n
+				Kit.SetButton(buy, "Red", "Sure? " .. Kit.Short(Alters.SkinPrice(n) or 0))
+				task.delay(3, function()
+					if buyArmed == n then buyArmed = nil panel.refresh() end
+				end)
+				return
+			end
+			buyArmed = nil
+			remotes.PlayerAction:FireServer("BuyAlterSkin", n)
+		end)
 	end
 
 	function panel.selectNext()
@@ -271,11 +297,17 @@ function AltersPanel.Build(parent: Instance, opts: { [string]: any }?)
 			else "BODY ALTERS OPEN AT 6'0\". EACH ONE ADDS +15% GAINS."
 		local shown = picked or (if shop then highest + 1 else worn)
 		for n, t in pairs(tiles) do
+			local owned = Alters.OwnsSkin(data, n)
 			local reached = n <= highest
 			local isNext = n == highest + 1
-			local later = not reached and not isNext
+			-- (26 Oct) hidden (UNDISCOVERED) only in the Inventory and only if not bought; the shop shows every skin for sale
+			local later = not reached and not isNext and not owned and not shop
+			local price = Alters.SkinPrice(n)
+			t.priceTag.Visible = shop and not owned and price ~= nil
+			if price then t.priceTag.Text.Text = Kit.Short(price) end
+			reached = reached or owned
 			t.bg.Visible = not later
-			local dim = if isNext then 0.55 else 0
+			local dim = if isNext or (not reached) then 0.55 else 0
 			if t.bg:IsA("ImageLabel") then t.bg.ImageTransparency = dim else t.bg.BackgroundTransparency = dim end
 			AlterIcon.Set(t.icon, n, if later then "silhouette" else "lit")
 			t.icon.Size = if later then UDim2.fromOffset(34, 34) else UDim2.fromOffset(ICON, ICON)
@@ -301,9 +333,12 @@ function AltersPanel.Build(parent: Instance, opts: { [string]: any }?)
 		-- the detail panel
 		local n = shown
 		local alter = Alters.Get(n) or Alters.Natural
-		local reached = n <= highest
+		local owned = Alters.OwnsSkin(data, n)
+		local reachedReal = n <= highest
+		local reached = owned
 		local isNext = n == highest + 1
-		local later = n > highest + 1
+		local later = n > highest + 1 and not owned and not shop
+		local price = Alters.SkinPrice(n)
 		detailArt:ClearAllChildren()
 		if not later then banner(detailArt, n, true) end -- (no mesh on the detail panel)
 		AlterIcon.Set(bigIcon, n, if later then "silhouette" else "lit")
@@ -311,7 +346,7 @@ function AltersPanel.Build(parent: Instance, opts: { [string]: any }?)
 		local theme = if n > 0 then AlterThemes.Get(n) else nil
 		gains.Visible = not later
 		gains.Edge.Color = if theme then theme.accent else Colors.Muted
-		gainsText.Text = string.format("GAINS X%.2f", Alters.Bonus(n))
+		gainsText.Text = if reachedReal or isNext or n == 0 then string.format("GAINS X%.2f", Alters.Bonus(n)) else "LOOK ONLY"
 		tierText.Text = if later then (if shop then "REACH THE PREVIOUS ALTER FIRST" else "UNDISCOVERED · KEEP GROWING") elseif n == 0 then "YOUR OWN SKIN"
 			else string.upper("Alter " .. n .. " · " .. Alters.Tiers[alter.tier].name .. " tier")
 		detail.Border.Color = if not shop and reached and n == worn then Colors.Gold elseif theme and not later then theme.accent else Colors.Outline
@@ -329,25 +364,42 @@ function AltersPanel.Build(parent: Instance, opts: { [string]: any }?)
 				elseif n == worn then Kit.SetButton(wear, "Quiet", "Worn") else Kit.SetButton(wear, "Green", "Wear") end
 			end
 		else
-			local share = if reached then 1 elseif isNext then nextShare(progress) else 0
+			local share = if reachedReal then 1 elseif isNext then nextShare(progress) else 0
+			local forSale = not owned and price ~= nil
 			goalText.Visible = not later and n > 0
 			goalText.Text = if n > 0 then Muscles.FormatExpShort(Muscles.Shown(Alters.Goal(n))) .. " EXP in every group" else ""
 			goalBar.Visible = not later and n > 0
 			pctText.Visible = not later and n > 0
 			setGoalBar(share)
 			pctText.Text = math.floor(share * 100) .. "%"
-			action.Visible = not later
+			action.Visible = not later and (owned or isNext)
 			mySkins.Visible = reached
+			-- (26 Oct) BUY: the whole width for a skin you can't alter into yet, half next to WHAT TO TRAIN / ALTER NOW
+			buy.Visible = forSale
+			if forSale then
+				buy:SetAttribute("Alter", n)
+				buy.Size = if isNext then UDim2.fromOffset((DETAIL_W - 26) / 2, 32) else UDim2.fromOffset(DETAIL_W - 20, 32)
+				if buyArmed == n then
+					Kit.SetButton(buy, "Red", "Sure? " .. Kit.Short(price))
+				else
+					Kit.SetButton(buy, if (data.coins or 0) >= price then "Gold" else "Quiet", "Buy " .. Kit.Short(price))
+				end
+			end
+			if not isNext and not owned then
+				goalText.Visible = true
+				goalText.Text = "Wear the look now. No gains."
+				goalBar.Visible, pctText.Visible = false, false
+			end
 			if reached then
 				action.Size = UDim2.fromOffset((DETAIL_W - 26) / 2, 32)
 				Kit.SetButton(action, "Disabled", "Owned")
 				action:SetAttribute("Does", nil)
 			elseif isNext and progress.ready and maxed then
-				action.Size = UDim2.fromOffset(DETAIL_W - 20, 32)
+				action.Size = UDim2.fromOffset(if forSale then (DETAIL_W - 26) / 2 else DETAIL_W - 20, 32)
 				Kit.SetButton(action, "Gold", "Alter now")
 				action:SetAttribute("Does", "alter")
 			elseif isNext then
-				action.Size = UDim2.fromOffset(DETAIL_W - 20, 32)
+				action.Size = UDim2.fromOffset(if forSale then (DETAIL_W - 26) / 2 else DETAIL_W - 20, 32)
 				Kit.SetButton(action, "Quiet", "What to train")
 				action:SetAttribute("Does", "train")
 			end

@@ -83,6 +83,13 @@ handlers.EquipAlter = function(player, n)
 	if PlayerData.EquipAlter(player, n) then BodyService.Rebuild(player) end
 end
 
+-- (owner, 26 Oct) buy an alter skin with coins (validated in PlayerData.BuyAlterSkin) and wear it
+handlers.BuyAlterSkin = function(player, n)
+	local ok, why = PlayerData.BuyAlterSkin(player, n)
+	if ok then BodyService.Rebuild(player) end
+	Remotes.PlayerEvent:FireClient(player, "AlterSkinBought", { alter = n, failed = not ok, why = why })
+end
+
 handlers.EquipTitle = function(player, titleId)
 	if titleId == nil or (type(titleId) == "string" and Titles.ById[titleId]) then
 		TitleService.Equip(player, titleId)

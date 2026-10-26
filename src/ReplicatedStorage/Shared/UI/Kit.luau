@@ -910,6 +910,7 @@ Kit.Format = formatInt
 -- 1500 -> "1.5K", 2000 -> "2K", 1200000 -> "1.2M"
 function Kit.Short(n: number): string
 	local function trim(x) return (string.format("%.1f", x):gsub("%.0$", "")) end
+	if n >= 1e9 then return trim(n / 1e9) .. "B" end -- (26 Oct: the alter skins' prices)
 	if n >= 1e6 then return trim(n / 1e6) .. "M" end
 	if n >= 1e3 then return trim(n / 1e3) .. "K" end
 	return tostring(math.floor(n))

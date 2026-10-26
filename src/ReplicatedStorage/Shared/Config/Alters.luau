@@ -8,8 +8,9 @@
 --    the rest show "Coming soon" with a placeholder color until their textures come.
 --  * Skins: ReplicatedStorage.SkinStages also holds one SurfaceAppearance per alter with textures ("Alter_<id>", built
 --    by tools/builders/SkinStages); MuscleRig uses it instead of the stages when a body's "Alter" attribute names it.
--- Save data: data.alter = { highest = n, equipped = n, best = { muscles = { [id] = level }, spurts, alter, strength } }
--- (equipped = the skin you wear: any alter up to highest; best = the biggest physique ever, for the statue / profile).
+-- Save data: data.alter = { highest = n, equipped = n, best = { muscles = { [id] = level }, spurts, alter, strength },
+-- bought = { ["n"] = true } } (equipped = the skin you wear: any alter up to highest or bought with coins, SkinPrices;
+-- best = the biggest physique ever, for the statue / profile).
 local GrowthSpurts = require(script.Parent.GrowthSpurts)
 local Muscles = require(script.Parent.Muscles)
 
@@ -202,6 +203,20 @@ function Alters.State(data)
 	local state = type(data) == "table" and data.alter
 	if type(state) ~= "table" then return { highest = 0, equipped = 0 } end
 	return state
+end
+
+-- (owner, 26 Oct: "make the alter skins absurdly expensive ... rn there's no alter skins to buy in the shop") every skin
+-- can be bought with coins in the PUMP SHOP's ALTERS tab, to WEAR the look. The gains bonus, the ALTER label over your
+-- head and the posing divisions stay the alters you've really done. Saved in data.alter.bought = { ["7"] = true }.
+Alters.SkinPrices = { 25e6, 40e6, 60e6, 85e6, 120e6, 250e6, 400e6, 600e6, 850e6, 1.2e9, 2.5e9, 4e9, 6e9, 8.5e9, 12e9 }
+function Alters.SkinPrice(n: number): number?
+	return Alters.SkinPrices[n]
+end
+-- reached (n <= highest) or bought; 0 (Natural) is always yours
+function Alters.OwnsSkin(data, n: number): boolean
+	local state = Alters.State(data)
+	if n <= (state.highest or 0) then return true end
+	return type(state.bought) == "table" and state.bought[tostring(n)] == true
 end
 
 -- Progress toward the next alter: { next, required, met, total, groups = { [groupId] = level }, ready, open, locked }

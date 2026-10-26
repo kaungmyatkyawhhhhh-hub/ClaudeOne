@@ -342,9 +342,17 @@ local function addButton(style, text, width, onTap, order, price, best, currency
 	local button = slimButton(buttonRow, { Name = "Buy" .. (order or 1), LayoutOrder = order or 1, Size = UDim2.fromOffset(width, 40), ZIndex = 4 }, text, price, look, 15, currency)
 	if best then
 		local words = if type(best) == "string" then best else "BEST"
-		local tag = New("Frame", { Name = "Best", BackgroundColor3 = Colors.Gold, AnchorPoint = Vector2.new(1, 0.5), Position = UDim2.new(1, 4, 0, 0),
-			Size = UDim2.fromOffset(if #words > 4 then 64 else 38, 14), ZIndex = 8, Parent = button }, { New("UICorner", { CornerRadius = UDim.new(1, 0) }) })
-		Kit.Text({ Name = "Text", Text = words, Font = "Chunky", TextSize = 10, TextColor3 = Colors.Ink, Size = UDim2.fromScale(1, 1), ZIndex = 9, Parent = tag })
+		-- (owner, 26 Oct: "the BEST text looks faint") bigger, bright gold with a dark rim, sitting just inside the row (was
+		-- half above the button, partly cut off)
+		local tag = New("Frame", { Name = "Best", BackgroundColor3 = Color3.new(1, 1, 1), AnchorPoint = Vector2.new(1, 0), Position = UDim2.new(1, 2, 0, -4),
+			Size = UDim2.fromOffset(if #words > 4 then 70 else 44, 16), ZIndex = 10, Parent = button }, {
+			New("UICorner", { CornerRadius = UDim.new(1, 0) }),
+			New("UIGradient", { Rotation = 90, Color = ColorSequence.new(Color3.fromHex("#FFF3C4"), Color3.fromHex("#F6C75A")) }),
+			New("UIStroke", { Color = Color3.fromHex("#2A1A08"), Thickness = 1, ApplyStrokeMode = Enum.ApplyStrokeMode.Border }),
+		})
+		local label = Kit.Text({ Name = "Text", Text = words, Font = "Chunky", TextSize = 12, TextColor3 = Color3.fromHex("#1A1006"), Size = UDim2.fromScale(1, 1), ZIndex = 11, Parent = tag })
+		local blur = label:FindFirstChild("TextStroke")
+		if blur then blur:Destroy() end -- (the chunky font's dark stroke smudged dark words this small)
 	end
 	button.Activated:Connect(function()
 		if style == "Disabled" then return end
@@ -726,7 +734,13 @@ local function renderGear()
 	end
 end
 
+-- (owner, 26 Oct: "when I buy something it goes back to the start and I have to scroll all the way back") the grid is
+-- rebuilt on every change; on the same shop + tab it keeps where you'd scrolled to
+local lastScrollKey = nil
 function refresh()
+	local scrollKey = tostring(shopId) .. "/" .. tostring(tab)
+	local keepScroll = if scrollKey == lastScrollKey then grid.CanvasPosition else nil
+	lastScrollKey = scrollKey
 	for _, child in ipairs(grid:GetChildren()) do
 		if child:IsA("GuiObject") then child:Destroy() end
 	end
@@ -925,6 +939,13 @@ function refresh()
 		if entry.key == picked[tab] then current = entry end
 	end
 	showStrip(current)
+	if keepScroll then
+		grid.CanvasPosition = keepScroll
+		task.spawn(function() -- (the automatic canvas size settles a frame later)
+			game:GetService("RunService").Heartbeat:Wait()
+			if lastScrollKey == scrollKey then grid.CanvasPosition = keepScroll end
+		end)
+	end
 end
 
 function openOn(section: string?, newShop: string?)
