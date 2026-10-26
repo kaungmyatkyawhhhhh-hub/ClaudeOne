@@ -14,6 +14,8 @@ local GrowthSpurts = H.module("ReplicatedStorage/Shared/Config/GrowthSpurts")
 local Stamina = H.module("ReplicatedStorage/Shared/Config/Stamina")
 local MuscleOfTheDay = H.module("ReplicatedStorage/Shared/Config/MuscleOfTheDay")
 local Alters = H.module("ReplicatedStorage/Shared/Config/Alters")
+local Trainers = H.module("ReplicatedStorage/Shared/Config/Trainers")
+local PumpShop = H.module("ReplicatedStorage/Shared/Config/PumpShop")
 
 -- Muscle of the Day depends on the date; each simulated player gets their own 2x group for each spurt (a typical
 -- day), so results don't change from day to day.
@@ -71,12 +73,92 @@ local function stepPump(pump, dt, tapping)
 	end
 end
 
+-- (26 Oct) Trainers (lune run tests/pacing trainers): a player with data.tr rolls trainers with every coin from reps
+-- once trainers open (Growth Spurt 1), gets the free first roll at Spurt 1 and one free roll per hour of play (the
+-- daily playtime gift, playing about an hour a day), keeps every copy (3 of a trainer at a stage evolve into the next
+-- stage, keeping the best level), equips the best ones in the slots they have (Trainers.SlotsFor, no pass) and levels
+-- the equipped ones from reps (Trainers.RepXp / LevelXp). Their boosts: gains and coins x(1 + bonus), the stamina
+-- refill faster, a bigger stamina bar, and the progress perk lowers every goal (GrowthSpurts.BoostedLevel).
+local TRAINERS_OPEN = 1
+local function trainerValue(copy)
+	local perk = Trainers.ById[copy.id].perk
+	return ((perk.gains or 0) + (perk.progress or 0) + 0.25 * (perk.coins or 0) + 0.2 * (perk.staminaRegen or 0) + 0.2 * (perk.maxStamina or 0))
+		* Trainers.CopyMultiplier(copy)
+end
+local function equipTrainers(data)
+	local tr = data.tr
+	table.sort(tr.copies, function(a, b) return trainerValue(a) > trainerValue(b) end)
+	local slots = Trainers.SlotsFor(false, data.growthSpurts, data.alter and data.alter.highest or 0)
+	tr.equipped = {}
+	for i = 1, math.min(slots, #tr.copies) do tr.equipped[i] = tr.copies[i] end
+	tr.bonus = Trainers.Bonus(tr.equipped)
+	data.trainers = { bonus = tr.bonus } -- (GrowthSpurts.ProgressBoost reads it)
+end
+local function addCopy(data, id)
+	local tr = data.tr
+	table.insert(tr.copies, { id = id, s = 1, l = 1, x = 0 })
+	-- evolve: 3 of the same trainer at the same stage -> 1 at the next stage (the best level kept)
+	local merged = true
+	while merged do
+		merged = false
+		local groups = {}
+		for _, copy in tr.copies do
+			if copy.s < #Trainers.Stages then
+				local key = copy.id .. "@" .. copy.s
+				groups[key] = groups[key] or {}
+				table.insert(groups[key], copy)
+			end
+		end
+		for _, list in groups do
+			if #list >= Trainers.EvolveCount then
+				local best = 1
+				for i = 1, Trainers.EvolveCount do best = math.max(best, list[i].l) end
+				for i = 1, Trainers.EvolveCount do table.remove(tr.copies, table.find(tr.copies, list[i])) end
+				table.insert(tr.copies, { id = list[1].id, s = list[1].s + 1, l = best, x = 0 })
+				merged = true
+				break
+			end
+		end
+	end
+end
+local function rollTrainers(data)
+	local tr = data.tr
+	if not tr or data.growthSpurts < TRAINERS_OPEN then return end
+	local price = Trainers.RollPrice(PumpShop.Rate(data.growthSpurts))
+	local rolled = false
+	while tr.freeRolls > 0 or data.coins >= price do
+		if tr.freeRolls > 0 then tr.freeRolls -= 1 else data.coins -= price end
+		local rarity
+		rarity, tr.pity = Trainers.Roll(math.random(), tr.pity)
+		addCopy(data, Trainers.PickTrainer(rarity, math.random()).id)
+		tr.rolls += 1
+		rolled = true
+	end
+	if rolled then equipTrainers(data) end
+end
+local function trainerReps(data, reps, tierGains)
+	local tr = data.tr
+	if not tr then return end
+	for _, copy in tr.equipped do
+		if copy.l < Trainers.MaxLevel then
+			copy.x += reps * Trainers.RepXp(tierGains)
+			while copy.l < Trainers.MaxLevel and copy.x >= Trainers.LevelXp(copy.l, copy.s) do
+				copy.x -= Trainers.LevelXp(copy.l, copy.s)
+				copy.l += 1
+			end
+		end
+	end
+	tr.bonus = Trainers.Bonus(tr.equipped)
+	data.trainers = { bonus = tr.bonus }
+end
+
 -- Plays from the current state to the next Growth Spurt and does it. Returns the minutes it took.
 -- alterGoal (prompt 21): at 7'0", play to that Body Alter goal instead and do the alter (keep Alters.KeepShare).
 local function playOneSpurt(data, overhead, limitSeconds, alterGoal)
 	motdGroup = Muscles.Groups[(data.seed + data.growthSpurts) % #Muscles.Groups + 1].id
 	local trainable = Machines.TrainableMuscles(data.growthSpurts)
 	local required = alterGoal or GrowthSpurts.Get(data.growthSpurts + 1).requiredLevel
+	if data.tr then required = GrowthSpurts.BoostedLevel(required, GrowthSpurts.ProgressBoost(data)) end -- (the trainers' progress perk)
 	local cap = GrowthSpurts.GetLevelCap(data.growthSpurts)
 	local open = {}
 	for _, machine in Machines.List do
@@ -87,6 +169,7 @@ local function playOneSpurt(data, overhead, limitSeconds, alterGoal)
 	local time, current = overhead, nil
 	local pump = { meter = 0, left = 0 }
 	local stamina = Stamina.Max -- (carried from set to set: a player who switches machines keeps what's left)
+	local function bonus(kind) return data.tr and data.tr.bonus and data.tr.bonus[kind] or 0 end
 
 	local function progress()
 		if alterGoal then
@@ -156,18 +239,29 @@ local function playOneSpurt(data, overhead, limitSeconds, alterGoal)
 			local pumped = pump.left > 0
 			local quality = (pumped and Gains.Pump.Multiplier or 1)
 				* (math.random() < Gains.BigRep.Chance and Gains.BigRep.Multiplier or 1)
-			for id, amount in Gains.PerRep(data, machine, tier, 1, quality) do addXp(data, id, amount, cap) end
-			data.coins += machine.tiers[tier].coins
+			for id, amount in Gains.PerRep(data, machine, tier, 1 + bonus("gains"), quality) do addXp(data, id, amount, cap) end
+			data.coins += machine.tiers[tier].coins * (1 + bonus("coins"))
 			local rep = PLAY.Rep * (pumped and Gains.Pump.Speed or 1) + (tapping and 0 or Gains.AutoRepGap)
 			stepPump(pump, rep, tapping)
 			time += rep
 		end
 		if not switch then
 			-- recovering: empty to full in the pacing's refillSeconds, on the machine (Config/Stamina.Pacing)
-			local rest = Stamina.PacingFor(data.growthSpurts).refillSeconds * (Stamina.Max - stamina) / Stamina.Max
+			local maxStamina = Stamina.Max * (1 + bonus("maxStamina"))
+			local rest = Stamina.PacingFor(data.growthSpurts).refillSeconds * math.max(maxStamina - stamina, 0) / maxStamina / (1 + bonus("staminaRegen"))
 			stepPump(pump, rest, false)
 			time += rest
-			stamina = Stamina.Max
+			stamina = maxStamina
+		end
+		if data.tr then
+			trainerReps(data, reps, machine.tiers[tier].gains)
+			-- the playtime gift's free roll, about one per hour of play
+			local hours = math.floor((data.tr.played + time) / 3600)
+			if hours > data.tr.hourGifts then
+				data.tr.freeRolls += hours - data.tr.hourGifts
+				data.tr.hourGifts = hours
+			end
+			rollTrainers(data)
 		end
 		if time > 6 * 3600 then break end -- safety
 	end
@@ -175,11 +269,20 @@ local function playOneSpurt(data, overhead, limitSeconds, alterGoal)
 	if alterGoal then -- the alter (same as PlayerData.Alter)
 		for _, muscle in Muscles.List do data.muscles[muscle.id] = Alters.Kept(data.muscles[muscle.id]) end
 		data.alter = { highest = (data.alter and data.alter.highest or 0) + 1 }
+		if data.tr then
+			data.tr.played += time
+			equipTrainers(data) -- (the 3rd slot at the first alter)
+		end
 		return time / 60
 	end
 	-- the Growth Spurt itself (same as PlayerData.GrowthSpurt)
 	for _, muscle in Muscles.List do data.muscles[muscle.id] = { level = 0, xp = 0 } end
 	data.growthSpurts += 1
+	if data.tr then
+		data.tr.played += time
+		if data.growthSpurts == TRAINERS_OPEN then data.tr.freeRolls += 1 end -- (the free first roll, TrainerService)
+		equipTrainers(data)
+	end
 	return time / 60
 end
 
@@ -251,6 +354,53 @@ if process.args[1] == "alters" then
 		local mid, sorted = median(per[n])
 		print(string.format("  alter %d (goal %d, bonus x%.2f before it): median %.1f, fastest 10%% %.1f, slowest 10%% %.1f",
 			n, Alters.Goal(n), Alters.Bonus(n - 1), mid, at(sorted, 0.1), at(sorted, 0.9)))
+	end
+	return
+end
+
+-- (26 Oct) The whole game with trainers: Growth Spurts 1-6, then ALTERS alters, every player rolling trainers as above.
+-- Prints the median minutes per step, the running total, and the typical equipped trainers when each step is done.
+--   lune run tests/pacing trainers [alters = all with textures]
+if process.args[1] == "trainers" then
+	local ALTERS = tonumber(process.args[2]) or Alters.LastAvailable()
+	local N = PLAYERS // 2
+	local steps = {}
+	for i = 1, SPURTS + ALTERS do steps[i] = { minutes = {}, gains = {}, progress = {}, rolls = {}, sets = {} } end
+	for seed = 1, N do
+		local data = newPlayer(seed)
+		data.tr = { copies = {}, equipped = {}, pity = 0, freeRolls = 0, rolls = 0, played = 0, hourGifts = 0, bonus = Trainers.Bonus({}) }
+		for i = 1, SPURTS + ALTERS do
+			local minutes
+			if i <= SPURTS then
+				minutes = playOneSpurt(data, i == 1 and PLAY.Overhead or PLAY.SpurtOverhead)
+			else
+				minutes = playOneSpurt(data, 30, nil, Alters.Goal(i - SPURTS))
+			end
+			local step = steps[i]
+			table.insert(step.minutes, minutes)
+			table.insert(step.gains, data.tr.bonus.gains)
+			table.insert(step.progress, data.tr.bonus.progress)
+			table.insert(step.rolls, data.tr.rolls)
+			local names = {}
+			for _, copy in data.tr.equipped do
+				table.insert(names, Trainers.ById[copy.id].name .. " " .. Trainers.Stages[copy.s].name .. " LV" .. copy.l)
+			end
+			table.insert(step.sets, table.concat(names, " + "))
+		end
+	end
+	print(string.format("Whole game with trainers (median of %d players; all rep coins go to trainer rolls)", N))
+	local total = 0
+	for i, step in steps do
+		local mid = median(step.minutes)
+		total += mid
+		local label = if i <= SPURTS then "Growth Spurt " .. i else "Alter " .. (i - SPURTS) .. " " .. Alters.Get(i - SPURTS).name
+		-- the set of the player closest to the median EXP boost
+		local g = median(step.gains)
+		local pick = 1
+		for j = 1, #step.gains do if math.abs(step.gains[j] - g) < math.abs(step.gains[pick] - g) then pick = j end end
+		print(string.format("  %-22s %5.1f min  total %3dh%02d  rolls %4d  EXP +%3d%%  progress +%2d%%  e.g. %s", label, mid,
+			math.floor(total / 60), math.floor(total % 60), (median(step.rolls)), math.floor(g * 100 + 0.5),
+			math.floor((median(step.progress)) * 100 + 0.5), step.sets[pick]))
 	end
 	return
 end

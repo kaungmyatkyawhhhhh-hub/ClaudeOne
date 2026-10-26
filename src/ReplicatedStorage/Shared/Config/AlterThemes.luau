@@ -132,10 +132,25 @@ local colors = {
 	[29] = { "#050307", "#FF8A2A", "#FFC27A", "#2A1A30", "#FFFFFF" }, -- Eclipse
 	[30] = { "#0E1018", "#FFF0C0", "#FFFFFF", "#F6C75A", "#2A1C04" }, -- Celestial
 }
+-- (26 Oct) popup background art for Tiers 2-3 (tools/alter_backgrounds.py, Downloads\gym_arc_alters\for_group_bg, imported
+-- to the group by the owner): abstract, no bodies, no text, like Tier 1's
+local bgs = {
+	[6] = "rbxassetid://86081477005772",   -- Clay: glowing cracks
+	[7] = "rbxassetid://136007448586409",  -- Sandstone: dunes under a warm sun
+	[8] = "rbxassetid://124884905254975",  -- Granite: shards of light
+	[9] = "rbxassetid://130454706656390",  -- Marble: glowing veins
+	[10] = "rbxassetid://130654508259652", -- Obsidian: violet glass shards
+	[11] = "rbxassetid://102483147646116", -- Bronze: forge sparks
+	[12] = "rbxassetid://78384329885876",  -- Iron: a hot seam and rivets
+	[13] = "rbxassetid://132353472571060", -- Steel: blades of light
+	[14] = "rbxassetid://72824563055626",  -- Chrome: mirror sweeps
+	[15] = "rbxassetid://92792053789881",  -- Gold: a gold burst (end of Tier 3)
+}
 for n, c in pairs(colors) do
 	local tier = math.ceil(n / 5)
 	local style = tierStyle[tier]
 	themes[n] = {
+		bg = bgs[n],
 		base = C(c[1]), accent = C(c[2]), title = { C(c[3]), C(c[4]) }, buttonText = C(c[5]),
 		intro = c[6] or style.intro,
 		sting = if c[7] then { { c[7], 0 } } else style.sting,
