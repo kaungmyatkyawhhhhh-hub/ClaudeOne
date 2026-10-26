@@ -36,7 +36,9 @@ UIBus.InviteFriends.Event:Connect(invite)
 
 -- the INVITE row under the left menu's tiles
 local invitePercent = math.floor((cfg.InviteGains - 1) * 100 + 0.5)
-local inviteButton = Kit.Button("Green", "Invite  +" .. invitePercent .. "%", { Name = "InviteFriends", Visible = false }, { height = 34, textSize = 13, icon = "users" })
+-- (owner, 26 Oct: "premium and yellow like the other buttons, not chunky") the gold chrome button (GO TRAIN, SHOP)
+local inviteButton = Kit.Button("Gold", "Invite  +" .. invitePercent .. "%", { Name = "InviteFriends", Visible = false }, { height = 34, textSize = 13, icon = "users" })
+Theme.SetChrome(inviteButton)
 inviteButton.Size = UDim2.new(1, 0, 0, 34)
 SideMenu.AddFooter(inviteButton, 34, 5)
 inviteButton.Activated:Connect(function()

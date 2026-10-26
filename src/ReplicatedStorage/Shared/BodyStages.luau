@@ -361,6 +361,7 @@ function BodyStages.Update(self, getLook, style, tint, covered, marble)
 			local material = if stone then Enum.Material.Marble
 				elseif template ~= "" and style.outfit then Enum.Material.Fabric -- (a trainer's outfit: matte cloth, not shiny plastic)
 				elseif piece.kind == "shorts" and template == "" then Enum.Material.Fabric
+				elseif piece.kind == "top" and template == "" and style.top then Enum.Material.Fabric -- (26 Oct: tops are matte cloth)
 				else Enum.Material.SmoothPlastic
 			if part.Material ~= material then part.Material = material end
 			local variant = if stone and type(marble) == "table" and marble.variant then marble.variant else ""

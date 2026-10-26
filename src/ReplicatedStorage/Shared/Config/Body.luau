@@ -72,7 +72,9 @@ Body.Tops = {
 	{ id = "TankBlack", name = "Black tank top", color = Color3.fromHex("#1E1E22"), shop = true },
 }
 Body.DefaultTop = "Shirtless"
-Body.PlayerTop = "TankBlack" -- (owner, 24 Oct) what a player wears instead of shirtless
+-- (owner, 26 Oct: "the black shirt looks bad ... make it white matte") the white tank top; every top is matte cloth now
+-- (MuscleRig / BodyStages)
+Body.PlayerTop = "Tank" -- (owner, 24 Oct) what a player wears instead of shirtless (was TankBlack)
 
 function Body.ShortsColor(id: string?): Color3
 	for _, entry in ipairs(Body.ShortsColors) do

@@ -79,7 +79,8 @@ Theme.Gradients = {
 	Flat = { Color3.fromHex("#1C1A1D"), Color3.fromHex("#1C1A1D") },
 	Disabled = { Color3.fromHex("#1A181B"), Color3.fromHex("#1A181B") },
 	-- (prompt 37 / 40: the ChunkyButton's green: EQUIP, CLAIM, WEAR, USE, KEEP, OWNED)
-	Green = { Color3.fromHex("#7BE38F"), Color3.fromHex("#23A047") },
+	-- (owner, 26 Oct: "change all green buttons into yellow like the old yellow one") the gold CTA's colours
+	Green = { Color3.fromHex("#FFE9A6"), Color3.fromHex("#D69B22") },
 	-- (older names some screens still pass; they all draw as a quiet or CTA button)
 	Blue = { Color3.fromHex("#2E2A2F"), Color3.fromHex("#1A181B") },
 	Gray = { Color3.fromHex("#2E2A2F"), Color3.fromHex("#1A181B") },
@@ -97,7 +98,7 @@ Theme.ButtonGradients = {
 	Secondary = "Quiet", Gray = "Quiet", Dark = "Quiet", Blue = "Quiet", Purple = "Quiet", Orange = "Quiet", Teal = "Quiet",
 	White = "Quiet", Quiet = "Quiet",
 }
-Theme.CTA = { Red = Color3.fromHex("#FF4A52"), Gold = Color3.fromHex("#FFD36B"), Green = Color3.fromHex("#5BE07A") } -- each CTA's glow color
+Theme.CTA = { Red = Color3.fromHex("#FF4A52"), Gold = Color3.fromHex("#FFD36B"), Green = Color3.fromHex("#FFD36B") } -- each CTA's glow color (26 Oct: Green = gold)
 
 -- (prompt 37 / 40, 22 Oct) the ONE rarity colour table: text, outlines and tile tints everywhere (Theme.Rarity below is
 -- the older bumper-plate table some screens still use for plates)

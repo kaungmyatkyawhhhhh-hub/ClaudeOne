@@ -339,7 +339,7 @@ function MuscleRig.DressBody(self)
 		end
 	end
 	for _, name in ipairs(BODY_PARTS) do paint(name, skin) end
-	paint("UpperTorso", top)
+	paint("UpperTorso", top, if self.style.top and not self.marble then Enum.Material.Fabric else nil) -- (26 Oct: a top is matte cloth)
 	paint("LowerTorso", shorts, self.marble and Enum.Material.Marble or Enum.Material.Fabric)
 	self.skinStage = nil -- (the skin pass puts the stage back on)
 end
@@ -667,10 +667,14 @@ local function recolor(self, group)
 	elseif group.def.kind == "snatched" or group.def.kind == "unified" or group.def.hidePart or template then
 		-- it stands in for the body part: the body part's own color and material
 		part.Color, part.Material = body.Color, smoothMaterial(body.Material)
-		if group.def.kind == "unified" and group.kindIndex == 3 and not template then part.Color = top end
+		-- (26 Oct) the top's colour is in the mesh's vertex colours (kindBase): the part stays white, or the two multiply (a
+		-- grey top came out almost black)
+		if group.def.kind == "unified" and group.kindIndex == 3 and not template then part.Color = if group.mesh then Color3.new(1, 1, 1) else top end
 		if (group.def.kind == "unified" and group.kindIndex == 1) or group.def.hidePart then part.Color = skin end
 	else
-		part.Color, part.Material = Color3.new(1, 1, 1), Enum.Material.SmoothPlastic
+		-- (owner, 26 Oct) the torso's muscles under a top are matte cloth like the shorts (SmoothPlastic made the top glossy)
+		local cloth = group.kindIndex == 3 and self.style.top ~= nil and not self.mirrorMode
+		part.Color, part.Material = Color3.new(1, 1, 1), if cloth then Enum.Material.Fabric else Enum.Material.SmoothPlastic
 	end
 	if template ~= group.template or (template and not group.cloth) then
 		task.spawn(makeCloth, self, group, template)

@@ -2465,14 +2465,15 @@ do
 		Audio.PlayUI("Click")
 		UIBus.AutoRepCard:Fire()
 	end)
+	-- (owner, 26 Oct) everyone sees the AUTO TRAIN button (off for non-owners); a non-owner's tap opens Roblox's purchase
+	-- prompt for the pass right there. The AUTO chip on the REP button is gone.
 	local function refreshAuto()
 		local forSale = Monetization.PassByKey.AutoLift and Monetization.PassByKey.AutoLift.id
+		chip.Visible = false
 		if player:GetAttribute("Pass_AutoLift") == true then
 			hud.setAuto(player:GetAttribute("AutoLiftOn") and "on" or "off")
-			chip.Visible = false
 		else
-			hud.setAuto("hidden")
-			chip.Visible = forSale ~= nil
+			hud.setAuto(if forSale then "off" else "hidden")
 		end
 	end
 	hud.autoButton.Activated:Connect(function()
@@ -2480,7 +2481,8 @@ do
 			-- a local attribute: only this client reads it
 			player:SetAttribute("AutoLiftOn", not player:GetAttribute("AutoLiftOn"))
 		elseif Monetization.PassByKey.AutoLift and Monetization.PassByKey.AutoLift.id then
-			UIBus.OpenShop:Fire("Passes")
+			Audio.PlayUI("Click")
+			game:GetService("MarketplaceService"):PromptGamePassPurchase(player, Monetization.PassByKey.AutoLift.id)
 		end
 	end)
 	player:GetAttributeChangedSignal("Pass_AutoLift"):Connect(refreshAuto)

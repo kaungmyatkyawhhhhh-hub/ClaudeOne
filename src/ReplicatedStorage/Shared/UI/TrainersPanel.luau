@@ -172,14 +172,6 @@ function TrainersPanel.Build(parent: Instance, header)
 	local chartButton = Kit.Button("Dark", "Evolutions", { Name = "EvolutionsButton", LayoutOrder = 12, Parent = header.row or holder },
 		{ width = 104, height = 30, textSize = 12 })
 	table.insert(headerItems, chartButton)
-	-- (26 Oct, owner) BEST EQUIP: the server puts your strongest trainers in your slots
-	local bestButton = Kit.Button("Green", "Best equip", { Name = "BestEquip", LayoutOrder = 13, Parent = header.row or holder },
-		{ width = 104, height = 30, textSize = 12 })
-	table.insert(headerItems, bestButton)
-	bestButton.Activated:Connect(function()
-		Audio.PlayUI("Click")
-		if remote then remote:FireServer("BestEquip") end
-	end)
 	local function headerShown()
 		for _, item in ipairs(headerItems) do item.Visible = holder.Visible end
 	end
@@ -381,8 +373,16 @@ function TrainersPanel.Build(parent: Instance, header)
 		end
 	end)
 	-- (prompt 27b) the following trainers' real total, after the cap: "TOTAL +180% EXP (MAX +400%)"
-	local totalMain = chunky(detail, { Name = "Total", TextColor3 = Colors.Gold }, 11)
+	local totalMain = chunky(detail, { Name = "Total", TextColor3 = Colors.Gold, TextXAlignment = Enum.TextXAlignment.Left }, 11)
 	Kit.Fit(totalMain, 11, 7)
+	-- (26 Oct, owner) BEST EQUIP: the server puts your strongest trainers (by stats) in your slots; on the TOTAL line (the
+	-- title row had no room left on phones)
+	local BEST_W, BEST_H = 96, 24
+	local bestButton = Kit.Button("Green", "Best equip", { Name = "BestEquip", Parent = detail }, { width = BEST_W, height = BEST_H, textSize = 12 })
+	bestButton.Activated:Connect(function()
+		Audio.PlayUI("Click")
+		if remote then remote:FireServer("BestEquip") end
+	end)
 
 	-- places the detail's pieces for the layout (side = phone, stack = PC / the reference)
 	local function placeDetail()
@@ -405,7 +405,8 @@ function TrainersPanel.Build(parent: Instance, header)
 			at(feed.button, w - 8 - feed.size, 16 + b)
 			at(feed.pop, math.max(8, w - 8 - 250), 12 + b)
 			at(nextCell, 16 + bw, by, w - 24 - bw, BUTTON_H)
-			at(totalMain, 8, by + BUTTON_H + 6, w - 16, 14)
+			at(totalMain, 8, by + BUTTON_H + 9, w - 24 - BEST_W, 14)
+			at(bestButton, w - 8 - BEST_W, by + BUTTON_H + 4)
 		else
 			at(big.cell, math.floor((w - b) / 2), 8)
 			at(expBar, 8, 16 + b, w - 16, 22)
@@ -420,7 +421,8 @@ function TrainersPanel.Build(parent: Instance, header)
 			at(feed.button, w - 8 - feed.size, 16 + b)
 			at(feed.pop, math.max(8, w - 8 - 250), 12 + b)
 			at(nextCell, 16 + bw, by, w - 24 - bw, BUTTON_H)
-			at(totalMain, 8, by + BUTTON_H + 6, w - 16, 14)
+			at(totalMain, 8, by + BUTTON_H + 9, w - 24 - BEST_W, 14)
+			at(bestButton, w - 8 - BEST_W, by + BUTTON_H + 4)
 		end
 	end
 
