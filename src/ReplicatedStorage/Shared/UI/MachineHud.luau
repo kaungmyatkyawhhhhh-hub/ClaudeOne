@@ -208,6 +208,24 @@ function MachineHud.Build()
 	-- AutoHeight on screen)
 	hud.autoButton, hud.autoLabel = Kit.Button("Quiet", "Auto train", { Name = "Auto", AnchorPoint = Vector2.new(1, 0),
 		Position = UDim2.new(1, 0, 1, 8), Visible = false, Parent = panel }, { width = size.X, height = 34, icon = "lock", textSize = 14 })
+	-- (owner, 26 Oct: "the auto train text is not centered") the words centred on the whole button (the icon and the words
+	-- were centred as one group, so the words sat right of centre); the icon on its own at the left
+	do
+		local button = hud.autoButton
+		local list = button:FindFirstChildOfClass("UIListLayout")
+		if list then list:Destroy() end
+		local face = 1 - Theme.LipHeight
+		hud.autoLabel.AutomaticSize = Enum.AutomaticSize.None
+		hud.autoLabel.AnchorPoint = Vector2.new(0.5, 0.5)
+		hud.autoLabel.Position = UDim2.fromScale(0.5, 0.5)
+		hud.autoLabel.Size = UDim2.new(1, -60, face, 0)
+		hud.autoLabel.TextXAlignment = Enum.TextXAlignment.Center
+		local icon = button:FindFirstChild("Icon")
+		if icon then
+			icon.AnchorPoint = Vector2.new(0, 0.5)
+			icon.Position = UDim2.new(0, 10, 0.5, 0)
+		end
+	end
 
 	-- (kept for MachineClient, not shown: the muscle split is on the machine's sign, the barbell drawing and the stamina
 	-- segments are gone, stamina is the bar at the bottom)
@@ -228,8 +246,9 @@ function MachineHud.Build()
 	local repRow = frame({ Name = "Content", Size = UDim2.new(1, 0, 1 - Theme.LipHeight, 0), Parent = rep }, {
 		Theme.List(Enum.FillDirection.Horizontal, 6, Enum.HorizontalAlignment.Center, Enum.VerticalAlignment.Center),
 	})
-	Kit.Text({ Name = "Label", LayoutOrder = 1, Text = "REP", Font = "Chunky", TextSize = 30, Size = UDim2.fromOffset(0, 34), AutomaticSize = Enum.AutomaticSize.X, Parent = repRow })
-	hud.repsLabel = Kit.Text({ Name = "Count", LayoutOrder = 2, Text = "x0", Font = "Chunky", TextSize = 18, Size = UDim2.fromOffset(0, 22),
+	-- (owner, 26 Oct: "make the REP button use the premium font") the premium buttons' heavy italic (PremiumKit)
+	Kit.Text({ Name = "Label", LayoutOrder = 1, Text = "REP", Font = "Title", KeepItalic = true, TextSize = 30, Size = UDim2.fromOffset(0, 34), AutomaticSize = Enum.AutomaticSize.X, Parent = repRow })
+	hud.repsLabel = Kit.Text({ Name = "Count", LayoutOrder = 2, Text = "x0", Font = "Title", KeepItalic = true, TextSize = 18, Size = UDim2.fromOffset(0, 22),
 		AutomaticSize = Enum.AutomaticSize.X, Parent = repRow })
 	hud.repsScale = New("UIScale", { Parent = hud.repsLabel })
 	hud.repButton = rep

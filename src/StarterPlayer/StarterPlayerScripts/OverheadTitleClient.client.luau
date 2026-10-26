@@ -115,7 +115,8 @@ local function updateBadge(other)
 		end)
 		-- (owner, 26 Oct: "remove the yellow border outline in the alter label") no coloured outline round the pill
 		Theme.New("TextLabel", { Name = "Text", BackgroundTransparency = 1, Size = UDim2.fromScale(1, 1), TextScaled = true,
-			FontFace = Font.fromEnum(Enum.Font.LuckiestGuy), TextColor3 = Color3.new(1, 1, 1), TextTransparency = fade, Text = "", ZIndex = 7, Parent = badge }, {
+			-- (owner, 26 Oct: "the same font as the player's username label": StyleService's NameTag, Theme.Fonts.Heading)
+			FontFace = Theme.Fonts.Heading, TextColor3 = Color3.new(1, 1, 1), TextTransparency = fade, Text = "", ZIndex = 7, Parent = badge }, {
 			Theme.New("UIPadding", { PaddingTop = UDim.new(0.14, 0), PaddingBottom = UDim.new(0.1, 0) }),
 			Theme.New("UIStroke", { Color = BADGE_OUTLINE, Thickness = 2, Transparency = fade }),
 		})
