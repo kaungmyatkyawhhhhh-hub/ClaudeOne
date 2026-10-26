@@ -42,7 +42,7 @@ Alters.Tiers = {
 -- (Downloads\gym_arc_alters\tier1_human_tiled): the body's UVs spread one texture over 10-14 studs, so the striations and
 -- veins came out about twice too big and soft. Old ids: Shredded 119513312479015 / 103766752198769 / 71101897859940,
 -- Vascular 103109392852988 / 72861088552312 / 121431954405592, Peak 128233798561844 / 127999198166079 / 89748828998136.
--- (prompt 38b) Peak's normal map re-uploaded as 99012039750322: the first upload (74285776621086) never loaded in game.
+-- (prompt 38b) Peak's normal map re-uploaded as 127542859522710: the first upload (74285776621086) never loaded in game.
 -- textures: rbxassetid ids of the color / normal / roughness maps (uploaded 21 Oct); placeholder = the color shown for an
 -- alter that has no textures yet (the Alters tab's "Coming soon" card).
 -- mean: the color map's average color (its tint math, Alters.Tint); tone: a bronze tan (Alters.Tint) instead of the plain
@@ -53,23 +53,23 @@ local function t(color, normal, roughness, metalness) return { color = color, no
 local function id(n) return "rbxassetid://" .. n end
 Alters.List = {
 	-- Tier 1: Human
-	{ id = "Pumped", name = "Pumped", tier = 1, textures = t("rbxassetid://118652537566937", "rbxassetid://77670612429230", "rbxassetid://109400263905498"), mean = { 242, 207, 189 } },
-	{ id = "Shredded", name = "Shredded", tier = 1, textures = t("rbxassetid://80449661881061", "rbxassetid://112368353705678", "rbxassetid://135284888816077"), mean = { 242, 235, 225 } },
-	{ id = "Tanned", name = "Tanned", tier = 1, textures = t("rbxassetid://124927923688709", "rbxassetid://95570134134448", "rbxassetid://74028606958342"), mean = { 194, 136, 94 }, tone = "Tan" },
-	{ id = "Vascular", name = "Vascular", tier = 1, textures = t("rbxassetid://138226447249744", "rbxassetid://134369961190395", "rbxassetid://79671580983023"), mean = { 232, 215, 203 } },
-	{ id = "Peak", name = "Peak", tier = 1, textures = t("rbxassetid://88467569632374", "rbxassetid://99012039750322", "rbxassetid://122443770392636"), mean = { 178, 123, 80 }, tone = "Tan" },
+	{ id = "Pumped", name = "Pumped", tier = 1, textures = t("rbxassetid://72026269031739", "rbxassetid://138975164134801", "rbxassetid://71709604632381"), mean = { 242, 207, 189 } },
+	{ id = "Shredded", name = "Shredded", tier = 1, textures = t("rbxassetid://104642189497370", "rbxassetid://117649849113991", "rbxassetid://140178966772946"), mean = { 242, 235, 225 } },
+	{ id = "Tanned", name = "Tanned", tier = 1, textures = t("rbxassetid://131732953848262", "rbxassetid://125769271183037", "rbxassetid://86397810143222"), mean = { 194, 136, 94 }, tone = "Tan" },
+	{ id = "Vascular", name = "Vascular", tier = 1, textures = t("rbxassetid://120386864458604", "rbxassetid://122654494233325", "rbxassetid://116600013517130"), mean = { 232, 215, 203 } },
+	{ id = "Peak", name = "Peak", tier = 1, textures = t("rbxassetid://87366831924259", "rbxassetid://127542859522710", "rbxassetid://71845369454810"), mean = { 178, 123, 80 }, tone = "Tan" },
 	-- Tier 2: Stone
-	{ id = "Clay", name = "Clay", tier = 2, placeholder = "#A0664A", textures = t(id(111908333081375), id(95059292570431), id(83773917914492)), mean = { 165, 98, 68 }, tone = "Raw" },
-	{ id = "Sandstone", name = "Sandstone", tier = 2, placeholder = "#C9A46B", textures = t(id(129006372823283), id(88101824353820), id(71033092117130)), mean = { 210, 175, 122 }, tone = "Raw" },
-	{ id = "Granite", name = "Granite", tier = 2, placeholder = "#7D7A78", textures = t(id(132912767006986), id(116202207751522), id(77503221662735)), mean = { 126, 122, 121 }, tone = "Raw" },
-	{ id = "Marble", name = "Marble", tier = 2, placeholder = "#E6E2DA", textures = t(id(74381425963314), id(117879246271249), id(79039157977312)), mean = { 230, 227, 221 }, tone = "Raw" },
-	{ id = "Obsidian", name = "Obsidian", tier = 2, placeholder = "#1E1A24", textures = t(id(94192074907581), id(110703296866261), id(77871006229352), id(130332354383261)), mean = { 43, 35, 58 }, tone = "Raw" },
+	{ id = "Clay", name = "Clay", tier = 2, placeholder = "#A0664A", textures = t(id(103208927128365), id(136027021701036), id(122387739358544)), mean = { 165, 98, 68 }, tone = "Raw" },
+	{ id = "Sandstone", name = "Sandstone", tier = 2, placeholder = "#C9A46B", textures = t(id(117662966490292), id(111143229275099), id(102285905430312)), mean = { 210, 175, 122 }, tone = "Raw" },
+	{ id = "Granite", name = "Granite", tier = 2, placeholder = "#7D7A78", textures = t(id(114152066626373), id(92860427424693), id(99689363876400)), mean = { 126, 122, 121 }, tone = "Raw" },
+	{ id = "Marble", name = "Marble", tier = 2, placeholder = "#E6E2DA", textures = t(id(125633369236681), id(80871636008375), id(122670512763076)), mean = { 230, 227, 221 }, tone = "Raw" },
+	{ id = "Obsidian", name = "Obsidian", tier = 2, placeholder = "#1E1A24", textures = t(id(74163280373750), id(128170621754211), id(136816173687866), id(90462650806054)), mean = { 43, 35, 58 }, tone = "Raw" },
 	-- Tier 3: Metal
-	{ id = "Bronze", name = "Bronze", tier = 3, placeholder = "#B0783C", textures = t(id(138659889209863), id(80938307342948), id(80326497501913), id(83058908656216)), mean = { 165, 114, 58 }, tone = "Raw" },
-	{ id = "Iron", name = "Iron", tier = 3, placeholder = "#5E5E62", textures = t(id(123398371909835), id(135884275559153), id(116181911858401), id(130000358095791)), mean = { 75, 75, 78 }, tone = "Raw" },
-	{ id = "Steel", name = "Steel", tier = 3, placeholder = "#9AA3AD", textures = t(id(121058418181770), id(127909722412233), id(72700386465198), id(132649841828659)), mean = { 164, 173, 183 }, tone = "Raw" },
-	{ id = "Chrome", name = "Chrome", tier = 3, placeholder = "#D9DEE4", textures = t(id(125031692272498), id(111437180712024), id(111783985655994), id(97478536021472)), mean = { 217, 222, 229 }, tone = "Raw" },
-	{ id = "Gold", name = "Gold", tier = 3, placeholder = "#F6C75A", textures = t(id(84450097571938), id(119906769696624), id(129600558914310), id(133250327586929)), mean = { 231, 179, 67 }, tone = "Raw" },
+	{ id = "Bronze", name = "Bronze", tier = 3, placeholder = "#B0783C", textures = t(id(134358575784801), id(133985434758558), id(90828296969539), id(83720974094937)), mean = { 165, 114, 58 }, tone = "Raw" },
+	{ id = "Iron", name = "Iron", tier = 3, placeholder = "#5E5E62", textures = t(id(85062646070713), id(84994385232743), id(109255323615122), id(120539270404937)), mean = { 75, 75, 78 }, tone = "Raw" },
+	{ id = "Steel", name = "Steel", tier = 3, placeholder = "#9AA3AD", textures = t(id(109461347330742), id(119196588974380), id(123975203147889), id(124094158642489)), mean = { 164, 173, 183 }, tone = "Raw" },
+	{ id = "Chrome", name = "Chrome", tier = 3, placeholder = "#D9DEE4", textures = t(id(90626623939699), id(112037747861980), id(130908811716029), id(128099095525117)), mean = { 217, 222, 229 }, tone = "Raw" },
+	{ id = "Gold", name = "Gold", tier = 3, placeholder = "#F6C75A", textures = t(id(136879292698795), id(118971647256051), id(93359417743460), id(123859532569605)), mean = { 231, 179, 67 }, tone = "Raw" },
 	-- Tier 4: Gem
 	{ id = "Jade", name = "Jade", tier = 4, placeholder = "#3FA77A" },
 	{ id = "Ruby", name = "Ruby", tier = 4, placeholder = "#C21E3A" },

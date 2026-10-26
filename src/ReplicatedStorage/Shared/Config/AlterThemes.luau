@@ -62,13 +62,13 @@ local themes = {}
 
 -- Tier 1 (art by the planner: Downloads\gym_arc_alters\ui_tier1, uploaded 21 Oct)
 themes[1] = { -- PUMPED: crimson, a heartbeat
-	bg = "rbxassetid://118148533402740", base = C("#3A0A0E"), accent = C("#FF3B3B"), buttonText = C("#FFFFFF"),
+	bg = "rbxassetid://116819823138326", base = C("#3A0A0E"), accent = C("#FF3B3B"), buttonText = C("#FFFFFF"),
 	title = { C("#FF6A5E"), C("#B3121A") }, intro = "heartbeat",
 	particle = { texture = "ember", color = C("#FF4A3A"), motion = "rise" },
 	sting = { { "Heartbeat", 0 } },
 }
 themes[2] = { -- SHREDDED: steel / silver, ice-blue, a blade
-	bg = "rbxassetid://121615053568328", base = C("#14181D"), accent = C("#A9D4F2"), buttonText = C("#14181D"),
+	bg = "rbxassetid://80757474213440", base = C("#14181D"), accent = C("#A9D4F2"), buttonText = C("#14181D"),
 	title = { C("#EEF3F8"), C("#8C9AAA") }, intro = "slice",
 	-- (prompt 57) its art is dark steel with thin blades at the edges: on the HUD's NEXT pill a lighter shade and a wash of
 	-- the accent, so it shows as much as PUMPED's (pillShade = the black's transparency left / right; pillWash = the
@@ -78,19 +78,19 @@ themes[2] = { -- SHREDDED: steel / silver, ice-blue, a blade
 	sting = { { "Shing", 0 } },
 }
 themes[3] = { -- TANNED: bronze sunset, the sun
-	bg = "rbxassetid://107568445227398", base = C("#4A2208"), accent = C("#FFB347"), buttonText = C("#3A1C05"),
+	bg = "rbxassetid://87062086356635", base = C("#4A2208"), accent = C("#FFB347"), buttonText = C("#3A1C05"),
 	title = { C("#FFD08A"), C("#E0761E") }, intro = "rise",
 	particle = { texture = "ember", color = C("#FFC062"), motion = "rise" },
 	sting = { { "WarmWhoosh", 0 }, { "WarmChime", 0.25 } },
 }
 themes[4] = { -- VASCULAR: dark purple, red and blue veins
-	bg = "rbxassetid://120390420209329", base = C("#120A1A"), accent = C("#D86BF0"), buttonText = C("#FFFFFF"),
+	bg = "rbxassetid://140546408644128", base = C("#120A1A"), accent = C("#D86BF0"), buttonText = C("#FFFFFF"),
 	title = { C("#FF5A6E"), C("#5A6BFF") }, intro = "veins",
 	particle = { texture = "spark", color = C("#C86BFF"), motion = "drift" },
 	sting = { { "Crackle", 0 } },
 }
 themes[5] = { -- PEAK: black + gold, the summit (tier finale)
-	bg = "rbxassetid://116089241327514", base = C("#100C06"), accent = C("#F6C75A"), buttonText = C("#2A1C04"),
+	bg = "rbxassetid://81204181773367", base = C("#100C06"), accent = C("#F6C75A"), buttonText = C("#2A1C04"),
 	title = { C("#FFF3C4"), C("#C98A12") }, intro = "spotlight",
 	particle = { texture = "spark", color = C("#FFD36B"), motion = "fall" },
 	sting = { { "Brass", 0 }, { "CheerBig", 0.3 } },
