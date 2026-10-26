@@ -15,11 +15,13 @@ GrowthSpurts.MaxHeight = GrowthSpurts.MaxHeightInches -- (older name, kept for c
 -- 47 / 72 / 103 / 135 / 157 -> 58 / 92 / 132 / 164 / 178.
 GrowthSpurts.Stages = {
 	{ height = 54, requiredLevel = 9, bonus = 1.25 }, -- (prompt 20, 21 Oct: 15 -> 9, first Growth Spurt in ~5 min)
-	{ height = 60, requiredLevel = 52, bonus = 1.5 }, -- (prompt 20: 58 -> 56; prompt 16: 52; prompt 32: pro machines back behind Spurt 2, still 15.9 min in tests/pacing)
-	{ height = 66, requiredLevel = 92, bonus = 1.75 },
-	{ height = 72, requiredLevel = 132, bonus = 2 },
-	{ height = 78, requiredLevel = 191, bonus = 2.5 }, -- (prompt 36, 22 Oct: 164 -> 191, the Pro Gym's heavier tiers; 45 min again)
-	{ height = 84, requiredLevel = 238, bonus = 3 }, -- (prompt 36: 178 -> 216; prompt 58: 216 -> 238, the Powerlifting Gym at Spurt 5 had made it 41 min: 45 again)
+	-- (26 Oct, retention: Targets 5/15/25/35/45 -> 5/10/18/28/38, retuned with tests/pacing tune: 52/92/132/191/238 ->
+	-- 35/68/113/163/197; the old 1 -> 2 jump was 3x longer and the middle spurts took 3-4 sessions each)
+	{ height = 60, requiredLevel = 35, bonus = 1.5 }, -- (prompt 20: 58 -> 56; prompt 16: 52; 26 Oct: 35, 9.8 min)
+	{ height = 66, requiredLevel = 68, bonus = 1.75 }, -- (26 Oct: 92 -> 68, 17.8 min)
+	{ height = 72, requiredLevel = 113, bonus = 2 }, -- (26 Oct: 132 -> 113, 27.8 min)
+	{ height = 78, requiredLevel = 163, bonus = 2.5 }, -- (prompt 36, 22 Oct: 164 -> 191; 26 Oct: 163, 37.9 min)
+	{ height = 84, requiredLevel = 197, bonus = 3 }, -- (prompt 58: 216 -> 238; 26 Oct: 197, 37.7 min)
 }
 
 -- Beyond the table: keep growing until MaxHeight, and keep adding level + bonus. (From here the bonus mostly runs
@@ -30,7 +32,7 @@ GrowthSpurts.ExtraPerStage = { height = 6, requiredLevel = 18, bonus = 0.5 }
 -- one ("normal play with some tapping": half the sets tapped, see tests/pacing).
 -- The requiredLevel values above are tuned to these with tests/pacing, which plays simulated players through the
 -- spurts with the real gains formula. If gains, tiers, stamina or bonuses change, rerun it and retune the levels.
-GrowthSpurts.Targets = { 5, 15, 25, 35, 45 }
+GrowthSpurts.Targets = { 5, 10, 18, 28, 38 } -- (26 Oct: was 5, 15, 25, 35, 45)
 
 function GrowthSpurts.TargetMinutes(n)
 	local targets = GrowthSpurts.Targets
@@ -51,6 +53,20 @@ end
 function GrowthSpurts.GetHeight(spurts)
 	local height = spurts == 0 and GrowthSpurts.StartHeight or GrowthSpurts.Get(spurts).height
 	return math.min(height, GrowthSpurts.MaxHeightInches)
+end
+
+-- (owner, 24 Oct) past 7'0": every finished Body Alter tier (5 alters) adds AlterTierInches (Tier 1 done = 7'4").
+GrowthSpurts.AlterTierInches = 4
+GrowthSpurts.AltersPerTier = 5
+
+-- A player's real height: the Growth Spurt height, plus the alter tiers once at 7'0" (data.alter.highest, Config/Alters).
+function GrowthSpurts.PlayerHeight(data)
+	local spurts = type(data) == "table" and data.growthSpurts or 0
+	local height = GrowthSpurts.GetHeight(spurts or 0)
+	if height < GrowthSpurts.MaxHeightInches then return height end
+	local alter = type(data) == "table" and data.alter
+	local highest = type(alter) == "table" and tonumber(alter.highest) or 0
+	return height + GrowthSpurts.AlterTierInches * (highest // GrowthSpurts.AltersPerTier)
 end
 
 -- The spurt that reaches 7'0" (the last one anybody can do).
@@ -135,8 +151,8 @@ end
 -- (prompt 58, owner 23 Oct: not a new gym every spurt) What each Growth Spurt opens, shown under the "Growth Spurt!"
 -- moment (StatsClient) so a spurt without a new gym still feels big. Short, in caps, joined with " · ".
 GrowthSpurts.Unlocks = {
-	[1] = { "BEACH GYM", "POSES", "CREWS", "LOCAL SHOW" },
-	[2] = { "TRAINERS", "ARM WRESTLING", "REGIONAL SHOW" },
+	[1] = { "TRAINERS", "BEACH GYM", "POSES", "CREWS", "LOCAL SHOW" }, -- (26 Oct: trainers from Spurt 1)
+	[2] = { "2ND TRAINER SLOT", "GEAR", "ARM WRESTLING", "REGIONAL SHOW" },
 	[3] = { "PRO GYM", "AURAS", "PUMP SHOP" },
 	[4] = { "NATIONAL SHOW" },
 	[5] = { "POWERLIFTING GYM", "PRO CARD QUALIFIER" },
@@ -148,7 +164,7 @@ function GrowthSpurts.UnlockText(spurts: number): string?
 end
 
 GrowthSpurts.Milestones = { 25, 50, 75 }
-GrowthSpurts.MilestoneCoinMinutes = 0.5
+GrowthSpurts.MilestoneCoinMinutes = 2 -- (26 Oct: 0.5 -> 2, half a minute of coins felt like nothing; the marks stay 25/50/75, the funnel steps use them)
 
 -- The goal bar's share (0..1), exactly as the HUD shows it (ProgressClient): the shown levels of every group, each
 -- capped at the goal, against the goal in every group.

@@ -37,7 +37,8 @@ local MONSTER_DEFAULT: number = Index.monsterDefaultG or 1.35
 -- The shape layers (the traps yoke, the round delt caps; see addUpperTraps / addRoundDelts) grow with their muscle's level
 -- but have their own, gentler mass monster size (key "<muscle>@shape"): times the data's own monster sizes they made
 -- horns and folded wings.
-MuscleMeshes.ShapeMonsterG = { Traps = 1.6, FrontDelts = 1.6, SideDelts = 1.6, RearDelts = 1.6, Rhomboids = 1.7, LowerBack = 1.7, Lats = 1.3, Quads = 1.3 } :: { [string]: number }
+-- (Biceps: the biceps mass layer, see addBicepsMass; drawn by MuscleRig, this only sizes its mesh bounds)
+MuscleMeshes.ShapeMonsterG = { Traps = 1.6, FrontDelts = 1.6, SideDelts = 1.6, RearDelts = 1.6, Rhomboids = 1.7, LowerBack = 1.7, Lats = 1.3, Quads = 1.3, Biceps = 1.1 } :: { [string]: number }
 function MuscleMeshes.MonsterG(key: string): number
 	local muscle = string.match(key, "^(.-)@shape$")
 	if muscle then return MuscleMeshes.ShapeMonsterG[muscle] or 1.3 end
@@ -616,6 +617,48 @@ local function addRoundDelts(data, outward: number)
 	end
 end
 
+-- The biceps past the full look (owner, 23 Oct, prompt 66: "huge bulging blob sticking out of the upper arm, overlapping
+-- the forearm / chest, stretched skin"). The data's bicep growth is a push off the skin, not a scale around the arm: forward,
+-- sideways and DOWN toward the elbow, and it reaches the elbow; drawn at the mass monster (x3.4: monsterG 2.883 x the
+-- monster's extra thickness) it stood 0.84 studs off a 0.77 stud deep arm and ran over the elbow into the forearm. Now the
+-- data's bicep stops at the full look (MuscleRig meshShown) and past it this BICEPS MASS layer (the Biceps shape layer)
+-- takes over: the full-look bicep's own footprint pushed straight out from the arm's centre line (no up / down part:
+-- thicker, never longer), Peak studs at its peak, none below ElbowTo, all from ElbowFrom up (part-local height), so a curl
+-- never pushes it into the forearm. How much of it shows is capped (BicepsMassAt): the arm through the bicep at most Cap
+-- thicker than the arm without it (Depth: the bare arm's depth at the bicep's peak, plus Triceps x the triceps' drawn
+-- size behind it), and the bicep (Biceps: the data's bicep at the full look) never sticks out further than the delt cap
+-- beside it (DeltCap x the side delt cap's drawn size). What the cap holds back makes the whole arm (upper arm + forearm)
+-- up to ArmGrow thicker instead (MuscleRig armThick).
+MuscleMeshes.BicepsMass = { Peak = 0.16, ElbowTo = -0.46, ElbowFrom = -0.3, Cap = 0.35, Depth = 0.765, Triceps = 0.159,
+	Biceps = 0.245, DeltCap = 0.305, ArmGrow = 0.06 }
+local function addBicepsMass(data)
+	local B, m = MuscleMeshes.BicepsMass, data.muscles.Biceps
+	if not m then return end
+	local pushes, biggest = {}, 0
+	for j, v in ipairs(m.idx) do
+		local p = data.base[v]
+		local out = Vector3.new(p.X, 0, p.Z) -- (the arm's centre line is part-local X = Z = 0)
+		if out.Magnitude < 1e-4 then continue end
+		out = out.Unit
+		local push = math.max(m.disp[j]:Dot(out), 0) * ease((p.Y - B.ElbowTo) / (B.ElbowFrom - B.ElbowTo))
+		if push > 0 then
+			pushes[v] = out * push
+			biggest = math.max(biggest, push)
+		end
+	end
+	if biggest <= 0 then return end
+	for v, push in pairs(pushes) do addShape(data, "Biceps", v, push * (B.Peak / biggest)) end
+end
+-- How much of the biceps mass layer shows (0 .. t) and how much the cap held back (MuscleRig armThick): t = the biceps' way
+-- into the mass monster (0 .. 1.1), triceps / delts = the drawn sizes of the triceps and the side delt cap.
+function MuscleMeshes.BicepsMassAt(t: number, triceps: number, delts: number): (number, number)
+	if t <= 0 then return 0, 0 end
+	local B = MuscleMeshes.BicepsMass
+	local room = math.min(B.Cap * (B.Depth + B.Triceps * triceps), B.DeltCap * delts)
+	local shown = math.clamp((room - B.Biceps) / B.Peak, 0, t)
+	return shown, t - shown
+end
+
 function MuscleMeshes.LoadUnified(name: string): any
 	local found = unifiedCache[name]
 	if found then return found end
@@ -647,6 +690,7 @@ function MuscleMeshes.LoadUnified(name: string): any
 	end
 	if record.part == "RightUpperArm" then addRoundDelts(data, 1) end
 	if record.part == "LeftUpperArm" then addRoundDelts(data, -1) end
+	if record.part == "RightUpperArm" or record.part == "LeftUpperArm" then addBicepsMass(data) end
 	fitNormals(data)
 	unifiedCache[name] = data
 	return data

@@ -31,8 +31,10 @@ Guides.StartDelay = 8 -- seconds of play before the first guide (after the menu 
 -- Store only a single item may need a level, never a whole tab.)
 Guides.Locks = {
 	{ tile = "Emotes", need = { spurts = 1 }, when = "Growth Spurt 1", progress = 1, tease = "Get on stage and flex in front of everyone." },
+	-- (26 Oct: retention) trainers, the strongest hook, open at Growth Spurt 1 (about 6 minutes in, so the first session has a
+	-- roll in it)
 	{ tile = "Crew", need = { spurts = 1 }, when = "Growth Spurt 1", progress = 1, tease = "Make a crew with your friends and win shows together." },
-	{ tile = "Trainers", need = { spurts = 2 }, when = "Growth Spurt 2", progress = 2, tease = "Hire a coach who lifts with you. Some are really rare." },
+	{ tile = "Trainers", need = { spurts = 1 }, when = "Growth Spurt 1", progress = 1, tease = "Hire a coach who lifts with you. Some are really rare." },
 	{ tile = "Genetics", need = { level = 5, spurts = 1 }, when = "LVL 5", tease = "See which muscles grow fastest for you." },
 	{ tile = "Inventory", need = { reps = 60, spurts = 1 }, when = "a few minutes", tease = "Your shakes and boosts go here." },
 }
@@ -68,6 +70,10 @@ Guides.List = {
 	{ id = "HeavierWeight", need = { heavier = true }, reward = 25,
 		lines = { "A heavier weight just opened! Heavier lifts give more EXP every rep.", "Pick it on the machine's weight bar." } },
 	-- Growth Spurt 1
+	{ id = "Trainers", need = { spurts = 1 }, tile = "Trainers", reward = 25,
+		lines = { "TRAINERS are open! Hire a coach who lifts with you and boosts your gains.", "Your first roll is free!" } },
+	{ id = "TrainerAgency", need = { spurts = 1 }, big = true, place = "Tag:TrainerDesk", label = "TRAINER AGENCY",
+		lines = { "Roll for trainers at the Trainer Agency desk. Some of them are really rare." } },
 	{ id = "BeachGym", need = { spurts = 1 }, big = true, reward = 25, place = "Gym:Beach", label = "BEACH GYM",
 		lines = { "The BEACH GYM is open! New machines out in the sun.", "Let's go take a look." } },
 	{ id = "Emotes", need = { spurts = 1 }, tile = "Emotes", reward = 25,
@@ -84,10 +90,6 @@ Guides.List = {
 	{ id = "Spotting", need = { reps = 400 }, reward = 25,
 		lines = { "Tip: walk up to someone lifting and tap SPOT to help them. You both lift harder." } },
 	-- Growth Spurt 2 (prompt 58: no new gym here)
-	{ id = "Trainers", need = { spurts = 2 }, tile = "Trainers", reward = 25,
-		lines = { "TRAINERS are open! Hire a coach who lifts with you and boosts your gains." } },
-	{ id = "TrainerAgency", need = { spurts = 2 }, big = true, place = "Tag:TrainerDesk", label = "TRAINER AGENCY",
-		lines = { "Roll for trainers at the Trainer Agency desk. Some of them are really rare." } },
 	{ id = "ArmWrestle", need = { spurts = 2 }, big = true, reward = 25, place = "Tag:ArmWrestleTable", label = "ARM WRESTLING",
 		lines = { "Arm wrestling is open! Sit at a table and challenge anyone in the server." } },
 	-- Growth Spurt 3 (prompt 58: the Pro Gym moved here from 2)

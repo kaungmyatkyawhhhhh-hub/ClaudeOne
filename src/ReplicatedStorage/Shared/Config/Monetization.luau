@@ -28,12 +28,14 @@ Monetization.Passes = {
 Monetization.Products = {
 	-- (prompt 61) the coin packs grow with the player: coinMinutes of coins at their stage (Config/Economy.Minutes), never less
 	-- than `coins` (the old fixed amounts). The server works it out at purchase time; the Store shows that exact number.
+	-- (owner, 24 Oct: 118k for a Large pack at 7'0" broke the economy) 20 / 120 / 360 min -> 10 / 30 / 60 min:
+	-- at 7'0" Small 3,300 / Medium 9,850 / Large 19,700.
 	{ key = "CoinsSmall", id = 3718306241, tab = "Coins", name = "Small Coins", text = "A pile of coins. The bigger you are, the more you get.",
-		coins = 1000, coinMinutes = 20, price = 25, art = "product_coins_small" },
+		coins = 1000, coinMinutes = 10, price = 25, art = "product_coins_small" },
 	{ key = "CoinsMedium", id = 3718306326, tab = "Coins", name = "Medium Coins", text = "A big pile of coins. The bigger you are, the more you get.",
-		coins = 5000, coinMinutes = 120, price = 99, art = "product_coins_medium" },
+		coins = 5000, coinMinutes = 30, price = 99, art = "product_coins_medium" },
 	{ key = "CoinsLarge", id = 3718306360, tab = "Coins", name = "Large Coins", text = "A huge pile of coins. The bigger you are, the more you get.",
-		coins = 15000, coinMinutes = 360, price = 249, art = "product_coins_large" },
+		coins = 15000, coinMinutes = 60, price = 249, art = "product_coins_large" },
 	{ key = "ShakePack", id = 3718306390, tab = "Boosts", name = "Shake Bundle", text = "3 Energy Shakes.", price = 49, art = "product_shake_bundle" },
 	-- (owner, 14 Oct: was "Stamina Refill", same id, renamed in the Creator Hub; MonetizationService / PlayerData)
 	{ key = "EndlessStamina", id = 3718306417, tab = "Boosts", name = "Endless Stamina", text = "15 min of stamina that never runs out. Stacks up to 60 min.",

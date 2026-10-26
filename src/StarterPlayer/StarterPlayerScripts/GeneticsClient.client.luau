@@ -1117,6 +1117,11 @@ local function refreshButtons()
 	Kit.SetButton(rerollButton, "Red", data.freeReroll and "Reroll · free" or "Reroll · 1 DNA token")
 	rerollButton.Active = not revealing
 	rerollButton.AutoButtonColor = false
+	-- (26 Oct: no purchase offers in a new player's first minutes) during the tutorial, with the free reroll used and no token,
+	-- the button hides instead of opening the R$ / 25,000 coins choice
+	local Onboarding = require(Shared.Config.Onboarding)
+	local inTutorial = ((data.onboarding or {}).tutorialStep or Onboarding.Done) < Onboarding.Done
+	rerollButton.Visible = not (inTutorial and not data.freeReroll and (data.dnaTokens or 0) <= 0)
 	tokensLabel.Text = data.dnaTokens .. (data.dnaTokens == 1 and " DNA TOKEN" or " DNA TOKENS")
 end
 

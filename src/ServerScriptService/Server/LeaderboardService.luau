@@ -4,7 +4,7 @@
 --   3. publishes it all as JSON in ReplicatedStorage.LeaderboardData (one StringValue): LeaderboardClient draws the boards
 --      near each player and works out "Your rank" from the list.
 -- Boards: Biggest (average muscle look), Strongest (heaviest weight ever lifted), Tallest (height), Most reps today (a
--- new store each UTC day), Posing wins, Arm wrestling wins.
+-- new store each UTC day), Posing wins, Arm wrestling wins, Alters (highest Body Alter), Level (the best top bar LVL ever).
 -- Studio: Workspace attribute TestLeaderboards = true fills every board with example rows (nothing is written).
 local Players = game:GetService("Players")
 local DataStoreService = game:GetService("DataStoreService")
@@ -77,7 +77,7 @@ local function valueOf(player: Player, data, boardId: string): number
 	elseif boardId == "Strongest" then
 		return heaviestLift(data)
 	elseif boardId == "Tallest" then
-		return math.floor(GrowthSpurts.GetHeight(data.growthSpurts or 0))
+		return math.floor(GrowthSpurts.PlayerHeight(data))
 	elseif boardId == "RepsToday" then
 		local today_ = data.repsToday
 		return (type(today_) == "table" and today_.day == today()) and (today_.count or 0) or 0
@@ -85,6 +85,12 @@ local function valueOf(player: Player, data, boardId: string): number
 		return data.stats.posingWins or 0
 	elseif boardId == "ArmWins" then
 		return data.stats.armWins or 0
+	elseif boardId == "Alters" then
+		local alter = data.alter
+		return type(alter) == "table" and tonumber(alter.highest) or 0
+	elseif boardId == "Level" then
+		-- the best LVL ever (the top bar's average muscle level; owner, 24 Oct: best, not the current one)
+		return PlayerData.NoteBestLevel(data)
 	end
 	return 0
 end
@@ -128,7 +134,7 @@ end
 local function testBoard(board)
 	local players = Players:GetPlayers()
 	local entries = {}
-	local base = { Biggest = 260, Strongest = 455, Tallest = 84, RepsToday = 1840, PosingWins = 37, ArmWins = 112 }
+	local base = { Biggest = 260, Strongest = 455, Tallest = 84, RepsToday = 1840, PosingWins = 37, ArmWins = 112, Alters = 5, Level = 305 }
 	for rank = 1, 40 do
 		local who = players[(rank - 1) % math.max(#players, 1) + 1]
 		local value = base[board.id] or 100

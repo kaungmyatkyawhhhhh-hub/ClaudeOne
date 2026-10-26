@@ -88,9 +88,29 @@ local function apply(player, state)
 	player:SetAttribute("TrainerSlots", slotsOf(player))
 end
 
+-- (26 Oct: retention) trainers open at Growth Spurt 1 and the first roll is free: once, for a player who never rolled
+-- (saved flag onboarding.firstTrainerRoll, so it is never given twice)
+local function firstRollGift(player, state)
+	local data = PlayerData.Get(player)
+	if not data or (data.growthSpurts or 0) < 1 or (type(data.onboarding) == "table" and data.onboarding.firstTrainerRoll) then return end
+	PlayerData.SetFlag(player, "firstTrainerRoll", true)
+	if (state.rolls or 0) == 0 and #state.copies == 0 then state.freeRolls += 1 end
+end
+
+-- (26 Oct) free rolls from elsewhere (the last playtime gift, PlaytimeService); used before coins like the others
+function TrainerService.AddFreeRolls(player, count: number)
+	if not PlayerData.Get(player) then return end
+	local state = stateOf(player)
+	state.freeRolls += math.max(0, math.floor(count))
+	apply(player, state)
+end
+
 -- Growth Spurts and alters can add a slot (ActionService calls this after them)
 function TrainerService.Refresh(player)
-	if PlayerData.Get(player) then apply(player, stateOf(player)) end
+	if not PlayerData.Get(player) then return end
+	local state = stateOf(player)
+	firstRollGift(player, state)
+	apply(player, state)
 end
 
 local function rollPrice(player): number
@@ -915,6 +935,7 @@ function TrainerService.Start()
 		local state = stateOf(player)
 		rebalanceGift(player, state)
 		rebalanceGift2(player, state)
+		firstRollGift(player, state)
 		apply(player, state)
 		-- the pass (bought later, or found at join) adds a slot
 		player:GetAttributeChangedSignal("Pass_" .. Trainers.ExtraSlotPass):Connect(function() apply(player, stateOf(player)) end)

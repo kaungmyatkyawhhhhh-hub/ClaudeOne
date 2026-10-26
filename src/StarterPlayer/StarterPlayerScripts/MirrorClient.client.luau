@@ -261,7 +261,7 @@ local function open(rigs)
 	pcall(lightCard)
 	local data = ClientData.Get()
 	local dayOne = data.dayOne or { height = GrowthSpurts.StartHeight, level = 0 }
-	local nowHeight = GrowthSpurts.GetHeight(data.growthSpurts)
+	local nowHeight = GrowthSpurts.PlayerHeight(data)
 	-- day one: the starting height, no muscle growth; now: today's height and muscle steps (both built by the server)
 	local before, beforeSize = prepare(rigs.before)
 	local after, afterSize = prepare(rigs.after)

@@ -754,6 +754,23 @@ function PlayerData.SetMachine(player, machineId, unlocked, selected, best)
 	return true
 end
 
+-- (owner, 24 Oct) the best LVL ever (the top bar's average muscle level) in stats.bestLevel, for the LEVEL board:
+-- noted before a Growth Spurt / alter resets the muscles, and on every leaderboard write. Returns it.
+function PlayerData.NoteBestLevel(data): number
+	local total, count = 0, 0
+	for _, muscle in ipairs(Muscles.List) do
+		local entry = data.muscles and data.muscles[muscle.id]
+		if entry then
+			total += Muscles.ExactLevel(entry)
+			count += 1
+		end
+	end
+	local now = math.floor(count > 0 and total / count or 0)
+	data.stats = data.stats or {}
+	data.stats.bestLevel = math.max(tonumber(data.stats.bestLevel) or 0, now)
+	return data.stats.bestLevel
+end
+
 -- Growth Spurt: if every group meets the goal, muscles reset to 0, the spurt count goes up
 -- (taller + permanent gains bonus via Config) and you get a DNA Token. Returns success.
 function PlayerData.GrowthSpurt(player)
@@ -762,6 +779,7 @@ function PlayerData.GrowthSpurt(player)
 	local Machines = require(Config.Machines)
 	local progress = GrowthSpurts.Progress(data, Muscles.Groups, Machines.TrainableMuscles(data.growthSpurts))
 	if not progress.ready then return false end
+	PlayerData.NoteBestLevel(data)
 	for _, muscle in ipairs(Muscles.List) do
 		data.muscles[muscle.id] = { level = 0, xp = 0 }
 	end
@@ -784,6 +802,7 @@ function PlayerData.Alter(player): number?
 	local progress = Alters.Progress(data, Muscles.Groups, Machines.TrainableMuscles(data.growthSpurts))
 	if not progress.ready then return nil end
 	updateBest(data)
+	PlayerData.NoteBestLevel(data)
 	if PlayerData.IsPersistent(player) and not save(player, false) then return nil end
 	if not PlayerData.Get(player) then return nil end -- (left while saving)
 	local kept = {}

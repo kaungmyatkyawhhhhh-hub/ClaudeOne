@@ -43,6 +43,7 @@ function DataTemplate.new()
 		daily = { lastDay = 0, streak = 0, best = 0, calendarDay = 0 }, -- login streak calendar (Config.Economy.Login): last claimed day + calendar day
 		-- today's quests (Config.DailyQuests, DailyService): list = { { id, progress, done, claimed } }, groups trained today
 		dailyQuests = { day = 0, list = {}, bonus = false, swaps = 0, groups = {} },
+		playtime = { day = 0, seconds = 0, claimed = 0 }, -- (26 Oct) minutes played today + playtime gifts paid today (Config.Playtime, PlaytimeService)
 		repsToday = { day = 0, count = 0 }, -- reps on the current UTC day (the "Most reps today" board, LeaderboardService)
 		trainers = { copies = {}, equipped = {}, discovered = { Base = true }, nextUid = 1, rolls = 0, pity = 0, autoDelete = {} },
 		starterPack = { bought = false }, -- (prompt 60) the STARTER PACK, bought once (MonetizationService)

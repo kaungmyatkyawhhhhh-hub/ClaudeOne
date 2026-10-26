@@ -22,9 +22,11 @@ Alters.BonusPer = 0.15  -- gains bonus per alter (x1.15, x1.30, x1.45 ...), the 
 -- the previous alter, with KeepShare kept and the bonus so far).
 -- Measured 21 Oct (lune run tests/pacing alters, 30 players): alter 1 15.5 min (from a fresh 7'0"), 2: 10.6, 3: 11.1,
 -- 4: 11.2, 5: 11.9 (later ones grow to ~16 by alter 10: retune when their textures come).
-Alters.FirstGoal = 95  -- alter 1 (from 7'0" with the muscles you have when you get there)
-Alters.GoalPer = 10     -- each later alter's goal is this much higher
-Alters.TargetMinutes = { 10, 15 } -- about 10-15 minutes per alter
+-- (owner, 24 Oct: all of Tier 1 = 8 hours) 95 / +10 -> 205 / +25: alter 1 ~1 h 50, 2: ~1 h 15, 3: ~1 h 30,
+-- 4: ~1 h 40, 5: ~1 h 55 = ~8 h (estimated from the EXP curve and the 21 Oct times; rerun tests/pacing alters to confirm).
+Alters.FirstGoal = 205  -- alter 1 (from 7'0" with the muscles you have when you get there)
+Alters.GoalPer = 25     -- each later alter's goal is this much higher
+Alters.TargetMinutes = { 75, 115 } -- Tier 1 in about 8 hours
 
 Alters.Tiers = {
 	{ id = "Human", name = "Human" },

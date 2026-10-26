@@ -456,10 +456,12 @@ end
 -- budget): the inner part (the bare body: skin with its texture stage, or the game's top / gym-shorts color), a hair smaller,
 -- and the outer "Cloth" part (the Shirt / Pants image as TextureID, a tiny bit transparent, so the image's see-through areas
 -- show the inner part, like skin under clothing on the real body part).
+-- (group.thick: the upper arms' extra thickness past the biceps cap, armThick; thicker, never longer)
 local function groupScale(group): Vector3
 	local ref = group.refSize
 	local size = group.body.Size
-	return Vector3.new(size.X / ref.X, size.Y / ref.Y, size.Z / ref.Z)
+	local thick = group.thick or 1
+	return Vector3.new(size.X / ref.X * thick, size.Y / ref.Y, size.Z / ref.Z * thick)
 end
 
 local INNER_SCALE = 0.97 -- (13 Oct: 0.985 let the skin flicker through tops in small speckles at a distance)
@@ -747,12 +749,31 @@ local MONSTER_EXTRA = Body.Widths.MassMonster.muscle_extra -- the monster's extr
 
 -- The growth one mesh / muscle is drawn at: its g up to the full look; past it toward its own monster size (manifest
 -- mass_monster.g by name) with the monster's extra thickness.
+-- The biceps (prompt 66, MuscleMeshes.BicepsMass): the data's bicep stops at the full look; past it the biceps mass layer
+-- ("Biceps@shape") grows, as far as its cap lets it (bicepsMass).
+local bicepsMass: (any) -> (number, number)
 local function meshShown(self, key: string, id: string): number
 	local g = currentShown(self, id)
+	if id == "Biceps" then
+		if key == "Biceps@shape" then return (bicepsMass(self)) end
+		return math.min(g, 1)
+	end
 	if g <= 1 then return g end
 	local t = math.clamp((g - 1) / math.max(Muscles.MonsterG(id) - 1, 0.01), 0, 1.1)
 	return (1 + t * (MuscleMeshes.MonsterG(key) - 1)) * (1 + MONSTER_EXTRA * math.min(t, 1))
 end
+-- the biceps mass layer drawn now, and what its cap held back (MuscleMeshes.BicepsMassAt)
+bicepsMass = function(self): (number, number)
+	local t = monsterT("Biceps", currentShown(self, "Biceps"))
+	if t <= 0 then return 0, 0 end
+	return MuscleMeshes.BicepsMassAt(t, meshShown(self, "Triceps", "Triceps"), meshShown(self, "SideDelts@shape", "SideDelts"))
+end
+-- the whole arm's extra thickness (upper arm + forearm parts, X and Z only) from what the biceps cap held back, in steps
+local function armThick(self): number
+	local _, over = bicepsMass(self)
+	return math.floor((1 + MuscleMeshes.BicepsMass.ArmGrow * math.min(over, 1)) * 400 + 0.5) / 400
+end
+local ARM_PARTS = { RightUpperArm = true, LeftUpperArm = true }
 
 -- the vein amount for a muscle: with the mass monster stage, and briefly while PUMPED at the full look
 local function veinFor(self, id: string): number
@@ -955,6 +976,11 @@ local function groupChanged(self, group): boolean
 		if piece.vein and veinOfPiece(self, piece) ~= group.appliedVein then return true end
 		for _, muscle in ipairs(piece.muscleNames) do
 			if math.abs(meshShown(self, muscle, muscle) - (group.appliedG[muscle] or 0)) > MIN_CHANGE then return true end
+		end
+		-- (the shape layers too: the biceps mass layer moves while the data's bicep stays at its full look)
+		for _, muscle in ipairs(piece.shapeNames or {}) do
+			local key = muscle .. "@shape"
+			if math.abs(meshShown(self, key, muscle) - (group.appliedG[key] or 0)) > MIN_CHANGE then return true end
 		end
 		return false
 	end
@@ -1565,6 +1591,7 @@ local function step(self, dt: number)
 	local wrote = false
 	local pending = false -- (a unit that has something to write but waits for its turn)
 	local units = self.units
+	local thick = armThick(self)
 	local first = ((self.writeCursor or 0) % #units) + 1
 	for k = 0, #units - 1 do
 		local index = (first + k - 1) % #units + 1
@@ -1610,8 +1637,9 @@ local function step(self, dt: number)
 						self.writeCursor = index
 					end
 				end
-				if body.Size ~= group.bodySize then
-					group.bodySize = body.Size
+				local groupThick = if ARM_PARTS[group.def.part] then thick else 1
+				if body.Size ~= group.bodySize or groupThick ~= (group.thick or 1) then
+					group.bodySize, group.thick = body.Size, groupThick
 					sizeParts(group)
 				end
 				if self.static and group.part.CFrame ~= body.CFrame then
@@ -1630,6 +1658,7 @@ local function step(self, dt: number)
 	local tintLive = updateTintState(self, dt)
 	local stagesNow = moving or self.dirty or tintLive or self.tintWasLive or slowNow
 	if self.limbs and stagesNow then
+		self.limbs.thick = { RightLowerArm = thick, LeftLowerArm = thick } -- (the forearms grow with the arm: armThick)
 		self.limbs:Update(function(id, key) return meshShown(self, key, id) end, {
 			skin = if self.style and self.style.skin then (colorsOf(self)) else nil, shirt = outfitImage(self, "Shirt"), pants = outfitImage(self, "Pants"),
 			sleeves = self.style.sleeves, legs = self.style.legs, outfit = self.style.outfit,

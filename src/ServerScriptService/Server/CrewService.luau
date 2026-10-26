@@ -513,6 +513,31 @@ actions.SetJoinMode = function(player, mode)
 	end)
 end
 
+-- (owner, 24 Oct) MY CREW, leader only: kick a member out. In this server they're told at once; in another server their
+-- next score refresh notices (refreshScores); offline, onJoin clears it.
+actions.Kick = function(player, userId)
+	local crewId = crewIdOf(player)
+	local record = crewId and cache[crewId]
+	if type(userId) ~= "number" or userId == player.UserId or not record or roleOf(record, player.UserId) ~= "Leader" then return end
+	local key = tostring(userId)
+	local name = record.members[key] and record.members[key].name or nameOf(userId)
+	local ok, stored = updateCrew(crewId, function(current)
+		if not current or not current.members[key] or tostring(current.owner) ~= tostring(player.UserId) then return nil end
+		current.members[key] = nil
+		if current.officers then current.officers[key] = nil end
+		return current
+	end)
+	if not ok or not stored then result(player, "Couldn't kick right now. Try again in a minute.") return end
+	local target = Players:GetPlayerByUserId(userId)
+	if target and crewIdOf(target) == crewId then
+		setCrew(target, nil)
+		updateTag(target)
+		result(target, "You were removed from " .. stored.name .. " [" .. stored.tag .. "].")
+		sendInfo(target)
+	end
+	result(player, name .. " was kicked from the crew.")
+end
+
 actions.Leave = function(player)
 	local crewId = crewIdOf(player)
 	if not crewId then return end
@@ -590,6 +615,16 @@ local function refreshScores()
 			return stored
 		end)
 		if ok and record then
+			-- kicked by the leader in another server: out of the crew here too
+			for userId in pairs(scores) do
+				local target = not record.members[userId] and Players:GetPlayerByUserId(tonumber(userId))
+				if target and crewIdOf(target) == crewId then
+					setCrew(target, nil)
+					updateTag(target)
+					result(target, "You were removed from " .. record.name .. " [" .. record.tag .. "].")
+					sendInfo(target)
+				end
+			end
 			local total = 0
 			for _, member in pairs(record.members) do total += member.score or 0 end
 			pcall(scoreStore.SetAsync, scoreStore, crewId, total)

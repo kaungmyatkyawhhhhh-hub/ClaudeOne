@@ -30,7 +30,7 @@ handlers.GrowthSpurt = function(player)
 		if okTrainers and TrainerService.Refresh then TrainerService.Refresh(player) end
 		Remotes.PlayerEvent:FireClient(player, "GrowthSpurt", {
 			spurts = data.growthSpurts,
-			height = GrowthSpurts.GetHeight(data.growthSpurts),
+			height = GrowthSpurts.PlayerHeight(data),
 			bonus = GrowthSpurts.GetBonus(data.growthSpurts),
 		})
 	end

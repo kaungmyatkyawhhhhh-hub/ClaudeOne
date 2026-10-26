@@ -26,7 +26,7 @@ local MirrorService = {}
 local function saveDayOne(player, data)
 	if type(data.dayOne) == "table" then return end
 	local fresh = (data.stats and data.stats.totalReps or 0) == 0 and (data.growthSpurts or 0) == 0
-	local height = fresh and GrowthSpurts.GetHeight(data.growthSpurts or 0) or GrowthSpurts.StartHeight
+	local height = fresh and GrowthSpurts.PlayerHeight(data) or GrowthSpurts.StartHeight
 	PlayerData.SetTable(player, "dayOne", {
 		height = height,                 -- inches
 		heightScale = height / BodyShape.BaseHeight,
@@ -97,7 +97,7 @@ local function openFor(player)
 	if old then old:Destroy() end
 	local dayOne = data.dayOne or {}
 	local before = buildRig(player, "DayOne", dayOne.heightScale or GrowthSpurts.StartHeight / BodyShape.BaseHeight)
-	local after = buildRig(player, "Now", GrowthSpurts.GetHeight(data.growthSpurts) / BodyShape.BaseHeight, "FrontDoubleBiceps", data)
+	local after = buildRig(player, "Now", GrowthSpurts.PlayerHeight(data) / BodyShape.BaseHeight, "FrontDoubleBiceps", data)
 	if not before or not after then return end
 	local folder = Instance.new("Folder")
 	folder.Name = "MirrorRigs"

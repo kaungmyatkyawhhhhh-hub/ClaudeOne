@@ -51,6 +51,29 @@ local function freshList(ids: { string })
 	return list
 end
 
+-- (26 Oct) Yesterday's finished quests that were never claimed (and the bonus, if all were finished) are paid before the new
+-- set replaces them, so a quest finished just before the reset is never lost.
+local function payLeftovers(player: Player, data, dq)
+	if type(dq) ~= "table" or type(dq.list) ~= "table" then return end
+	local coins, allDone = 0, #dq.list > 0
+	for _, entry in ipairs(dq.list) do
+		local quest = type(entry) == "table" and DailyQuests.ById[entry.id]
+		if quest and entry.done and not entry.claimed then
+			entry.claimed = true
+			coins += DailyQuests.CoinsFor(quest, data.growthSpurts)
+		end
+		if not (type(entry) == "table" and entry.claimed) then allDone = false end
+	end
+	if allDone and not dq.bonus then
+		dq.bonus = true
+		coins += DailyQuests.BonusFor(data.growthSpurts)
+	end
+	if coins > 0 then
+		PlayerData.AddCoins(player, coins)
+		send(player, "Claimed", { coins = coins, leftover = true })
+	end
+end
+
 -- Makes sure the player has today's quests (a new UTC day = a new set). Returns the table, and whether it changed.
 local function ensure(player: Player)
 	local data = PlayerData.Get(player)
@@ -58,6 +81,7 @@ local function ensure(player: Player)
 	local dq = data.dailyQuests
 	local day = today()
 	if type(dq) ~= "table" or dq.day ~= day or type(dq.list) ~= "table" or #dq.list == 0 then
+		payLeftovers(player, data, dq)
 		dq = { day = day, list = freshList(DailyQuests.Pick(day, player.UserId, nil, data.growthSpurts or 0)), bonus = false, swaps = 0, groups = {} }
 		PlayerData.SetTable(player, "dailyQuests", dq)
 		return dq, true
@@ -228,7 +252,7 @@ local function claimLogin(player: Player)
 	local calendarDay = Economy.LoginDay(daily.lastDay or 0, daily.calendarDay or 0, day)
 	if not calendarDay then return end -- already claimed today
 	local coins, tokens = Economy.LoginReward(calendarDay, data.growthSpurts) -- (prompt 61: at the player's stage)
-	local streak = (daily.lastDay == day - 1) and (daily.streak or 0) + 1 or 1
+	local streak = Economy.ContinuesStreak(daily.lastDay or 0, day) and (daily.streak or 0) + 1 or 1
 	PlayerData.SetTable(player, "daily", { lastDay = day, streak = streak, best = math.max(daily.best or 0, streak), calendarDay = calendarDay })
 	PlayerData.AddCoins(player, coins)
 	if tokens > 0 then PlayerData.AddDnaTokens(player, tokens) end

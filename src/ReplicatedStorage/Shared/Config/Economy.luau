@@ -73,11 +73,20 @@ function Economy.Day(now)
 	return math.floor((now or os.time()) / 86400)
 end
 
+-- (26 Oct) The streak survives this many missed UTC days. The UTC day turns over at 4-5 PM in the US, so a kid playing every
+-- afternoon can skip a whole UTC day without missing a real day (claim Mon 4:30 PM PDT, play Tue 7 PM PDT = 2 UTC days later).
+Economy.StreakGraceDays = 1
+
+-- Does a claim on `today` continue the streak from a claim on `lastDay`?
+function Economy.ContinuesStreak(lastDay, today): boolean
+	return lastDay ~= nil and lastDay > 0 and lastDay < today and today - lastDay <= 1 + Economy.StreakGraceDays
+end
+
 -- The calendar day to claim today (1..7), or nil when today's reward is already claimed. lastDay = the day number of the
 -- last claim (0 = never), calendarDay = the calendar day claimed then.
 function Economy.LoginDay(lastDay, calendarDay, today)
 	if lastDay == today then return nil end
-	if lastDay == today - 1 then return (calendarDay or 0) % #Economy.Login.Coins + 1 end
+	if Economy.ContinuesStreak(lastDay, today) then return (calendarDay or 0) % #Economy.Login.Coins + 1 end
 	return 1 -- first claim ever, or a missed day: back to day 1
 end
 

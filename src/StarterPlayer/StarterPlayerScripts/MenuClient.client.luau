@@ -446,7 +446,7 @@ local function levelOf(data): number
 	return math.floor(count > 0 and total / count or 0)
 end
 local function refreshPill(data)
-	local height = GrowthSpurts.FormatHeight(GrowthSpurts.GetHeight(data.growthSpurts or 0))
+	local height = GrowthSpurts.FormatHeight(GrowthSpurts.PlayerHeight(data))
 	cardSub.Text = string.format("Level %d · %s", levelOf(data), height)
 	coinText.Text = Kit.Format(data.coins or 0)
 end

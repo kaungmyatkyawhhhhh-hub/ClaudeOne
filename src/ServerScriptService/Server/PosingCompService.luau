@@ -432,7 +432,7 @@ local function runShow(npcsOnly: boolean?)
 	for _, entry in ipairs(entrants) do
 		local data = PlayerData.Get(entry.player)
 		if data then
-			local height = GrowthSpurts.GetHeight(data.growthSpurts)
+			local height = GrowthSpurts.PlayerHeight(data)
 			local alter = type(data.alter) == "table" and data.alter.highest or 0
 			local def = PosingComp.DivisionFor(height, Alters.TierOf(alter))
 			byDivision[def.id] = byDivision[def.id] or {}

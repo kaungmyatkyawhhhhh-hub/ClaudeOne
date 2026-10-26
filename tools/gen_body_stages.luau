@@ -37,6 +37,12 @@ local function smooth(t: number): number
 	return t * t * (3 - 2 * t)
 end
 local function shown(key: string, g: number): number
+	-- (prompt 66: the data's bicep stops at the full look; past it the capped biceps mass layer, MuscleMeshes.BicepsMassAt)
+	if key == "Biceps" then return math.min(g, 1) end
+	if key == "Biceps@shape" then
+		if g <= 1 then return 0 end
+		return (MuscleMeshes.BicepsMassAt(1, shown("Triceps", g), shown("SideDelts@shape", g)))
+	end
 	if g <= 1 then return g end
 	return MuscleMeshes.MonsterG(key) * (1 + EXTRA) -- (the full mass monster: t = 1)
 end

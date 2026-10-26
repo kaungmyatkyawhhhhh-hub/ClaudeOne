@@ -21,6 +21,9 @@ Leaderboards.Boards = {
 	{ id = "RepsToday", title = "Most reps", sub = "Today", daily = true },
 	{ id = "PosingWins", title = "Posing wins", sub = "All time" },
 	{ id = "ArmWins", title = "Arm wrestling", sub = "Wins" },
+	-- (owner, 24 Oct) two more boards: the highest Body Alter, and the best top bar LVL ever (average muscle level)
+	{ id = "Alters", title = "Alters", sub = "Highest alter" },
+	{ id = "Level", title = "Level", sub = "Best ever" },
 }
 Leaderboards.ById = {}
 for index, board in ipairs(Leaderboards.Boards) do
@@ -50,6 +53,10 @@ function Leaderboards.Format(boardId: string, value: number): string
 		return commas(value) .. " reps"
 	elseif boardId == "PosingWins" or boardId == "ArmWins" then
 		return commas(value) .. (value == 1 and " win" or " wins")
+	elseif boardId == "Alters" then
+		return "Alter " .. commas(value)
+	elseif boardId == "Level" then
+		return "LVL " .. commas(value)
 	end
 	return commas(value)
 end

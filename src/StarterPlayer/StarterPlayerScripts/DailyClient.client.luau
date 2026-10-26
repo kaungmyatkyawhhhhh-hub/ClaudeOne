@@ -391,7 +391,7 @@ for day = 1, DAYS do
 		:SetAttribute("KeepColor", true)
 	streak.cards[day] = { card = card, ring = ring, tag = tag, label = label, amount = amount, icons = icons, bonusTag = bonusTag, check = check, glow = glow }
 end
-Kit.Text({ Name = "Rules", Text = "Days 4 and " .. DAYS .. " give a DNA token. Miss a day and it starts over.", Font = "Body", TextSize = 11, TextColor3 = Colors.Muted,
+Kit.Text({ Name = "Rules", Text = "Days 4 and " .. DAYS .. " give a DNA token. Miss two days in a row and it starts over.", Font = "Body", TextSize = 11, TextColor3 = Colors.Muted,
 	Position = UDim2.fromOffset(0, DESC_Y), Size = UDim2.new(1, 0, 0, 12), Parent = page })
 streak.claim = Kit.Button("Green", "Claim", { Name = "Claim", AnchorPoint = Vector2.new(0.5, 0), Position = UDim2.new(0.5, 0, 0, CLAIM_Y), Parent = page },
 	{ width = 260, height = 36, textSize = 15 })
@@ -469,8 +469,19 @@ local function refreshCalendars()
 	end
 	streak.claim:SetAttribute("CanClaim", not claimed)
 	Kit.SetButton(streak.claim, claimed and "Quiet" or "Green", claimed and "Come back tomorrow" or ("Claim day " .. current))
-	local best = (ClientData.Get().daily or {}).best or 0
-	streak.record.Text = "STREAK RECORD: " .. best .. (if best == 1 then " DAY" else " DAYS")
+	-- (26 Oct) the current streak (not only the record), and once claimed what tomorrow gives, so there is a reason to come back
+	local daily = ClientData.Get().daily or {}
+	local best = daily.best or 0
+	local alive = (daily.lastDay or 0) == today() or Economy.ContinuesStreak(daily.lastDay or 0, today())
+	local now = if alive then daily.streak or 0 else 0
+	local function days(n) return n .. (if n == 1 then " DAY" else " DAYS") end
+	if claimed then
+		local tomorrow = current % DAYS + 1
+		local coins = Economy.LoginReward(tomorrow, spurtsNow())
+		streak.record.Text = "STREAK: " .. days(now) .. "   TOMORROW: +" .. Kit.Short(coins) .. " COINS" .. (if Economy.Login.DnaTokens[tomorrow] then " + DNA" else "")
+	else
+		streak.record.Text = "STREAK: " .. days(now) .. "   RECORD: " .. days(best)
+	end
 	dailyPill:SetDot(not claimed)
 	rewardWanted = not claimed
 	showRewardCard()
@@ -742,7 +753,8 @@ remote.OnClientEvent:Connect(function(kind, info)
 		-- (prompt 20: a reward popup, queued with the others)
 		Notify.Reward("QUEST DONE", tostring(info.text), "list-checks", Colors.Green, "QuestComplete")
 	elseif kind == "Claimed" then
-		Notify.Toast(info.bonus and "Daily bonus" or "Quest reward", "+" .. Kit.Format(tonumber(info.coins) or 0) .. " coins", "coin", Colors.Gold)
+		local title = if info.leftover then "Yesterday's quests" elseif info.bonus then "Daily bonus" else "Quest reward"
+		Notify.Toast(title, "+" .. Kit.Format(tonumber(info.coins) or 0) .. " coins", "coin", Colors.Gold)
 		Audio.PlayUI("QuestClaim")
 	elseif kind == "BuyReroll" then
 		-- (the server remembered which quest; the reroll happens after the purchase)
@@ -754,7 +766,9 @@ remote.OnClientEvent:Connect(function(kind, info)
 	elseif kind == "Swapped" then
 		Notify.Toast("New quest", tostring(info.text), "repeat", Colors.Blue)
 	elseif kind == "LoginClaimed" then
-		local sub = "+" .. Kit.Format(tonumber(info.coins) or 0) .. " coins"
+		-- (26 Oct) and what tomorrow gives
+		local day = tonumber(info.day) or 1
+		local sub = "+" .. Kit.Format(tonumber(info.coins) or 0) .. " coins. Tomorrow: +" .. Kit.Short((Economy.LoginReward(day % DAYS + 1, spurtsNow())))
 		Notify.Toast("Day " .. tostring(info.day) .. " reward", sub, "gift", Colors.Gold)
 		Audio.PlayUI("StreakClaim")
 		if (tonumber(info.tokens) or 0) > 0 then
@@ -799,9 +813,15 @@ task.spawn(function()
 	task.wait(1.5)
 	while playerGui:FindFirstChild("GeneticsScreen") and playerGui.GeneticsScreen.Enabled do task.wait(0.5) end
 	while ((ClientData.Get().onboarding or {}).tutorialStep or Onboarding.Done) < Onboarding.Done do task.wait(2) end
-	local _, claimed = calendarState()
-	if not claimed and not modal.isOpen() and not UIBus.Training then
-		UIBus.PanelOpened("DailyQuests")
-		open("Rewards")
+	-- (26 Oct) never skipped: it waits until you're off the machine and no other window is open (it used to give up at once)
+	while true do
+		local _, claimed = calendarState()
+		if claimed then break end
+		if not modal.isOpen() and not UIBus.Training and not UIBus.CoverOpen(playerGui) then
+			UIBus.PanelOpened("DailyQuests")
+			open("Rewards")
+			break
+		end
+		task.wait(2)
 	end
 end)

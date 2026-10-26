@@ -61,8 +61,16 @@ local function minutesPlayed(data): number
 	return (os.time() - first) / 60
 end
 
+-- (26 Oct, owner: SHOP is never locked) open as soon as the tutorial is done (it used to wait OpenAfterMinutes from the first
+-- join, so talking to Coach Dex a second time said "The shops open after a few minutes of training.")
+local Onboarding = require(Config.Onboarding)
+local function tutorialDone(data): boolean
+	local step = type(data.onboarding) == "table" and data.onboarding.tutorialStep or Onboarding.Done
+	return (tonumber(step) or Onboarding.Done) >= Onboarding.Done
+end
+
 function PumpShopService.IsOpen(data): boolean
-	return data ~= nil and ((data.growthSpurts or 0) >= 1 or minutesPlayed(data) >= PumpShop.OpenAfterMinutes)
+	return data ~= nil and ((data.growthSpurts or 0) >= 1 or tutorialDone(data) or minutesPlayed(data) >= PumpShop.OpenAfterMinutes)
 end
 
 local function sectionOpen(data, sectionId): boolean
@@ -278,7 +286,7 @@ function PumpShopService.OpenFor(player, shopId, section)
 	local shop = PumpShop.Shops[shopId]
 	if not data or not shop then return end
 	if not PumpShopService.IsOpen(data) then
-		send(player, "Failed", { text = "The shops open after a few minutes of training." })
+		send(player, "Failed", { text = "Finish Coach Dex's lesson first, then the shop is open." })
 		return
 	end
 	local wanted = if section and table.find(shop.tabs, section) and sectionOpen(data, section) then section else "Supplements"

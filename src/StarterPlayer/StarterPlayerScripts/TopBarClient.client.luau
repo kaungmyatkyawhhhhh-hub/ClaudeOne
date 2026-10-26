@@ -85,7 +85,7 @@ local function refresh()
 	local data = ClientData.Get()
 	if not data then return end
 	setCoins(data.coins or 0)
-	local inches = GrowthSpurts.GetHeight(data.growthSpurts or 0)
+	local inches = GrowthSpurts.PlayerHeight(data)
 	local heightText = GrowthSpurts.FormatHeight(inches, true)
 	if inches >= GrowthSpurts.MaxHeightInches then heightText ..= ' <font color="' .. GOLD .. '">MAX</font>' end
 	local total, count = 0, 0

@@ -166,8 +166,36 @@ local function crewHeader(parent, crew, onBack: (() -> ())?)
 	return card
 end
 
--- one member: headshot + online dot, name, "Leader · LVL 45 · 6'0" · In this server", score on the right
-local function memberRow(parent, member)
+-- (owner, 24 Oct) the leader's KICK button on a member row: one tap turns it into a red "Sure?" for 3 s, a second tap kicks
+local KICK_W = 64
+local function kickButton(card, member)
+	local current
+	local function make(text, style, onClick)
+		current = Kit.Button(style, text, { Name = "Kick", AnchorPoint = Vector2.new(1, 0.5), Position = UDim2.new(1, -88, 0.5, 0), Parent = card },
+			{ width = KICK_W, height = 28, textSize = 12 })
+		current.Activated:Connect(onClick)
+	end
+	local function ask()
+		Audio.PlayUI("Click")
+		current:Destroy()
+		make("Sure?", "Red", function()
+			current.Active = false
+			remote:FireServer("Kick", member.userId)
+		end)
+		local sure = current
+		task.delay(3, function()
+			if current == sure and sure.Parent then
+				sure:Destroy()
+				make("Kick", "Quiet", ask)
+			end
+		end)
+	end
+	make("Kick", "Quiet", ask)
+end
+
+-- one member: headshot + online dot, name, "Leader · LVL 45 · 6'0" · In this server", score on the right; canKick: the
+-- leader's KICK button (MY CREW only)
+local function memberRow(parent, member, canKick: boolean?)
 	local card = Kit.Card({ Name = "Member", LayoutOrder = nextOrder(), Size = UDim2.new(1, 0, 0, 46), Parent = parent }, {})
 	local face = Kit.Headshot(member.userId, member.name, 32, { AnchorPoint = Vector2.new(0, 0.5), Position = UDim2.new(0, 7, 0.5, 0), Parent = card })
 	New("Frame", { Name = "Online", AnchorPoint = Vector2.new(1, 1), Position = UDim2.fromScale(1.05, 1.05), Size = UDim2.fromOffset(10, 10),
@@ -176,7 +204,8 @@ local function memberRow(parent, member)
 		New("UIStroke", { Color = Colors.Card, Thickness = 2, ApplyStrokeMode = Enum.ApplyStrokeMode.Border }),
 	})
 	local scoreW = 74
-	Kit.Text({ Name = "PlayerName", Text = member.name or "?", Font = "Title", TextSize = 14, Position = UDim2.fromOffset(48, 5), Size = UDim2.new(1, -48 - scoreW - 8, 0, 19),
+	local kickW = canKick and (KICK_W + 10) or 0
+	Kit.Text({ Name = "PlayerName", Text = member.name or "?", Font = "Title", TextSize = 14, Position = UDim2.fromOffset(48, 5), Size = UDim2.new(1, -48 - scoreW - 8 - kickW, 0, 19),
 		TextXAlignment = Enum.TextXAlignment.Left, TextTruncate = Enum.TextTruncate.AtEnd, Parent = card })
 	local role = member.role or "Member"
 	local color = ROLE_COLORS[role] or Colors.Muted
@@ -185,7 +214,8 @@ local function memberRow(parent, member)
 	table.insert(bits, GrowthSpurts.FormatHeight(GrowthSpurts.GetHeight(member.spurts or 0), true))
 	if member.here then table.insert(bits, "In this server") end
 	Kit.Text({ Name = "Sub", Text = table.concat(bits, "  ·  "), RichText = true, Font = "Body", TextSize = 11, TextColor3 = Colors.Muted, Position = UDim2.fromOffset(48, 25),
-		Size = UDim2.new(1, -48 - scoreW - 8, 0, 15), TextXAlignment = Enum.TextXAlignment.Left, TextTruncate = Enum.TextTruncate.AtEnd, Parent = card })
+		Size = UDim2.new(1, -48 - scoreW - 8 - kickW, 0, 15), TextXAlignment = Enum.TextXAlignment.Left, TextTruncate = Enum.TextTruncate.AtEnd, Parent = card })
+	if canKick then kickButton(card, member) end
 	Kit.Text({ Name = "Score", Text = Muscles.FormatExp(member.score or 0), Font = "Number", TextSize = 15, TextColor3 = Colors.Gold, AnchorPoint = Vector2.new(1, 0),
 		Position = UDim2.new(1, -10, 0, 6), Size = UDim2.fromOffset(scoreW, 19), TextXAlignment = Enum.TextXAlignment.Right, Parent = card })
 	Kit.Text({ Name = "ScoreLabel", Text = "score", Font = "Body", TextSize = 10, TextColor3 = Colors.Muted, AnchorPoint = Vector2.new(1, 0),
@@ -195,7 +225,8 @@ end
 
 local function crewMembers(parent, crew, onBack)
 	crewHeader(parent, crew, onBack)
-	for _, member in ipairs(crew.members) do memberRow(parent, member) end
+	-- (the leader can kick everyone but themselves, only in MY CREW)
+	for _, member in ipairs(crew.members) do memberRow(parent, member, crew.leader == true and member.role ~= "Leader") end
 end
 
 -- loading rows: the row's shape in dark blocks with a soft light sweeping across (one tween per row, stopped on clear)

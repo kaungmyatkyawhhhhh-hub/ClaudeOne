@@ -40,6 +40,9 @@ local tracked = {} -- [model] = { rig, source, mine }
 -- Low-end devices (owner, 20 Oct: lag on phones; Shared.LowEnd): your own body shows the low-poly stage meshes (MuscleRig far
 -- look) while the camera is further than FAR_LOOK studs from it, and its live meshes again nearer than NEAR_LOOK (a gap, so it
 -- never flickers).
+-- Off (owner, 26 Oct: the stage meshes don't match the live body, so the quads / hamstrings / shoulders changed when the camera
+-- moved away; your own body never changes with distance). true turns it back on.
+local FAR_LOOK_ON = false
 local FAR_LOOK, NEAR_LOOK = 15, 12
 
 -- the growth numbers of my own muscles, from ClientData
@@ -141,7 +144,7 @@ local function refreshInfo(model, info, distance)
 	rig:SetGrowth(targetsFor(info.source, info.mine))
 	if info.mine and distance then
 		local far = if info.far then distance > NEAR_LOOK else distance > FAR_LOOK
-		info.far = far and LowEnd.IsLowEnd()
+		info.far = FAR_LOOK_ON and far and LowEnd.IsLowEnd()
 		rig:SetFarLook(info.far)
 	end
 	local until_ = info.source:GetAttribute("PumpedUntil")

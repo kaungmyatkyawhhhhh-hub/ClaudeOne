@@ -76,9 +76,12 @@ function LimbStages.new(model: Model, folder: Instance, static: boolean)
 	return self
 end
 
+-- (self.thick[part]: the forearms' extra thickness past the biceps cap, set by MuscleRig armThick; thicker, never longer)
 local function place(self, limb, part: MeshPart, body: BasePart, stage)
 	local ref = PARTS[limb.def.part] and PARTS[limb.def.part].size or body.Size
-	local scale = body.Size / ref
+	local thick = self.thick and self.thick[limb.def.part] or 1
+	local scale = body.Size / ref * Vector3.new(thick, 1, thick)
+	limb.thick = thick
 	part.Size = part.MeshSize * scale
 	local offset = CFrame.new(stage.center * scale) * Config.ImportTurn
 	local skin = part:FindFirstChild("Skin")
@@ -231,7 +234,7 @@ function LimbStages.Update(self, getG, style, tint, covered, marble)
 		local part = limb.part
 		if not part then continue end
 		-- the body part's size changed (Growth Spurt, widths): re-fit
-		if limb.size ~= body.Size then
+		if limb.size ~= body.Size or limb.thick ~= (self.thick and self.thick[def.part] or 1) then
 			limb.size = body.Size
 			place(self, limb, part, body, def.stages[limb.stage])
 		end

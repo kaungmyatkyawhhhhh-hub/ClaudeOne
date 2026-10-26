@@ -43,7 +43,7 @@ local states = {}
 local function targetHeight(data)
 	-- heightInches: only the giant NPC's made-up data (taller than any player can get; saves never have it)
 	if type(data.heightInches) == "number" then return data.heightInches / BodyShape.BaseHeight end
-	return GrowthSpurts.GetHeight(data.growthSpurts) / BodyShape.BaseHeight
+	return GrowthSpurts.PlayerHeight(data) / BodyShape.BaseHeight -- (24 Oct: + 4" per finished alter tier)
 end
 
 local function heightChanges(humanoid, data)
@@ -97,6 +97,8 @@ function BodyService.PublishData(target, data)
 	if target:GetAttribute("MuscleG") ~= g then target:SetAttribute("MuscleG", g) end
 	-- (prompt 19) a PUMP SHOP try-on wins for a few seconds (PumpShopService sets TryOnTop / TryOnShorts on the player)
 	local top = target:GetAttribute("TryOnTop") or settings.top or Body.DefaultTop
+	-- (owner, 24 Oct) players are never shirtless: no top = the black tank top (NPCs keep their own look)
+	if top == "Shirtless" and target:IsA("Player") then top = Body.PlayerTop end
 	local shorts = target:GetAttribute("TryOnShorts") or settings.shorts or Body.DefaultShorts
 	if target:GetAttribute("Top") ~= top then target:SetAttribute("Top", top) end
 	if target:GetAttribute("Shorts") ~= shorts then target:SetAttribute("Shorts", shorts) end

@@ -18,7 +18,8 @@
 -- keep the 25,000 base (Config/DNA) and get 10% dearer for each one bought in the same week.
 local PumpShop = {}
 
-PumpShop.CoinsPerMinute = { [0] = 57, [1] = 110, [2] = 152, [3] = 200, [4] = 220, [5] = 222, [6] = 328 } -- [Growth Spurts]
+-- (26 Oct: re-measured with tests/pacing coins after the Growth Spurt goals were lowered; was 57/110/152/200/220/222/328)
+PumpShop.CoinsPerMinute = { [0] = 55, [1] = 84, [2] = 119, [3] = 179, [4] = 255, [5] = 304, [6] = 328 } -- [Growth Spurts]
 
 -- Unlocks (gameplay plan "Introduce features slowly"): the shop opens ~8 minutes in (or at the first Growth Spurt) with
 -- Supplements only; Gear and Apparel open at Growth Spurt 2.
