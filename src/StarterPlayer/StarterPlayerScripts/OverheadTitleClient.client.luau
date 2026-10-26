@@ -55,9 +55,23 @@ local function styleTag(tag)
 	end
 end
 
--- (prompt 21) a small gold "ALTER 3" pill over the title of anyone with a Body Alter (the player's AlterNumber attribute,
+-- (prompt 21) a small "ALTER 3" pill over the title of anyone with a Body Alter (the player's AlterNumber attribute,
 -- BodyService); my own is smaller and faded like my title
-local BADGE = { Width = 1.7, Height = 0.4, Offset = 3.4, MaxDistance = 60 }
+-- (owner, 26 Oct: "should have style like the granite button") dressed like that alter's ALTER button in the BODY ALTER
+-- READY popup (Shared/UI/AlterPopup): its accent with a darker bottom edge, a dark outline, chunky white letters with a
+-- dark stroke, and a faint copy of its popup art (Tier 1) or of its own skin texture (granite speckles, gold shine: the
+-- tiers without popup art). Colours from Config/AlterThemes.
+local AlterThemes = require(ReplicatedStorage.Shared.Config.AlterThemes)
+local Alters = require(ReplicatedStorage.Shared.Config.Alters)
+local BADGE = { Width = 1.7, Height = 0.4, Offset = 3.4, MaxDistance = 60, Edge = 0.16 } -- Edge: the darker bottom edge (share of the height)
+local BADGE_OUTLINE = Color3.fromHex("#120A0C")
+local function badgeGradient(accent: Color3): ColorSequence
+	local top, bottom = accent:Lerp(Color3.new(1, 1, 1), 0.2), accent:Lerp(Color3.new(0, 0, 0), 0.25)
+	local dark = bottom:Lerp(Color3.new(0, 0, 0), 0.45)
+	local edge = 1 - BADGE.Edge
+	return ColorSequence.new({ ColorSequenceKeypoint.new(0, top), ColorSequenceKeypoint.new(edge - 0.001, bottom),
+		ColorSequenceKeypoint.new(edge, dark), ColorSequenceKeypoint.new(1, dark) })
+end
 local function updateBadge(other)
 	local head = other.Character and other.Character:FindFirstChild("Head")
 	if not head then return end
@@ -73,13 +87,26 @@ local function updateBadge(other)
 		badge = Theme.New("BillboardGui", { Name = "AlterBadge", Size = UDim2.fromScale(BADGE.Width * scale, BADGE.Height * scale),
 			StudsOffset = Vector3.new(0, BADGE.Offset, 0), MaxDistance = BADGE.MaxDistance, LightInfluence = 0, Enabled = not (mine and UIBus.MenuOpen),
 			Parent = head })
-		local pill = Theme.New("Frame", { Name = "Pill", BackgroundColor3 = Theme.Colors.Shadow, BackgroundTransparency = if mine then 0.55 else 0.25,
-			Size = UDim2.fromScale(1, 1), Parent = badge }, { Theme.New("UICorner", { CornerRadius = UDim.new(0.5, 0) }),
-			Theme.New("UIStroke", { Color = Theme.Colors.Gold, Thickness = 1, Transparency = if mine then 0.6 else 0.2 }) })
-		Theme.New("TextLabel", { Name = "Text", BackgroundTransparency = 1, Size = UDim2.fromScale(1, 1), TextScaled = true, FontFace = Theme.Fonts.Heading,
-			TextColor3 = Theme.Colors.Gold, TextTransparency = if mine then OWN.Transparency else 0, Text = "", Parent = pill },
-			{ Theme.New("UIPadding", { PaddingTop = UDim.new(0.12, 0), PaddingBottom = UDim.new(0.12, 0) }) })
+		local fade = if mine then OWN.Transparency else 0
+		local pill = Theme.New("Frame", { Name = "Pill", BackgroundColor3 = Color3.new(1, 1, 1), BackgroundTransparency = fade,
+			Size = UDim2.fromScale(1, 1), Parent = badge }, { Theme.New("UICorner", { CornerRadius = UDim.new(0.35, 0) }),
+			Theme.New("UIGradient", { Name = "Face", Rotation = 90 }),
+			Theme.New("UIStroke", { Color = BADGE_OUTLINE, Thickness = 2, Transparency = fade, ApplyStrokeMode = Enum.ApplyStrokeMode.Border }) })
+		Theme.New("ImageLabel", { Name = "Art", BackgroundTransparency = 1, ScaleType = Enum.ScaleType.Crop, Size = UDim2.new(1, 0, 1 - BADGE.Edge, 0),
+			ImageTransparency = 1, Parent = pill }, { Theme.New("UICorner", { CornerRadius = UDim.new(0.35, 0) }) })
+		Theme.New("TextLabel", { Name = "Text", BackgroundTransparency = 1, Size = UDim2.new(1, 0, 1 - BADGE.Edge, 0), TextScaled = true,
+			FontFace = Font.fromEnum(Enum.Font.LuckiestGuy), TextColor3 = Color3.new(1, 1, 1), TextTransparency = fade, Text = "", ZIndex = 2, Parent = pill }, {
+			Theme.New("UIPadding", { PaddingTop = UDim.new(0.14, 0), PaddingBottom = UDim.new(0.04, 0) }),
+			Theme.New("UIStroke", { Color = BADGE_OUTLINE, Thickness = 2, Transparency = fade }),
+		})
 	end
+	local theme = AlterThemes.Get(n)
+	badge.Pill.Face.Color = badgeGradient(theme.accent)
+	local alter = Alters.Get(n)
+	local skin = alter and alter.textures and alter.textures.color
+	local mine = other == player
+	badge.Pill.Art.Image = theme.bg or skin or ""
+	badge.Pill.Art.ImageTransparency = if theme.bg then (if mine then 0.9 else 0.8) elseif skin then (if mine then 0.75 else 0.5) else 1
 	badge.Pill.Text.Text = "ALTER " .. n
 end
 
