@@ -301,6 +301,12 @@ for _, machine in ipairs(PRO) do
 	table.insert(Machines.List, machine)
 end
 
+-- (owner, 26 Oct: "make the calisthenic stuff work") push-ups on the beach gym's parallettes: only there (an invisible
+-- station whose hand points are the real bars, Workspace.Town.BeachGym.PushUps; no builder of its own)
+table.insert(Machines.List, { id = "PushUps", name = "Push-Ups", pose = "PushUp", gym = "Beach", layout = "Center",
+	tiers = Machines.TierSets.Bodyweight, staminaCost = 4,
+	muscles = { { id = "MidChest", share = 1 }, { id = "Triceps", share = 0.5 }, { id = "FrontDelts", share = 0.3 } } })
+
 -- Dumbbells (prompt 16, 21 Oct): every gym's dumbbell rack has "Train" spots (small machine models with Dumbbell = true,
 -- tools/builders/DumbbellSpots); a tap opens the exercise picker and the spot becomes that exercise (its MachineId), so
 -- reps, stamina, EXP, weight tiers and the machine HUD work exactly like a machine. dumbbell = true; about 85% of the

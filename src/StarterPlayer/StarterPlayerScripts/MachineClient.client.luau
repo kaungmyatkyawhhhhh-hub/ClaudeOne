@@ -675,9 +675,53 @@ POSE_ANIMS.Dip = function(character, d, jitter, model)
 		if best and sideArm then
 			local s = (frame * bars.c0(sideArm.shoulder)).Position
 			local axis = best.CFrame.XVector
-			local half = best.Size.X / 2 - 0.3
+			local half = math.max(best.Size.X / 2 - 0.3, 0) -- (26 Oct: a short handle, e.g. a ring, never makes a negative clamp)
 			local t = math.clamp((s - best.Position):Dot(axis), -half, half)
 			bars.armIK(character, side[1], frame, best.Position + axis * t, bars.bodyDir(frame, side[1], Vector3.new(0.25, 0, 1)))
+		end
+	end
+end
+
+-- (owner, 26 Oct) Push-ups on the beach parallettes: placed like a dip (straight arms down onto the bars), then the whole
+-- body tips forward round the shoulders into a plank until the feet reach the floor (any body size); a rep bends the elbows
+-- (the shoulders drop, the body tips a little more). The hands stay on the bars (the model's "Handle" parts).
+POSE_ANIMS.PushUp = function(character, d, jitter, model)
+	local root = character:FindFirstChild("HumanoidRootPart")
+	local humanoid = character:FindFirstChildOfClass("Humanoid")
+	local lower, upper = character:FindFirstChild("LowerTorso"), character:FindFirstChild("UpperTorso")
+	local rootJoint, waist = lower and lower:FindFirstChild("Root"), upper and upper:FindFirstChild("Waist")
+	local arm = bars.arm(character, "R")
+	if not (root and humanoid and rootJoint and waist and arm and model) then return end
+	local reach = arm.a + arm.b
+	-- the shoulders' point in the Root joint's space (body upright, no transforms), on the body's middle line
+	local q = (bars.c1(rootJoint):Inverse() * bars.c0(waist) * bars.c1(waist):Inverse() * bars.c0(arm.shoulder)).Position
+	q = Vector3.new(0, q.Y, q.Z)
+	local floorY = model:GetPivot().Position.Y
+	local shoulderY = (root.CFrame * bars.c0(rootJoint) * CFrame.new(q)).Position.Y
+	local soleY = root.Position.Y - humanoid.HipHeight - root.Size.Y / 2
+	local length = shoulderY - soleY -- (shoulders to soles, standing)
+	local drop = reach * 0.42 * d
+	local tip = math.acos(math.clamp((shoulderY - drop - floorY - 0.2) / math.max(length, 0.1), -1, 1))
+	local around = CFrame.new(q)
+	bars.base(character, CFrame.new(0, -drop, 0) * around * Angles(-tip + jitter * 0.05, 0, 0) * around:Inverse())
+	bars.legs(character, 0, 0, rad(25))
+	local _, frame = bars.frames(character)
+	if not frame then return end
+	for _, side in ipairs(SIDES) do
+		local sideArm = bars.arm(character, side[1])
+		local best, bestScore = nil, -math.huge
+		for _, part in ipairs(model:GetChildren()) do
+			if part.Name == "Handle" and part:IsA("BasePart") then
+				local score = (part.Position - frame.Position):Dot(frame.RightVector) * side[2]
+				if score > bestScore then best, bestScore = part, score end
+			end
+		end
+		if best and sideArm then
+			local s = (frame * bars.c0(sideArm.shoulder)).Position
+			local axis = best.CFrame.XVector
+			local half = math.max(best.Size.X / 2 - 0.3, 0)
+			local t = math.clamp((s - best.Position):Dot(axis), -half, half)
+			bars.armIK(character, side[1], frame, best.Position + axis * t, bars.bodyDir(frame, side[1], Vector3.new(0.5, 0, 0.6)))
 		end
 	end
 end

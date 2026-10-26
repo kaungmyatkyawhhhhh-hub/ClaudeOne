@@ -72,6 +72,10 @@ local Poses = {
 	Run = { kind = "Stand", position = Vector3.new(0, 0.69, 0.3), yaw = 0, exit = Vector3.new(0, 0, 4.5), follow = "None" },
 	SledPush = { kind = "Stand", position = Vector3.new(0, 0.1, 0), yaw = FACE_FORWARD, exit = Vector3.new(0, 0, -3), follow = "None" },
 	LegRaise = { kind = "Hang", position = Vector3.new(0, 0, 0), barHeight = 9, yaw = FACE_FORWARD, exit = Vector3.new(0, 0, -3), follow = "None", contract = true },
+	-- (owner, 26 Oct) push-ups on the beach parallettes: placed like a dip (straight arms down onto the two bars, handleTop =
+	-- their top above the mat, 3 studs apart); MachineClient tips the body forward round the shoulders into a plank with the
+	-- feet on the floor and bends the elbows on each rep. Not a contract pose (it starts at the top).
+	PushUp = { kind = "Support", position = Vector3.new(0, 0, 0), handleTop = 0.81, handleX = 1.5, yaw = FACE_FORWARD, exit = Vector3.new(2.6, 0, 0), follow = "None" },
 }
 
 -- Dumbbells (prompt 16): standing on the spot's mat with the rack behind (the spot faces +Z, into the room); off one step
