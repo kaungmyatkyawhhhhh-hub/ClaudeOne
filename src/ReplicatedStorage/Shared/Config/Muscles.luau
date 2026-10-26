@@ -115,6 +115,28 @@ function Muscles.ExactLevel(entry)
 	return Muscles.LevelFromXp(Muscles.EntryXp(entry))
 end
 
+-- The average exact level of the 18 muscles (muscles = data.muscles).
+function Muscles.AverageLevel(muscles): number
+	local total, count = 0, 0
+	for _, muscle in ipairs(Muscles.List) do
+		local entry = muscles and muscles[muscle.id]
+		if entry then
+			total += Muscles.ExactLevel(entry)
+			count += 1
+		end
+	end
+	return if count > 0 then total / count else 0
+end
+
+-- (26 Oct) LVL, the top bar's level (exact, fractional): the average muscle level plus data.stats.levelBase, the levels
+-- Growth Spurts and Body Alters took away when they reset the muscles (PlayerData), so LVL never drops. Used by the top
+-- bar, the menu card, LVL auras, unlock guides, the crew list and the LEVEL board.
+function Muscles.Lvl(data): number
+	if type(data) ~= "table" then return 0 end
+	local base = type(data.stats) == "table" and tonumber(data.stats.levelBase) or 0
+	return base + Muscles.AverageLevel(data.muscles)
+end
+
 -- EXP shown for a level (fractional ok) / for an amount of xp (a rep's gain)
 function Muscles.Shown(level)
 	return math.floor(Muscles.CumXp(level) * Muscles.ExpPerXp + 0.5)

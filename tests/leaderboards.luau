@@ -3,8 +3,8 @@ local L = H.module("ReplicatedStorage/Shared/Config/Leaderboards")
 print("Boards")
 local ids = {}
 for _, b in L.Boards do ids[b.id] = true end
-for _, id in { "Biggest", "Strongest", "Tallest", "RepsToday", "PosingWins", "ArmWins" } do H.check(ids[id], id .. " exists") end
-H.check(#L.Boards == 6 and L.Top == 10, "six boards, top 10")
+for _, id in { "Biggest", "Strongest", "Tallest", "RepsToday", "PosingWins", "ArmWins", "Alters", "Level" } do H.check(ids[id], id .. " exists") end
+H.check(#L.Boards == 8 and L.Top == 10, "eight boards, top 10") -- (owner, 24 Oct: + Alters, Level)
 H.check(L.Refresh >= 60 and L.Refresh <= 120, "refresh inside 60-120 s")
 print("Formatting")
 H.check(L.Format("Tallest", 84) == "7'0\"", "7'0\"")

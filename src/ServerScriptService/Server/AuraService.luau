@@ -34,15 +34,7 @@ end
 
 -- the top bar's LVL: the average exact level of the 18 muscles
 local function averageLevel(data): number
-	local total, count = 0, 0
-	for _, muscle in ipairs(Muscles.List) do
-		local entry = data.muscles and data.muscles[muscle.id]
-		if entry then
-			total += Muscles.ExactLevel(entry)
-			count += 1
-		end
-	end
-	return if count > 0 then total / count else 0
+	return Muscles.Lvl(data) -- (26 Oct: LVL never drops)
 end
 
 -- earned right now? (level / height / achievements; the rest never "earns")

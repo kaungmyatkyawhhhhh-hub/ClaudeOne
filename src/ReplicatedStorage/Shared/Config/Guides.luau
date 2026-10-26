@@ -111,15 +111,7 @@ for _, guide in ipairs(Guides.List) do Guides.ById[guide.id] = guide end
 local Muscles = require(script.Parent.Muscles)
 local GrowthSpurts = require(script.Parent.GrowthSpurts)
 function Guides.Level(data): number
-	local total, count = 0, 0
-	for _, muscle in ipairs(Muscles.List) do
-		local entry = data.muscles and data.muscles[muscle.id]
-		if entry then
-			total += Muscles.ExactLevel(entry)
-			count += 1
-		end
-	end
-	return if count > 0 then math.floor(total / count) else 0
+	return math.floor(Muscles.Lvl(data)) -- (26 Oct: LVL never drops)
 end
 function Guides.Heavier(data): boolean
 	for _, progress in pairs(data.machines or {}) do

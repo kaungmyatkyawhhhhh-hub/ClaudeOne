@@ -16,8 +16,10 @@ H.check(tokens[4] == 1 and tokens[7] == 1 and tokens[1] + tokens[2] + tokens[3] 
 for day = 2, 7 do H.check(E.LoginReward(day) >= E.LoginReward(day - 1), "day " .. day .. " pays at least day " .. (day - 1)) end
 print("Offline")
 H.check(E.OfflineCoins(5 * 60) == 0, "short break: nothing")
-H.check(E.OfflineCoins(60 * 60) == 30, "1 hour = 30 coins")
-H.check(E.OfflineCoins(48 * 3600) == 240, "capped at 8 hours")
+-- (prompt 61, 22 Oct) a minute away pays OfflineShare of the stage's coins a minute (at least the old 0.5)
+local offlineRate = math.max(E.Offline.CoinsPerMinute, E.Rewards.OfflineShare * H.module("ReplicatedStorage/Shared/Config/PumpShop").Rate(nil))
+H.check(E.OfflineCoins(60 * 60) == math.floor(60 * offlineRate), "1 hour = " .. math.floor(60 * offlineRate) .. " coins")
+H.check(E.OfflineCoins(48 * 3600) == math.floor(E.Offline.CapHours * 60 * offlineRate), "capped at 8 hours")
 print("Rush hour")
 local active, left = E.RushHourAt(1800 * 1000 + 10)
 H.check(active and left == 170, "active at :00 for 3 minutes")

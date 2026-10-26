@@ -376,6 +376,18 @@ local function onPlayerAdded(player)
 		print(string.format("[PlayerData] %s was past the height cap (Growth Spurt %d): +%s EXP on every muscle, Growth Spurt set to %d. This server: %d",
 			player.Name, before, Muscles.FormatExp(OVER_CAP_EXP), maxSpurts, clampedToMax))
 	end
+	-- (26 Oct) LVL never drops (Muscles.Lvl): a save from before stats.levelBase gets the levels its Growth Spurts and Body
+	-- Alters took away, worked out once from the goals they met
+	if type(data.stats) == "table" and data.stats.levelBase == nil then
+		local base = 0
+		for i = 1, math.min(data.growthSpurts or 0, #GrowthSpurts.Stages) do base += GrowthSpurts.Stages[i].requiredLevel or 0 end
+		local Alters = require(Config.Alters)
+		for n = 1, Alters.State(data).highest or 0 do
+			local goal = Alters.Goal(n)
+			base += goal - Muscles.LevelFromXp(Muscles.CumXp(goal) * Alters.KeepShare)
+		end
+		data.stats.levelBase = math.floor(base)
+	end
 	-- The beach gym's own machines are gone (owner, 8 Oct night: it uses the real machines): their weight progress moves to
 	-- the real machine (same tier sets, so the same tier numbers; the higher of the two is kept)
 	for oldId, newId in pairs(require(Config.Machines).Renamed) do
@@ -756,17 +768,10 @@ end
 
 -- (owner, 24 Oct) the best LVL ever (the top bar's average muscle level) in stats.bestLevel, for the LEVEL board:
 -- noted before a Growth Spurt / alter resets the muscles, and on every leaderboard write. Returns it.
+-- (26 Oct) LVL is Muscles.Lvl now (never drops), so the board's best is simply the LVL.
 function PlayerData.NoteBestLevel(data): number
-	local total, count = 0, 0
-	for _, muscle in ipairs(Muscles.List) do
-		local entry = data.muscles and data.muscles[muscle.id]
-		if entry then
-			total += Muscles.ExactLevel(entry)
-			count += 1
-		end
-	end
-	local now = math.floor(count > 0 and total / count or 0)
 	data.stats = data.stats or {}
+	local now = math.floor(Muscles.Lvl(data))
 	data.stats.bestLevel = math.max(tonumber(data.stats.bestLevel) or 0, now)
 	return data.stats.bestLevel
 end
@@ -780,12 +785,15 @@ function PlayerData.GrowthSpurt(player)
 	local progress = GrowthSpurts.Progress(data, Muscles.Groups, Machines.TrainableMuscles(data.growthSpurts))
 	if not progress.ready then return false end
 	PlayerData.NoteBestLevel(data)
+	local levelBefore = Muscles.AverageLevel(data.muscles)
 	for _, muscle in ipairs(Muscles.List) do
 		data.muscles[muscle.id] = { level = 0, xp = 0 }
 	end
+	data.stats.levelBase = (tonumber(data.stats.levelBase) or 0) + levelBefore -- (26 Oct: LVL never drops)
 	data.growthSpurts += 1
 	data.dnaTokens = math.max(0, data.dnaTokens or 0) + require(Config.DNA).PerGrowthSpurt -- (the free token, once per spurt)
 	replicate(player, { "muscles" }, data.muscles)
+	replicate(player, { "stats", "levelBase" }, data.stats.levelBase)
 	replicate(player, { "growthSpurts" }, data.growthSpurts)
 	replicate(player, { "dnaTokens" }, data.dnaTokens)
 	return true
@@ -807,10 +815,12 @@ function PlayerData.Alter(player): number?
 	if not PlayerData.Get(player) then return nil end -- (left while saving)
 	local kept = {}
 	for _, muscle in ipairs(Muscles.List) do kept[muscle.id] = Alters.Kept(data.muscles[muscle.id]) end
+	data.stats.levelBase = (tonumber(data.stats.levelBase) or 0) + Muscles.AverageLevel(data.muscles) - Muscles.AverageLevel(kept) -- (26 Oct)
 	data.muscles = kept
 	local state = Alters.State(data)
 	data.alter = { highest = progress.next, equipped = progress.next, best = state.best }
 	replicate(player, { "muscles" }, data.muscles)
+	replicate(player, { "stats", "levelBase" }, data.stats.levelBase)
 	replicate(player, { "alter" }, data.alter)
 	task.spawn(function()
 		if PlayerData.IsPersistent(player) then save(player, false) end

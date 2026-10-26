@@ -7,6 +7,15 @@ Social.Together = {
 	Range = 30,         -- studs between two lifters
 }
 
+-- (26 Oct, retention) Friend Boost: every Roblox friend in your server gives GainsPer more gains, up to Max friends
+-- (Server/FriendService). The Crew window's INVITE FRIENDS button and a one-time invite prompt after Growth Spurt
+-- PromptAfterSpurt (FriendClient) bring them in.
+Social.Friends = {
+	GainsPer = 0.1,
+	Max = 3,
+	PromptAfterSpurt = 2,
+}
+
 -- Arm wrestling (owner's feature run, task 3): a table in the starter gym and one in the pro gym (tag "ArmWrestleTable",
 -- tools/builders/ArmWrestleTable). Sit down with the machines' OCCUPY prompt. Two players = a match; alone you can pick
 -- an NPC opponent (3 levels) or wait for a player. 3-2-1, then tap a big button as fast as you can for up to MaxTime:

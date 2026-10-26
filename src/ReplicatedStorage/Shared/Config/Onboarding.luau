@@ -33,8 +33,9 @@ Onboarding.Steps = {
 			"Every machine trains real muscles. The bench builds your chest, shoulders and triceps." } },
 	{ id = "FirstLift", text = "Tap REP to lift faster. A full PUMP bar: tap it for x2.", done = { type = "reps", count = 1 },
 		coach = { "Reps go on their own. Tap REP to lift faster!", "Every tap fills the PUMP bar. When it's full, tap it for double gains." } },
-	{ id = "Stamina", text = "Every rep uses stamina. Keep lifting until it runs low.", done = { type = "staminaLow", below = 0.4, count = 20 },
-		coach = { "Every rep uses stamina, the blue bar. Keep lifting until it runs low." } },
+	-- (26 Oct, funnel: 12% left on this step; 20 reps -> 10)
+	{ id = "Stamina", text = "Every rep uses stamina. Do 10 more reps!", done = { type = "staminaLow", below = 0.4, count = 10 },
+		coach = { "Every rep uses stamina, the blue bar. Do 10 more reps!" } },
 	-- (prompt 20, 21 Oct: the button used to be off-screen on a machine; now an arrow points at it wherever it is, and after
 	-- `timeout` seconds the shake is drunk for the player so the tutorial never gets stuck)
 	-- (owner, 23 Oct, option B: the shake sits in the hotbar, which hides on a machine, so on a machine the step first says
@@ -68,7 +69,7 @@ Onboarding.Done = 100
 -- Bumped when steps are renumbered; PlayerData converts older saves (see PlayerData onPlayerAdded).
 Onboarding.Version = 2
 
-Onboarding.FinishedText = "You're all set. Go get big."
+Onboarding.FinishedText = "You're all set. Tap GO TRAIN for your first Growth Spurt!" -- (26 Oct: the GO TRAIN button, ProgressClient)
 Onboarding.FinishCoins = 50 -- paid once when the last step is done the normal way (not when skipped)
 
 return Onboarding

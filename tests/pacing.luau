@@ -238,7 +238,7 @@ end
 -- Body Alters (prompt 21): players play up to 7'0", then through ALTERS alters; minutes per alter against
 -- Alters.TargetMinutes.   lune run tests/pacing alters
 if process.args[1] == "alters" then
-	local ALTERS = 10
+	local ALTERS = tonumber(process.args[2]) or 10 -- (26 Oct: lune run tests/pacing alters 15)
 	local per = {}
 	for n = 1, ALTERS do per[n] = {} end
 	for seed = 1, PLAYERS // 2 do

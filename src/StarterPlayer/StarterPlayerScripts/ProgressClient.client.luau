@@ -726,6 +726,69 @@ task.spawn(function()
 end)
 
 ------------------------------------------------------------------------
+-- (26 Oct, funnel: 54% of new players left between the end of the tutorial and the first Growth Spurt goal, with nothing
+-- on screen saying where to train) Until the first Growth Spurt, off a machine: a gold GO TRAIN button at the bottom
+-- centre (the tutorial's GO TO spot) for the group furthest from the goal; it teleports you to a machine for it (goTo).
+-- Hidden while a window or a Coach Dex dialog / GO TO button (tutorial, unlock guides) is up.
+------------------------------------------------------------------------
+local CoachDialog = require(Shared.UI.CoachDialog)
+local playerGui = player:WaitForChild("PlayerGui")
+local trainGui = Theme.ScreenGui({ Name = "GoTrain", DisplayOrder = 5, Parent = playerGui })
+local trainRoot = Kit.Root(trainGui)
+local trainButton = Kit.Button("Gold", "Go train", { Name = "GoTrain", AnchorPoint = Vector2.new(0.5, 1), Position = UDim2.new(0.5, 0, 1, -10), Visible = false,
+	Parent = trainRoot }, { width = 240, height = 38, textSize = 15 })
+Theme.SetChrome(trainButton)
+local trainTarget = nil -- the machine the button leads to
+local trainHiddenUntil = 0 -- (just teleported: the button steps aside so it's not over the machine's Occupy prompt)
+trainButton.Activated:Connect(function()
+	if not trainTarget then return end
+	trainHiddenUntil = os.clock() + 12
+	trainButton.Visible = false
+	goTo(trainTarget)
+end)
+
+local function otherGuideUp(): boolean
+	for _, name in ipairs({ "Tutorial", "Guide" }) do
+		local gui = playerGui:FindFirstChild(name)
+		if gui and gui:IsA("LayerCollector") and gui.Enabled then
+			for _, child in ipairs(gui:GetDescendants()) do
+				if (child.Name == "CoachDialog" or child.Name == "GoTo") and child:IsA("GuiObject") and child.Visible then return true end
+			end
+		end
+	end
+	return false
+end
+
+local function updateTrainButton()
+	local data = ClientData.Get()
+	local show = false
+	if started and data and data.muscles and (data.growthSpurts or 0) == 0 and not currentMachine and not ready and not UIBus.InTutorial()
+		and (data.onboarding and (data.onboarding.tutorialStep or Onboarding.Done) >= Onboarding.Done) and os.clock() >= trainHiddenUntil
+		and not UIBus.CoverOpen(playerGui) and not needsModal.isOpen() and not otherGuideUp() then
+		local progress = spurtProgress(data)
+		local missing = missingGroups(progress)
+		local first = missing[1]
+		local machine = first and machinesFor(data, first.group.id)[1]
+		if machine then
+			show = true
+			if trainTarget ~= machine then
+				trainTarget = machine
+				Kit.SetButton(trainButton, "Gold", "Go train " .. string.lower(first.group.name))
+			end
+		end
+	end
+	trainButton.Visible = show
+	if show then trainButton.Position = UDim2.new(0.5, 0, 1, -CoachDialog.BottomClear(trainRoot)) end
+end
+task.spawn(function()
+	while true do
+		local ok, err = pcall(updateTrainButton)
+		if not ok then warn("[GoTrain] " .. tostring(err)) end
+		task.wait(0.5)
+	end
+end)
+
+------------------------------------------------------------------------
 task.spawn(function()
 	ClientData.Get() -- waits for the data snapshot
 	started = true

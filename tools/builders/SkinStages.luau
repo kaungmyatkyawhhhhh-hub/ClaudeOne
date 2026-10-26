@@ -43,6 +43,7 @@ function Builder.BuildAlters()
 			sa.ColorMap = alter.textures.color
 			sa.NormalMap = alter.textures.normal
 			sa.RoughnessMap = alter.textures.roughness
+			if alter.textures.metalness then sa.MetalnessMap = alter.textures.metalness end -- (26 Oct) Tier 2-3
 			sa.AlphaMode = Enum.AlphaMode.Overlay
 			sa.Parent = folder
 			made += 1

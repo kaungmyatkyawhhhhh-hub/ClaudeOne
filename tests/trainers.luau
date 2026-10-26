@@ -12,7 +12,8 @@ for _, r in T.Rarities do
 	for _, t in T.InRarity[r.id] or {} do sum += t.chance end
 	H.check(math.abs(sum - r.chance) < 1e-9 and T.ByRarity[r.id] == T.InRarity[r.id][1], r.id .. " = its trainers' chances (" .. sum .. "%)")
 end
-local odds = { RookieCoach = 30, CardioCoach = 25, MoneyCoach = 20, PumpCoach = 17, AtlasCoach = 5.75, BlazeCoach = 1.5, ShadeCoach = 0.6, AeonCoach = 0.15 }
+-- (26 Oct: matches Config/Trainers after the owner's later odds change: 42 / 30 / 18 / 7 / 2.2 + 0.6 / 0.16 / 0.04)
+local odds = { RookieCoach = 42, CardioCoach = 30, MoneyCoach = 18, PumpCoach = 7, AtlasCoach = 2.2, BlazeCoach = 0.6, ShadeCoach = 0.16, AeonCoach = 0.04 }
 local rarityOf = { RookieCoach = "Common", CardioCoach = "Uncommon", MoneyCoach = "Rare", PumpCoach = "Epic", AtlasCoach = "Legendary", BlazeCoach = "Legendary",
 	ShadeCoach = "Mythic", AeonCoach = "Secret" }
 for _, t in T.List do
@@ -64,18 +65,18 @@ H.check(T.Materials[T.ById.AeonCoach.look.marble.variant] ~= nil, "Atlas's marbl
 
 print("Rolls")
 -- the boundaries of the odds
-H.check(T.Roll(0, 0) == "Common" and T.Roll(0.2999, 0) == "Common" and T.Roll(0.3001, 0) == "Uncommon", "0-30% Common, then Uncommon")
-H.check(T.Roll(0.9999, 0) == "Secret" and T.Roll(0.998, 0) == "Mythic" and T.Roll(0.95, 0) == "Legendary", "the last 0.15% is Secret, the 0.6% before it Mythic")
--- (owner, 23 Oct) which Legendary: Duke Ironside 5.75 of 7.25, Volta 1.5 of 7.25
-H.check(T.PickTrainer("Legendary", 0).id == "AtlasCoach" and T.PickTrainer("Legendary", 0.79).id == "AtlasCoach" and T.PickTrainer("Legendary", 0.8).id == "BlazeCoach"
-	and T.PickTrainer("Secret", 0.5).id == "AeonCoach", "Legendary: Duke Ironside up to 79.3%, then Volta")
+H.check(T.Roll(0, 0) == "Common" and T.Roll(0.4199, 0) == "Common" and T.Roll(0.4201, 0) == "Uncommon", "0-42% Common, then Uncommon")
+H.check(T.Roll(0.9999, 0) == "Secret" and T.Roll(0.999, 0) == "Mythic" and T.Roll(0.98, 0) == "Legendary", "the last 0.04% is Secret, the 0.16% before it Mythic")
+-- which Legendary: Duke Ironside 2.2 of 2.8, Volta 0.6 of 2.8
+H.check(T.PickTrainer("Legendary", 0).id == "AtlasCoach" and T.PickTrainer("Legendary", 0.78).id == "AtlasCoach" and T.PickTrainer("Legendary", 0.79).id == "BlazeCoach"
+	and T.PickTrainer("Secret", 0.5).id == "AeonCoach", "Legendary: Duke Ironside up to 78.6%, then Volta")
 -- pity: 99 low rolls, the 100th is a Legendary
 local pity, last = 0, nil
 for _ = 1, T.Pity - 1 do last, pity = T.Roll(0.1, pity) end
 H.check(last == "Common" and pity == T.Pity - 1, "99 commons in a row: pity 99")
 last, pity = T.Roll(0.1, pity)
 H.check(last == "Legendary" and pity == 0, "the 100th is a Legendary and the pity resets")
-local _, p2 = T.Roll(0.95, 40)
+local _, p2 = T.Roll(0.98, 40)
 H.check(p2 == 0, "a natural Legendary or better resets the pity too")
 -- the odds over many rolls (with pity) are close to the config
 math.randomseed(7)
@@ -113,8 +114,8 @@ local function avgRollsTo(index)
 	end
 	return sum / runs
 end
--- (owner, 23 Oct odds: Legendary ~20 min, The Shadow ~3.5 h, Atlas ~18 h)
-for _, spec in { { "Epic", 3, 12 }, { "Legendary", 12, 32 }, { "Mythic", 170, 270 }, { "Secret", 850, 1350 } } do
+-- (26 Oct: with the current odds, Epic ~16 min, Legendary ~50 min, The Shadow ~13.5 h, Atlas ~67 h)
+for _, spec in { { "Epic", 10, 25 }, { "Legendary", 35, 70 }, { "Mythic", 650, 1000 }, { "Secret", 3200, 4800 } } do
 	local rolls = avgRollsTo(T.RarityById[spec[1]].index)
 	local minutes = rolls * T.RollMinutes
 	H.check(minutes >= spec[2] and minutes <= spec[3], string.format("first %s or better: %.0f rolls, %.0f min (%.1f h)", spec[1], rolls, minutes, minutes / 60))
@@ -143,7 +144,7 @@ H.check(atlas >= 1.35 and atlas <= 1.45, "one max LIMITLESS Atlas (Secret) is ab
 b = T.Bonus({ { id = "AeonCoach", s = 5, l = 20 }, { id = "AeonCoach", s = 5, l = 20 }, { id = "AeonCoach", s = 5, l = 20 }, { id = "AeonCoach", s = 5, l = 20 } })
 H.check(b.gains == T.BoostCap and b.progress <= T.BoostCap, "the total is capped at +" .. (T.BoostCap * 100) .. "%")
 local lines = T.TotalLines({ { id = "AeonCoach", s = 5, l = 20 }, { id = "AeonCoach", s = 5, l = 20 }, { id = "AeonCoach", s = 5, l = 20 }, { id = "AeonCoach", s = 5, l = 20 } })
-H.check(lines[1].pct == 400 and lines[1].capped and lines[#lines].kind == "progress", "the shown total: capped at +400%, biggest first")
+H.check(lines[1].pct == 400 and lines[1].capped and lines[#lines].kind == "coins" and lines[#lines].pct == 100, "the shown total: capped at +400% (coins +100%), biggest first")
 H.check(T.PerkText(T.ById.PumpCoach, { id = "PumpCoach", s = 2, l = 10 }) == "+26% EXP, +26% coins", "perk text: " .. T.PerkText(T.ById.PumpCoach, { id = "PumpCoach", s = 2, l = 10 }))
 H.check(T.Stages[5].mult == 2 and #T.Stages == 5 and T.EvolveCount == 3, "5 stages x1 .. x2, 3 to evolve")
 local m = T.Migrate({ copies = { { u = 1, id = "PumpCoach", s = 1, l = 1 } }, freeRolls = 1, rebalance = 1 })

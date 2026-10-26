@@ -47,7 +47,10 @@ Alters.Tiers = {
 -- alter that has no textures yet (the Alters tab's "Coming soon" card).
 -- mean: the color map's average color (its tint math, Alters.Tint); tone: a bronze tan (Alters.Tint) instead of the plain
 -- skin tint (prompt 38b).
-local function t(color, normal, roughness) return { color = color, normal = normal, roughness = roughness } end
+-- (26 Oct) Tiers 2 and 3 (Stone, Metal): tools/alter_textures.py (Downloads\gym_arc_alters\tier2_stone, tier3_metal),
+-- with a metalness map where the material shines. tone = "Raw": the maps are the real colors, no skin tint.
+local function t(color, normal, roughness, metalness) return { color = color, normal = normal, roughness = roughness, metalness = metalness } end
+local function id(n) return "rbxassetid://" .. n end
 Alters.List = {
 	-- Tier 1: Human
 	{ id = "Pumped", name = "Pumped", tier = 1, textures = t("rbxassetid://118652537566937", "rbxassetid://77670612429230", "rbxassetid://109400263905498"), mean = { 242, 207, 189 } },
@@ -56,17 +59,17 @@ Alters.List = {
 	{ id = "Vascular", name = "Vascular", tier = 1, textures = t("rbxassetid://138226447249744", "rbxassetid://134369961190395", "rbxassetid://79671580983023"), mean = { 232, 215, 203 } },
 	{ id = "Peak", name = "Peak", tier = 1, textures = t("rbxassetid://88467569632374", "rbxassetid://99012039750322", "rbxassetid://122443770392636"), mean = { 178, 123, 80 }, tone = "Tan" },
 	-- Tier 2: Stone
-	{ id = "Clay", name = "Clay", tier = 2, placeholder = "#A0664A" },
-	{ id = "Sandstone", name = "Sandstone", tier = 2, placeholder = "#C9A46B" },
-	{ id = "Granite", name = "Granite", tier = 2, placeholder = "#7D7A78" },
-	{ id = "Marble", name = "Marble", tier = 2, placeholder = "#E6E2DA" },
-	{ id = "Obsidian", name = "Obsidian", tier = 2, placeholder = "#1E1A24" },
+	{ id = "Clay", name = "Clay", tier = 2, placeholder = "#A0664A", textures = t(id(111908333081375), id(95059292570431), id(83773917914492)), mean = { 165, 98, 68 }, tone = "Raw" },
+	{ id = "Sandstone", name = "Sandstone", tier = 2, placeholder = "#C9A46B", textures = t(id(129006372823283), id(88101824353820), id(71033092117130)), mean = { 210, 175, 122 }, tone = "Raw" },
+	{ id = "Granite", name = "Granite", tier = 2, placeholder = "#7D7A78", textures = t(id(132912767006986), id(116202207751522), id(77503221662735)), mean = { 126, 122, 121 }, tone = "Raw" },
+	{ id = "Marble", name = "Marble", tier = 2, placeholder = "#E6E2DA", textures = t(id(74381425963314), id(117879246271249), id(79039157977312)), mean = { 230, 227, 221 }, tone = "Raw" },
+	{ id = "Obsidian", name = "Obsidian", tier = 2, placeholder = "#1E1A24", textures = t(id(94192074907581), id(110703296866261), id(77871006229352), id(130332354383261)), mean = { 43, 35, 58 }, tone = "Raw" },
 	-- Tier 3: Metal
-	{ id = "Bronze", name = "Bronze", tier = 3, placeholder = "#B0783C" },
-	{ id = "Iron", name = "Iron", tier = 3, placeholder = "#5E5E62" },
-	{ id = "Steel", name = "Steel", tier = 3, placeholder = "#9AA3AD" },
-	{ id = "Chrome", name = "Chrome", tier = 3, placeholder = "#D9DEE4" },
-	{ id = "Gold", name = "Gold", tier = 3, placeholder = "#F6C75A" },
+	{ id = "Bronze", name = "Bronze", tier = 3, placeholder = "#B0783C", textures = t(id(138659889209863), id(80938307342948), id(80326497501913), id(83058908656216)), mean = { 165, 114, 58 }, tone = "Raw" },
+	{ id = "Iron", name = "Iron", tier = 3, placeholder = "#5E5E62", textures = t(id(123398371909835), id(135884275559153), id(116181911858401), id(130000358095791)), mean = { 75, 75, 78 }, tone = "Raw" },
+	{ id = "Steel", name = "Steel", tier = 3, placeholder = "#9AA3AD", textures = t(id(121058418181770), id(127909722412233), id(72700386465198), id(132649841828659)), mean = { 164, 173, 183 }, tone = "Raw" },
+	{ id = "Chrome", name = "Chrome", tier = 3, placeholder = "#D9DEE4", textures = t(id(125031692272498), id(111437180712024), id(111783985655994), id(97478536021472)), mean = { 217, 222, 229 }, tone = "Raw" },
+	{ id = "Gold", name = "Gold", tier = 3, placeholder = "#F6C75A", textures = t(id(84450097571938), id(119906769696624), id(129600558914310), id(133250327586929)), mean = { 231, 179, 67 }, tone = "Raw" },
 	-- Tier 4: Gem
 	{ id = "Jade", name = "Jade", tier = 4, placeholder = "#3FA77A" },
 	{ id = "Ruby", name = "Ruby", tier = 4, placeholder = "#C21E3A" },
@@ -149,6 +152,7 @@ end
 -- its color map average to TanColor.
 function Alters.Tint(id: string?, skin: Color3): Color3
 	local alter = id and Alters.ById[id]
+	if alter and alter.tone == "Raw" then return Color3.new(1, 1, 1) end -- (26 Oct) stone / metal: their own colors
 	if not alter or alter.tone ~= "Tan" or not alter.mean then return skin end
 	local want, mean = Alters.TanColor(skin), meanOf(alter.mean)
 	return Color3.new(math.min(want.R / mean.R, 1), math.min(want.G / mean.G, 1), math.min(want.B / mean.B, 1))

@@ -438,12 +438,7 @@ end
 -- Load: the save data and the world around you, then let the loading screen go
 ------------------------------------------------------------------------
 local function levelOf(data): number
-	local total, count = 0, 0
-	for _, muscle in ipairs(Muscles.List) do
-		total += Muscles.ExactLevel(data.muscles and data.muscles[muscle.id])
-		count += 1
-	end
-	return math.floor(count > 0 and total / count or 0)
+	return math.floor(Muscles.Lvl(data)) -- (26 Oct: LVL never drops)
 end
 local function refreshPill(data)
 	local height = GrowthSpurts.FormatHeight(GrowthSpurts.PlayerHeight(data))

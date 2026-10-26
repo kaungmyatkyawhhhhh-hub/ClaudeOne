@@ -88,25 +88,18 @@ local function refresh()
 	local inches = GrowthSpurts.PlayerHeight(data)
 	local heightText = GrowthSpurts.FormatHeight(inches, true)
 	if inches >= GrowthSpurts.MaxHeightInches then heightText ..= ' <font color="' .. GOLD .. '">MAX</font>' end
-	local total, count = 0, 0
-	for _, muscle in ipairs(Muscles.List) do
-		local entry = data.muscles and data.muscles[muscle.id]
-		if entry then
-			total += Muscles.ExactLevel(entry)
-			count += 1
-		end
-	end
-	local average = count > 0 and total / count or 0
+	local average = Muscles.Lvl(data) -- (26 Oct: LVL never drops; a Growth Spurt / alter banks the levels it resets)
 	local whole = math.floor(average)
 	-- (owner, 23 Oct, chrome reset: the LVL number in gold)
 	level:setLabel('LVL <font color="' .. GOLD .. '">' .. whole .. "</font> · " .. heightText)
 	if barFill then barFill.Size = UDim2.fromScale(math.clamp(average - whole, 0, 1), 1) end
 	-- LVL up (prompt 20, 21 Oct): a reward popup. Not on the first read, and not after a Growth Spurt (the level starts over)
 	local stage = (data.growthSpurts or 0) * 100 + (type(data.alter) == "table" and data.alter.highest or 0) -- (a Body Alter starts the level over too)
+	-- (26 Oct) only past the highest LVL shown: the reset and the banked levels arrive one after the other (a one-frame dip)
 	if shownLevel and whole > shownLevel and stage == shownSpurts then
 		Notify.Reward("LVL UP", "You are LVL " .. whole .. " now", "arrow-big-up", Colors.Gold, "LevelUp", "lvl")
 	end
-	shownLevel, shownSpurts = whole, stage
+	shownLevel, shownSpurts = math.max(shownLevel or 0, whole), stage
 end
 
 task.spawn(function()

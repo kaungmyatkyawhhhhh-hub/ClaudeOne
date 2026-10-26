@@ -175,15 +175,7 @@ end
 
 -- average muscle level (the top bar's "LVL n")
 local function levelOf(data): number
-	local total, n = 0, 0
-	for _, muscle in ipairs(Muscles.List) do
-		local entry = data.muscles and data.muscles[muscle.id]
-		if entry then
-			total += Muscles.ExactLevel(entry)
-			n += 1
-		end
-	end
-	return n > 0 and math.floor(total / n) or 0
+	return math.floor(Muscles.Lvl(data)) -- (26 Oct: LVL never drops)
 end
 
 ------------------------------------------------------------------------

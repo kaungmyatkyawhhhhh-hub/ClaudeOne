@@ -267,7 +267,7 @@ Machines.Cardio = { MetersPerMph = 2, KingMeters = 10000, BeltScroll = 1.2 } -- 
 -- AnimateDistance studs of the camera, and the pump swell only shows within PumpDistance. Your own lift always animates.
 Machines.ClientCull = { AnimateDistance = 80, PumpDistance = 30 }
 
--- Pro gym (opens at Growth Spurt 2). Built from code by ProGymService; every one carries its plates on a
+-- Pro gym (opens at Growth Spurt 3 since prompt 58, 23 Oct). Built from code by ProGymService; every one carries its plates on a
 -- weight stack ("Bar" part, centered layout) and the lifter's hands stay free (pose follow = "None").
 local PRO = {
 	{ id = "Dips", name = "Dips", pose = "Dip", tiers = "Bodyweight", staminaCost = 5,

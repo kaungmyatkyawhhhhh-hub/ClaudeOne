@@ -133,6 +133,19 @@ local function rowCard(parent, icon: any, color: Color3, text: string, sub: stri
 end
 
 ------------------------------------------------------------------------
+-- (26 Oct, retention) INVITE FRIENDS: Roblox's invite prompt; friends in your server give the Friend Boost (FriendService)
+local function inviteFriendsRow(parent)
+	local friendCfg = Social.Friends
+	local percent = math.floor(friendCfg.GainsPer * 100 + 0.5)
+	rowCard(parent, "users", Colors.Green, "Invite friends", "Every friend here: +" .. percent .. "% gains (up to +" .. percent * friendCfg.Max .. "%)", "Invite", "Green", function()
+		local SocialService = game:GetService("SocialService")
+		local me = game:GetService("Players").LocalPlayer
+		local ok, can = pcall(SocialService.CanSendGameInviteAsync, SocialService, me)
+		if ok and can then pcall(SocialService.PromptGameInvite, SocialService, me) end
+	end)
+end
+
+------------------------------------------------------------------------
 -- The crew view (shared by MY CREW and a top crew)
 ------------------------------------------------------------------------
 local ROLE_COLORS = { Leader = Colors.Gold, Officer = Color3.fromHex("#7FB6FF"), Member = Colors.Muted }
@@ -305,9 +318,11 @@ local function render(info)
 				rowCard(scroll, { userId = other.userId, name = other.name }, Colors.Card, other.name, nil, "Invite", "Blue", function() remote:FireServer("Invite", other.userId) end)
 			end
 		end
+		inviteFriendsRow(scroll)
 		local leave = button("Leave crew", "Red")
 		leave.Activated:Connect(function() remote:FireServer("Leave") end)
 	else
+		inviteFriendsRow(scroll)
 		heading("Start a crew")
 		line("Name (" .. CREW.NameLength[1] .. "-" .. CREW.NameLength[2] .. ") and tag (" .. CREW.TagLength[1] .. "-" .. CREW.TagLength[2] .. " letters)")
 		local nameBox = textBox("Crew name", CREW.NameLength[2])
