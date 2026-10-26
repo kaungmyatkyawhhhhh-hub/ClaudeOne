@@ -58,6 +58,10 @@ end
 -- (owner, 24 Oct) past 7'0": every finished Body Alter tier (5 alters) adds AlterTierInches (Tier 1 done = 7'4").
 GrowthSpurts.AlterTierInches = 4
 GrowthSpurts.AltersPerTier = 5
+-- (owner, 26 Oct: "7'0 is not max") the tallest anyone can get: 7'0" + every alter tier (Config/Alters: 6 tiers of 5 =
+-- 30 alters) = 9'0". Only this height says MAX (top bar, menu card, stats); 7'0" is only the last Growth Spurt.
+GrowthSpurts.AlterTiers = 6
+GrowthSpurts.TopHeightInches = GrowthSpurts.MaxHeightInches + GrowthSpurts.AlterTierInches * GrowthSpurts.AlterTiers
 
 -- A player's real height: the Growth Spurt height, plus the alter tiers once at 7'0" (data.alter.highest, Config/Alters).
 function GrowthSpurts.PlayerHeight(data)
@@ -181,7 +185,7 @@ end
 -- "5'6\""; a player at the cap reads "7'0\" (MAX)". `plain` skips the MAX tag (NPCs like Dante, who are no player).
 function GrowthSpurts.FormatHeight(inches, plain)
 	local text = string.format("%d'%d\"", inches // 12, inches % 12)
-	if not plain and inches >= GrowthSpurts.MaxHeightInches then text ..= " (MAX)" end
+	if not plain and inches >= GrowthSpurts.TopHeightInches then text ..= " (MAX)" end
 	return text
 end
 

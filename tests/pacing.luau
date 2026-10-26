@@ -511,5 +511,5 @@ local full = { growthSpurts = maxSpurts + 3, muscles = {} } -- (an old save past
 for _, muscle in Muscles.List do full.muscles[muscle.id] = { level = 5000, xp = 0 } end
 local progress = GrowthSpurts.Progress(full, Muscles.Groups, Machines.TrainableMuscles(full.growthSpurts))
 H.check(progress.maxed and not progress.ready and progress.met == progress.total, "at 7'0\" a spurt is never ready")
-H.check(GrowthSpurts.FormatHeight(84) == "7'0\" (MAX)" and GrowthSpurts.FormatHeight(78) == "6'6\"", "height text")
+H.check(GrowthSpurts.FormatHeight(84) == "7'0\"" and GrowthSpurts.FormatHeight(108) == "9'0\" (MAX)" and GrowthSpurts.FormatHeight(78) == "6'6\"", "height text (MAX only at 9'0\": alter tiers add height)")
 H.done()

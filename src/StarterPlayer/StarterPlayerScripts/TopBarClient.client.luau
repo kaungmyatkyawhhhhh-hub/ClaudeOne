@@ -87,7 +87,7 @@ local function refresh()
 	setCoins(data.coins or 0)
 	local inches = GrowthSpurts.PlayerHeight(data)
 	local heightText = GrowthSpurts.FormatHeight(inches, true)
-	if inches >= GrowthSpurts.MaxHeightInches then heightText ..= ' <font color="' .. GOLD .. '">MAX</font>' end
+	if inches >= GrowthSpurts.TopHeightInches then heightText ..= ' <font color="' .. GOLD .. '">MAX</font>' end -- (26 Oct: only at 9'0", alter tiers add height)
 	local average = Muscles.Lvl(data) -- (26 Oct: LVL never drops; a Growth Spurt / alter banks the levels it resets)
 	local whole = math.floor(average)
 	-- (owner, 23 Oct, chrome reset: the LVL number in gold)
