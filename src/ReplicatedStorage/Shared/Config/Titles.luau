@@ -54,7 +54,7 @@ Titles.List = {
 	{ id = "LateBloomer", name = "Late Bloomer", rarity = "Rare", category = "Growth Spurt",
 		description = "Do your first Growth Spurt.", condition = { type = "spurts", min = 1 } },
 	{ id = "Skyscraper", name = "Skyscraper", rarity = "Legendary", category = "Growth Spurt",
-		description = "Grow to 7'0\".", condition = { type = "height", min = 84 }, badgeId = nil },
+		description = "Grow to 6'0\".", condition = { type = "height", min = 72 }, badgeId = nil }, -- (26 Oct: the last spurt is 6'0")
 	{ id = "GeneticFreak", name = "Genetic Freak", rarity = "Epic", category = "Genetics",
 		description = "Have an S overall genetics grade.", condition = { type = "overall", grade = "S" } },
 	{ id = "HardGainer", name = "Hard Gainer", rarity = "Uncommon", category = "Genetics",

@@ -28,7 +28,7 @@ Auras.List = {
 	{ id = "Storm", vfx = "storm", name = "Storm", rarity = "Rare", style = "electric", colors = { c("#9CC8FF"), c("#FFFFFF") },
 		unlock = { type = "level", level = 50 }, how = "Reach LVL 50", short = "LVL 50", Icon = "rbxassetid://134283670005654" },
 	{ id = "Golden", vfx = "golden", name = "Golden", rarity = "Legendary", style = "flame", colors = { c("#FFC93C"), c("#FFF1B8") },
-		unlock = { type = "height" }, how = "Reach 7'0\"", short = "7'0\"", Icon = "rbxassetid://72969190443545" },
+		unlock = { type = "height" }, how = "Reach 6'0\"", short = "6'0\"", Icon = "rbxassetid://72969190443545" },
 	{ id = "Titan", vfx = "titan", name = "Titan", rarity = "Legendary", style = "flame", colors = { c("#E8343C"), c("#FFC93C") },
 		unlock = { type = "achievements" }, how = "Finish every Coach Quest", short = "All quests", Icon = "rbxassetid://73997537236580" },
 	-- Body Alters (prompt 21): a tier's aura at its 5th alter (placeholder looks: the earned auras' effects)

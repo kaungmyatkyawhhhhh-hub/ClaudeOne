@@ -748,7 +748,7 @@ function refresh()
 	altersWasShown = false
 	grid.Visible = open
 	if not open then
-		lockNote.Text = if tab == "Alters" then "BODY ALTERS OPEN AT 7'0\". KEEP GROWING!" else "GEAR OPENS AT GROWTH SPURT 2. KEEP TRAINING!"
+		lockNote.Text = if tab == "Alters" then "BODY ALTERS OPEN AT 6'0\". KEEP GROWING!" else "GEAR OPENS AT GROWTH SPURT 2. KEEP TRAINING!"
 		strip.Visible = false
 		return
 	end

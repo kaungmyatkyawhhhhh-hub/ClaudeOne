@@ -43,7 +43,7 @@ Guides.Locks = {
 Guides.TabLocks = {
 	{ key = "Inventory/Gear", need = { spurts = 2, gear = true }, when = "Growth Spurt 2", progress = 2, tease = "Belts, wraps and straps. Each one makes a lift stronger." },
 	{ key = "Inventory/Auras", need = { spurts = 3, auras = true }, when = "Growth Spurt 3", progress = 3, tease = "A glow around your body. Each aura gives a small bonus." },
-	{ key = "Looks/Alters", need = { maxed = true }, when = "7'0\"", tease = "Change your skin once you hit max height." },
+	{ key = "Looks/Alters", need = { maxed = true }, when = "6'0\"", tease = "Change your skin once you finish your last Growth Spurt." },
 	{ key = "Physique/Genetics", need = { level = 5, spurts = 1 }, when = "LVL 5", tease = "See which muscles grow fastest for you." },
 }
 Guides.TabLockByKey = {}
@@ -64,7 +64,7 @@ Guides.List = {
 	{ id = "SpurtReadyAgain", need = { ready = "spurt" }, every = "spurt", after = "SpurtReady", tile = "GrowthSpurt",
 		lines = { "Your next Growth Spurt is ready. Tap TAP TO GROW!" } },
 	{ id = "AlterReady", need = { ready = "alter" }, big = true, reward = 25, tile = "GrowthSpurt",
-		lines = { "You've hit 7'0\". Now you can BODY ALTER: a whole new skin, +15% gains, forever.", "Tap ALTER NOW when you're ready." } },
+		lines = { "You've hit 6'0\". Now you can BODY ALTER: a whole new skin, +15% gains, forever. Every 5 alters you grow 4 inches taller!", "Tap ALTER NOW when you're ready." } },
 	{ id = "AlterTier", need = { alterTier = true }, every = "alter", after = "AlterReady", tile = "GrowthSpurt",
 		lines = { "A new alter tier is waiting. Tap ALTER NOW to see what you become." } },
 	{ id = "HeavierWeight", need = { heavier = true }, reward = 25,

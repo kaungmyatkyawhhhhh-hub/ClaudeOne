@@ -268,7 +268,7 @@ function AltersPanel.Build(parent: Instance, opts: { [string]: any }?)
 		local discovered = AltersPanel.Discovered(data)
 		count.Text = "ALTERS " .. highest .. " / " .. #Alters.List .. " UNLOCKED" -- (owner, 23 Oct: the alters you've reached, not DISCOVERED)
 		header.Text = if maxed then string.upper(string.format("%s is your highest · gains x%.2f", Alters.Get(highest).name, Alters.Bonus(highest)))
-			else "BODY ALTERS OPEN AT 7'0\". EACH ONE ADDS +15% GAINS."
+			else "BODY ALTERS OPEN AT 6'0\". EACH ONE ADDS +15% GAINS."
 		local shown = picked or (if shop then highest + 1 else worn)
 		for n, t in pairs(tiles) do
 			local reached = n <= highest

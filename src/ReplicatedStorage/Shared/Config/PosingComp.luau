@@ -20,10 +20,11 @@ PosingComp.JoinTeleport = 80   -- JOIN from further than this (or from another g
 -- Divisions by height (inches, Config.GrowthSpurts heights), smallest first. At 7'0" (prompt 21) by Body Alter tier:
 -- "Open" = Natural (no alter yet), then one division per alter tier (Config.Alters.Tiers).
 PosingComp.Divisions = {
-	{ id = "Bantam", name = "Bantam", maxHeight = 59 },  -- under 5'0"
-	{ id = "Middle", name = "Middle", maxHeight = 72 },  -- 5'0" to 6'0"
-	{ id = "Heavy", name = "Heavy", maxHeight = 83 },    -- over 6'0"
-	{ id = "Open", name = "Open", maxHeight = math.huge, alterTier = 0 }, -- 7'0", Natural
+	-- (26 Oct: Growth Spurts are 4 inches now, 4'0" -> 6'0"; two spurts per division)
+	{ id = "Bantam", name = "Bantam", maxHeight = 52 },  -- 4'0" and 4'4"
+	{ id = "Middle", name = "Middle", maxHeight = 60 },  -- 4'8" and 5'0"
+	{ id = "Heavy", name = "Heavy", maxHeight = 71 },    -- 5'4" and 5'8"
+	{ id = "Open", name = "Open", maxHeight = math.huge, alterTier = 0 }, -- 6'0" (the last spurt), Natural
 	{ id = "Alter1", name = "Human", maxHeight = math.huge, alterTier = 1 },
 	{ id = "Alter2", name = "Stone", maxHeight = math.huge, alterTier = 2 },
 	{ id = "Alter3", name = "Metal", maxHeight = math.huge, alterTier = 3 },
@@ -44,7 +45,7 @@ PosingComp.Between = 2     -- seconds between two divisions
 PosingComp.Weights = { Size = 60, Balance = 25, Presence = 15 }
 PosingComp.SizeFull = 1          -- (an NPC's size from its share: Muscles.LookG, 1 = the full aesthetic look)
 PosingComp.BalanceZero = 0.25    -- balance 1 when every group looks the same size, 0 when the smallest is this x the biggest
-PosingComp.PresenceHeight = 84   -- stage presence below 7'0": height / this
+PosingComp.PresenceHeight = 72   -- stage presence below the last Growth Spurt (6'0"): height / this
 -- (prompt 21) at 7'0" stage presence comes from the Body Alter number: AlterBase + the rest by alter / AlterFull
 PosingComp.AlterBase = 0.5
 PosingComp.AlterFull = 30

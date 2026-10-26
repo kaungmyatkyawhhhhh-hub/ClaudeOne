@@ -266,7 +266,7 @@ Workspace:GetAttributeChangedSignal("TestPhoneSize"):Connect(function() task.def
 ------------------------------------------------------------------------
 local MENU_DRAMA = {
 	Beat = 1.25, Embers = 18, Shake = 7, ShakeTime = 0.35,
-	Lines = { "Everyone starts tiny.", "No days off.", "Get HUGE.", "Grow to 7 feet tall.", "Lift. Grow. Repeat." }, LineSeconds = 2.6,
+	Lines = { "Everyone starts tiny.", "No days off.", "Get HUGE.", "Grow to 8 feet tall.", "Lift. Grow. Repeat." }, LineSeconds = 2.6,
 	Boom = { id = "rbxassetid://9125484526", volume = 0.45 }, -- PSE Deep Hits Big Reverberant Booms 1 (AlterThemes ImpactSub)
 }
 local menuFlash = New("Frame", { Name = "Flash", BackgroundColor3 = Color3.new(1, 1, 1), BackgroundTransparency = 1, BorderSizePixel = 0,

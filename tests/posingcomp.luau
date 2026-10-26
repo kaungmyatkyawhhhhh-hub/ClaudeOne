@@ -14,9 +14,10 @@ end
 H.check(P.Intro + #P.Poses * P.PoseTime + P.ScoreShow + P.PodiumTime < 60, "a division takes under 60 s")
 
 print("Divisions")
-H.check(P.DivisionFor(48).id == "Bantam" and P.DivisionFor(59).id == "Bantam", "under 5'0\" = Bantam")
-H.check(P.DivisionFor(60).id == "Middle" and P.DivisionFor(72).id == "Middle", "5'0\" to 6'0\" = Middle")
-H.check(P.DivisionFor(78).id == "Heavy", "over 6'0\" = Heavy")
+-- (26 Oct: Growth Spurts are 4 inches, 4'0" -> 6'0": two spurts a division)
+H.check(P.DivisionFor(48).id == "Bantam" and P.DivisionFor(52).id == "Bantam", "4'0\" and 4'4\" = Bantam")
+H.check(P.DivisionFor(56).id == "Middle" and P.DivisionFor(60).id == "Middle", "4'8\" and 5'0\" = Middle")
+H.check(P.DivisionFor(64).id == "Heavy" and P.DivisionFor(68).id == "Heavy", "5'4\" and 5'8\" = Heavy")
 H.check(P.DivisionFor(84).id == "Open", "7'0\" = Open")
 for spurts = 0, GrowthSpurts.MaxSpurts() do
 	H.check(P.DivisionFor(GrowthSpurts.GetHeight(spurts)) ~= nil, "every height has a division (spurt " .. spurts .. ")")
@@ -38,7 +39,7 @@ H.check(best.total == 100, "the biggest, balanced, 7'0\" with every alter = 100"
 -- (prompt 21) at 7'0" stage presence comes from the alter number; divisions by alter tier
 H.check(P.Score(1, 1, 84, 1, 0).presence < P.Score(1, 1, 84, 1, 5).presence, "a higher alter = more stage presence")
 H.check(P.DivisionFor(84, 0).id == "Open" and P.DivisionFor(84, 1).id == "Alter1" and P.DivisionFor(84, 6).id == "Alter6", "7'0\" divisions by alter tier")
-H.check(P.DivisionFor(78, 1).id == "Heavy", "below 7'0\" the alter doesn't matter")
+H.check(P.DivisionFor(68, 1).id == "Heavy", "below 6'0\" the alter doesn't matter")
 local small = P.Score(0.4, 1, 54, 0.4)
 H.check(small.size == w.Size, "the biggest in a small division gets full size points")
 local behind = P.Score(0.2, 1, 54, 0.4)

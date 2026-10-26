@@ -7,26 +7,28 @@ local GrowthSpurts = {}
 GrowthSpurts.StartHeight = 48 -- 4'0"
 -- Height cap (owner, 13 Oct): no spurt ever goes past 7'0" (clamped to exactly 7'0"), and once you're there there are no
 -- more Growth Spurts (height and body scale stop; muscles keep growing). Same inches as the height shown on screen.
-GrowthSpurts.MaxHeightInches = 84 -- 7'0"
+-- (owner, 26 Oct: 4 inches a Growth Spurt, 4'0" -> 6'0"; was 6 inches to 7'0". Everyone's height follows; the alter tiers
+-- add 4 inches each on top: 8'0" is the tallest)
+GrowthSpurts.MaxHeightInches = 72 -- 6'0"
 GrowthSpurts.MaxHeight = GrowthSpurts.MaxHeightInches -- (older name, kept for callers)
 
 -- requiredLevel is tuned with tests/pacing to GrowthSpurts.Targets below (the permanent bonus makes later stages much
 -- faster per level, so the goals climb slowly). Re-tuned 14 Oct when weights became free (heavier weights sooner):
 -- 47 / 72 / 103 / 135 / 157 -> 58 / 92 / 132 / 164 / 178.
 GrowthSpurts.Stages = {
-	{ height = 54, requiredLevel = 9, bonus = 1.25 }, -- (prompt 20, 21 Oct: 15 -> 9, first Growth Spurt in ~5 min)
+	{ height = 52, requiredLevel = 9, bonus = 1.25 }, -- (prompt 20, 21 Oct: 15 -> 9, first Growth Spurt in ~5 min)
 	-- (26 Oct, retention: Targets 5/15/25/35/45 -> 5/10/18/28/38, retuned with tests/pacing tune: 52/92/132/191/238 ->
 	-- 35/68/113/163/197; the old 1 -> 2 jump was 3x longer and the middle spurts took 3-4 sessions each)
-	{ height = 60, requiredLevel = 35, bonus = 1.5 }, -- (prompt 20: 58 -> 56; prompt 16: 52; 26 Oct: 35, 9.8 min)
-	{ height = 66, requiredLevel = 68, bonus = 1.75 }, -- (26 Oct: 92 -> 68, 17.8 min)
-	{ height = 72, requiredLevel = 113, bonus = 2 }, -- (26 Oct: 132 -> 113, 27.8 min)
-	{ height = 78, requiredLevel = 163, bonus = 2.5 }, -- (prompt 36, 22 Oct: 164 -> 191; 26 Oct: 163, 37.9 min)
-	{ height = 84, requiredLevel = 197, bonus = 3 }, -- (prompt 58: 216 -> 238; 26 Oct: 197, 37.7 min)
+	{ height = 56, requiredLevel = 35, bonus = 1.5 }, -- (prompt 20: 58 -> 56; prompt 16: 52; 26 Oct: 35, 9.8 min)
+	{ height = 60, requiredLevel = 68, bonus = 1.75 }, -- (26 Oct: 92 -> 68, 17.8 min)
+	{ height = 64, requiredLevel = 113, bonus = 2 }, -- (26 Oct: 132 -> 113, 27.8 min)
+	{ height = 68, requiredLevel = 163, bonus = 2.5 }, -- (prompt 36, 22 Oct: 164 -> 191; 26 Oct: 163, 37.9 min)
+	{ height = 72, requiredLevel = 197, bonus = 3 }, -- (prompt 58: 216 -> 238; 26 Oct: 197, 37.7 min)
 }
 
 -- Beyond the table: keep growing until MaxHeight, and keep adding level + bonus. (From here the bonus mostly runs
 -- into Gains.MaxMultiplier, so each extra spurt is a few minutes longer than the last; see tests/pacing.)
-GrowthSpurts.ExtraPerStage = { height = 6, requiredLevel = 18, bonus = 0.5 }
+GrowthSpurts.ExtraPerStage = { height = 4, requiredLevel = 18, bonus = 0.5 }
 
 -- How long each Growth Spurt should take a typical player, in minutes of play: 1st, 2nd, 3rd, 4th, then every later
 -- one ("normal play with some tapping": half the sets tapped, see tests/pacing).
