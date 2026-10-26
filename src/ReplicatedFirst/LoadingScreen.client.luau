@@ -24,6 +24,14 @@ local TweenService = game:GetService("TweenService")
 local ContentProvider = game:GetService("ContentProvider")
 local Workspace = game:GetService("Workspace")
 
+-- (owner, 26 Oct: "in the loading screen, at a certain spawn, the progress mirror prompt shows") prompts are drawn above
+-- every screen, so they're off from here until PLAY (MenuClient turns them back on)
+game:GetService("ProximityPromptService").Enabled = false
+task.spawn(function() -- (the server's value replaces it when the game finishes loading: set it again then)
+	if not game:IsLoaded() then game.Loaded:Wait() end
+	game:GetService("ProximityPromptService").Enabled = false
+end)
+
 ReplicatedFirst:RemoveDefaultLoadingScreen()
 
 local player = Players.LocalPlayer

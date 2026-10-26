@@ -64,6 +64,7 @@ local AlterThemes = require(ReplicatedStorage.Shared.Config.AlterThemes)
 local BADGE = { Width = 1.7, Height = 0.4, Offset = 3.4, MaxDistance = 60 }
 local BADGE_OUTLINE = Color3.fromHex("#120A0C")
 local BADGE_BASE = Color3.fromHex("#1A181C") -- (the HUD cards' graphite)
+local BADGE_GLOW = "rbxassetid://108461610476976" -- Config/UI.SoftGlow
 local function updateBadge(other)
 	local head = other.Character and other.Character:FindFirstChild("Head")
 	if not head then return end
@@ -80,36 +81,57 @@ local function updateBadge(other)
 			StudsOffset = Vector3.new(0, BADGE.Offset, 0), MaxDistance = BADGE.MaxDistance, LightInfluence = 0, Enabled = not (mine and UIBus.MenuOpen),
 			Parent = head })
 		local fade = if mine then OWN.Transparency else 0
-		local pill = Theme.New("CanvasGroup", { Name = "Pill", BackgroundColor3 = BADGE_BASE, GroupTransparency = fade,
-			Size = UDim2.fromScale(1, 1), Parent = badge }, { Theme.New("UICorner", { CornerRadius = UDim.new(0.3, 0) }) })
+		-- (owner, 26 Oct: "round up the edges or put vfx so it doesn't look unfinished") a fully round pill, a soft glow in the
+		-- alter's colour behind it and a shine that sweeps across every few seconds
+		-- (a CanvasGroup's round clip doesn't show on a 3D billboard: every layer is its own round Frame / image instead)
+		badge.ClipsDescendants = false
+		badge:SetAttribute("Fade", fade)
+		local function round() return Theme.New("UICorner", { CornerRadius = UDim.new(0.5, 0) }) end
+		Theme.New("ImageLabel", { Name = "Glow", BackgroundTransparency = 1, Image = BADGE_GLOW, ImageTransparency = 0.35 + fade * 0.5,
+			AnchorPoint = Vector2.new(0.5, 0.5), Position = UDim2.fromScale(0.5, 0.5), Size = UDim2.fromScale(1.4, 2.6), ZIndex = 1, Parent = badge })
+		local pill = Theme.New("Frame", { Name = "Pill", BackgroundColor3 = BADGE_BASE, BackgroundTransparency = fade, BorderSizePixel = 0,
+			Size = UDim2.fromScale(1, 1), ZIndex = 2, Parent = badge }, { round() })
 		Theme.New("ImageLabel", { Name = "Art", BackgroundTransparency = 1, BackgroundColor3 = Color3.new(1, 1, 1), ScaleType = Enum.ScaleType.Crop,
-			Size = UDim2.fromScale(1, 1), Parent = pill })
+			ImageTransparency = fade, Size = UDim2.fromScale(1, 1), ZIndex = 3, Parent = badge }, { round() })
 		Theme.New("Frame", { Name = "Wash", BackgroundColor3 = Color3.new(1, 1, 1), BackgroundTransparency = 1, BorderSizePixel = 0, Size = UDim2.fromScale(1, 1),
-			ZIndex = 2, Parent = pill })
-		Theme.New("Frame", { Name = "Shade", BackgroundColor3 = Color3.new(0, 0, 0), BorderSizePixel = 0, Size = UDim2.fromScale(1, 1), ZIndex = 3, Parent = pill },
-			{ Theme.New("UIGradient", { Name = "Gradient", Transparency = NumberSequence.new(0.45, 0.75) }) })
-		-- the outline (outside the CanvasGroup, so it isn't clipped)
-		Theme.New("Frame", { Name = "Edge", BackgroundTransparency = 1, Size = UDim2.fromScale(1, 1), Parent = badge }, {
-			Theme.New("UICorner", { CornerRadius = UDim.new(0.3, 0) }),
-			Theme.New("UIStroke", { Name = "Stroke", Thickness = 2, Transparency = fade, ApplyStrokeMode = Enum.ApplyStrokeMode.Border }),
+			ZIndex = 4, Parent = badge }, { round() })
+		Theme.New("Frame", { Name = "Shade", BackgroundColor3 = Color3.new(0, 0, 0), BorderSizePixel = 0, Size = UDim2.fromScale(1, 1), ZIndex = 5, Parent = badge },
+			{ round(), Theme.New("UIGradient", { Name = "Gradient", Transparency = NumberSequence.new(0.45, 0.75) }) })
+		local peak = 1 - 0.5 * (1 - fade)
+		local sweep = Theme.New("Frame", { Name = "Shine", BackgroundColor3 = Color3.new(1, 1, 1), BorderSizePixel = 0, Size = UDim2.fromScale(1, 1),
+			ZIndex = 6, Parent = badge }, {
+			round(),
+			Theme.New("UIGradient", { Rotation = 20, Offset = Vector2.new(-1, 0), Transparency = NumberSequence.new({
+				NumberSequenceKeypoint.new(0, 1), NumberSequenceKeypoint.new(0.42, 1), NumberSequenceKeypoint.new(0.5, peak),
+				NumberSequenceKeypoint.new(0.58, 1), NumberSequenceKeypoint.new(1, 1) }) }),
 		})
+		task.spawn(function()
+			local gradient = sweep:FindFirstChildOfClass("UIGradient")
+			while badge.Parent do
+				gradient.Offset = Vector2.new(-1, 0)
+				TweenService:Create(gradient, TweenInfo.new(SHINE.Time, Enum.EasingStyle.Sine, Enum.EasingDirection.InOut), { Offset = Vector2.new(1, 0) }):Play()
+				task.wait(SHINE.Every + math.random())
+			end
+		end)
+		-- (owner, 26 Oct: "remove the yellow border outline in the alter label") no coloured outline round the pill
 		Theme.New("TextLabel", { Name = "Text", BackgroundTransparency = 1, Size = UDim2.fromScale(1, 1), TextScaled = true,
-			FontFace = Font.fromEnum(Enum.Font.LuckiestGuy), TextColor3 = Color3.new(1, 1, 1), TextTransparency = fade, Text = "", ZIndex = 2, Parent = badge }, {
+			FontFace = Font.fromEnum(Enum.Font.LuckiestGuy), TextColor3 = Color3.new(1, 1, 1), TextTransparency = fade, Text = "", ZIndex = 7, Parent = badge }, {
 			Theme.New("UIPadding", { PaddingTop = UDim.new(0.14, 0), PaddingBottom = UDim.new(0.1, 0) }),
 			Theme.New("UIStroke", { Color = BADGE_OUTLINE, Thickness = 2, Transparency = fade }),
 		})
 	end
 	local theme = AlterThemes.Get(n)
-	local pill = badge.Pill
+	local fade = badge:GetAttribute("Fade") or 0
+	local function faded(t) return 1 - (1 - t) * (1 - fade) end
 	if theme.bg then
-		pill.Art.Image, pill.Art.BackgroundTransparency = theme.bg, 1
+		badge.Art.Image, badge.Art.BackgroundTransparency = theme.bg, 1
 	else
-		pill.Art.Image, pill.Art.BackgroundTransparency, pill.Art.BackgroundColor3 = "", 0, theme.accent:Lerp(theme.base, 0.4)
+		badge.Art.Image, badge.Art.BackgroundTransparency, badge.Art.BackgroundColor3 = "", fade, theme.accent:Lerp(theme.base, 0.4)
 	end
-	pill.Wash.BackgroundColor3, pill.Wash.BackgroundTransparency = theme.accent, theme.pillWash or 1
+	badge.Wash.BackgroundColor3, badge.Wash.BackgroundTransparency = theme.accent, faded(theme.pillWash or 1)
 	local shade = theme.pillShade or { 0.45, 0.75 }
-	pill.Shade.Gradient.Transparency = NumberSequence.new(shade[1], shade[2])
-	badge.Edge.Stroke.Color = theme.accent
+	badge.Shade.Gradient.Transparency = NumberSequence.new(faded(shade[1]), faded(shade[2]))
+	badge.Glow.ImageColor3 = theme.accent
 	badge.Text.Text = "ALTER " .. n
 end
 

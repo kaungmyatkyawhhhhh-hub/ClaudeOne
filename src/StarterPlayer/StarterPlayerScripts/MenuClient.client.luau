@@ -27,6 +27,7 @@ local Workspace = game:GetService("Workspace")
 local Shared = ReplicatedStorage:WaitForChild("Shared")
 local UIBus = require(Shared:WaitForChild("UI"):WaitForChild("UIBus"))
 UIBus.MenuOpen = true -- set first, before anything else loads, so other scripts wait for Play
+game:GetService("ProximityPromptService").Enabled = false -- (26 Oct) no prompts over the menu; back on at PLAY
 
 local Onboarding = require(Shared.Config.Onboarding)
 local Monetization = require(Shared.Config.Monetization)
@@ -648,6 +649,7 @@ local function play(thenShop: boolean?)
 	ContextActionService:UnbindAction("MenuFreeze")
 	if mainHud then mainHud.Enabled = true end
 	UIBus.MenuOpen = false
+	game:GetService("ProximityPromptService").Enabled = true -- (26 Oct) off since the loading screen (LoadingScreen)
 	restoreScreens()
 	hideFollowers(false)
 	UIBus.MenuClosed:Fire()

@@ -133,6 +133,10 @@ local function streamShot(shot)
 	if not shot then return end
 	for _, cf in ipairs({ shot.start, shot.finish }) do
 		pcall(function() player:RequestStreamAroundAsync(cf.Position, STREAM_TIMEOUT) end)
+		-- (owner, 26 Oct: "the beach gym looks like it's floating") also the ground the camera looks at (~60 studs ahead):
+		-- the gym's parts were in but the sand under them wasn't streamed yet
+		local ahead = cf.Position + cf.LookVector * 60
+		pcall(function() player:RequestStreamAroundAsync(Vector3.new(ahead.X, 0, ahead.Z), STREAM_TIMEOUT) end)
 	end
 end
 

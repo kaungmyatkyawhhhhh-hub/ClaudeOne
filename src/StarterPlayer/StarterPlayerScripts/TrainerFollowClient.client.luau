@@ -272,9 +272,14 @@ local synced = {} -- [player] = true after the first sync (the trainers you join
 
 -- (prompt 34) waits until a trainer's template has fully replicated (TrainerService's "Parts" count; a few seconds at
 -- most): a clone made earlier missed body parts, hair and gear
+-- (26 Oct, owner: "fix the trainer bug": sometimes no trainer all session) the server builds the templates after the game
+-- starts, so on an early join the template (or its Parts count) wasn't there yet, the clone failed and nothing tried again:
+-- now it waits for both (and the Heartbeat retries anyone still left without a trainer once a second)
 local function waitForTemplate(entry: string)
 	local id = Trainers.ParseEntry(entry)
-	local template = id and templates:FindFirstChild(id)
+	local template = id and templates:WaitForChild(id, 15)
+	local start = os.clock()
+	while template and type(template:GetAttribute("Parts")) ~= "number" and os.clock() - start < 8 do task.wait(0.2) end
 	local want = template and template:GetAttribute("Parts")
 	local function count()
 		local n = 0
@@ -751,11 +756,25 @@ end)
 
 local filterAt, machineAt = 0, 0
 local othersWere, lowNow = true, false
+local resyncing = {} -- [player] = a retry sync is running
 RunService.Heartbeat:Connect(function(dt)
 	local now = os.clock()
 	if now - filterAt > 1 then
 		filterAt = now
 		refreshFilter()
+		-- (26 Oct) anyone who should have a trainer in the world but has none (a sync that found no model yet) is synced again
+		for _, player in ipairs(Players:GetPlayers()) do
+			if not followers[player] and not resyncing[player] and synced[player] and (player == localPlayer or othersShown()) then
+				local value = player:GetAttribute("Trainers")
+				if type(value) == "string" and Trainers.ParseEntry(string.match(value, "[^,]+") or "") then
+					resyncing[player] = true
+					task.spawn(function()
+						sync(player)
+						resyncing[player] = nil
+					end)
+				end
+			end
+		end
 		-- (prompt 29) Settings "Others' Trainers" / Low Graphics changed: other players' trainers come or go
 		local shown = othersShown()
 		if shown ~= othersWere then
