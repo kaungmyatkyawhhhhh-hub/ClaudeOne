@@ -28,4 +28,9 @@ function Playtime.Describe(gift, coins: number?, canRoll: boolean?): string
 	return "+" .. tostring(coins or 0) .. " coins"
 end
 
+-- (owner, 26 Oct: "when they r doing tutorials give them boosts like new player boost so they grind hard") NEW PLAYER
+-- BOOST: gains and coins x for the first Minutes of play (data.playtime.total; from the first second, tutorial included;
+-- put back on a rejoin for what's left). PlaytimeService, BoostService source "NewPlayer".
+Playtime.NewPlayer = { gains = 2, coins = 2, minutes = 15 }
+
 return Playtime

@@ -18,6 +18,9 @@ Monetization.Passes = {
 	{ key = "AutoLift", id = 2033558291, name = "Auto Rep", text = "Lifts for you while you're on a machine (toggle it any time).", price = 249, art = "pass_auto_rep" },
 	{ key = "ExtraTrainer", id = 2032496303, -- (owner, 13 Oct: the "2nd slot" pass)
 		name = "Extra Trainer", text = "A second personal trainer follows you and their perks stack.", price = 99, art = "pass_extra_trainer" },
+	-- (owner, 26 Oct) VIP at 30% off, offered only after buying the Starter Pack (StarterPackClient, Monetization.VipDeal).
+	-- A second game pass with VIP's perks (grants = "VIP"): the owner creates it at 209 R$ and puts its id here.
+	{ key = "VIPDeal", id = nil, name = "VIP · 30% OFF", text = "Everything VIP gives, 30% off.", price = 209, grants = "VIP", store = false },
 	-- (no ids yet: not for sale)
 	{ key = "IronLungs", id = nil, name = "Iron Lungs", text = "50% more stamina." },
 	{ key = "FastRecovery", id = nil, name = "Fast Recovery", text = "Stamina refills 50% faster." },
@@ -47,8 +50,10 @@ Monetization.Products = {
 	-- (prompt 60) DNA tokens as a pack of 3 (cheaper per token than 3 singles); shown next to the single everywhere tokens are sold
 	{ key = "DnaTokenPack", id = 3721356358, tab = "Boosts", name = "DNA Token x3", text = "Three genetics rerolls.", dnaTokens = 3, price = 249, art = "product_dna_token" },
 	-- (prompt 60) STARTER PACK: once per player (data.starterPack); contents in Monetization.StarterPack
-	{ key = "StarterPack", id = 3721356162, tab = "Boosts", name = "Starter Pack", text = "Coins, 3 Protein Shakes, a DNA Token, 30 min 2x EXP and the STARTER title.",
-		price = 49, art = "product_shake_bundle", once = true },
+	-- (owner, 26 Oct: 79 R$, shown as 250 crossed out; only in your first 24 hours of play; +50% EXP and coins for 16 hours)
+	{ key = "StarterPack", id = 3721356162, tab = "Boosts", name = "Starter Pack",
+		text = "Coins, 3 Protein Shakes, a DNA Token, 30 min 2x EXP, the STARTER title and +50% EXP and coins for 16 hours.",
+		price = 79, art = "product_shake_bundle", once = true },
 	-- (prompt 57) the PUMP SHOP's specials, bought there (store = false): x1 and x5 of each (consumable, into the inventory)
 	-- (prompt 63: ids from the owner, 23 Oct; same for DnaTokenPack and StarterPack above)
 	{ key = "Supp_MassGainer_1", id = 3721356862, store = false, name = "Mass Gainer", supplement = "MassGainer", count = 1, price = 25 },
@@ -85,7 +90,47 @@ Monetization.StarterPack = {
 	CoinMinutes = 60, CoinsMin = 5000, CoinsMax = 10000,
 	Shakes = 3, DnaTokens = 1, BoostItem = "StarterBoost", Title = "Starter",
 	FirstMinutes = 5,
+	-- (owner, 26 Oct) LIMITED: on sale only in the first WindowHours of play (data.playtime.total, PlaytimeService); the
+	-- offer pops up every PopupMinutes of play until Growth Spurt PopupUntilSpurt, then it "goes into the SHOP" (still sold
+	-- there until the window ends). WasPrice = what the contents cost bought one by one (coins, shakes and the token at the
+	-- Store's prices: about 250 R$), shown crossed out. Rush = the buyer's boost for the first RushHours after buying.
+	WindowHours = 24, PopupMinutes = 5, PopupUntilSpurt = 4, WasPrice = 250,
+	Rush = { gains = 1.5, coins = 1.5 }, RushHours = 16,
 }
+-- (owner, 26 Oct) After buying the Starter Pack: VIP 30% off (the VIPDeal pass) for VipDeal.Hours of play, with VIP's perks
+-- listed on the offer.
+Monetization.VipDeal = {
+	Hours = 24, WasPrice = 299, Discount = 0.3,
+	Perks = { "+10% coins on everything", "The VIP tag in your boosts", "The Royal aura" },
+}
+
+-- seconds played ever (PlaytimeService)
+function Monetization.PlaySeconds(data): number
+	local p = type(data) == "table" and data.playtime
+	return type(p) == "table" and tonumber(p.total) or 0
+end
+-- The Starter Pack can still be bought: not bought yet and inside the first WindowHours of play. Second value: seconds left.
+function Monetization.StarterOpen(data, extraSeconds: number?): (boolean, number)
+	local pack = type(data) == "table" and data.starterPack
+	if type(pack) == "table" and pack.bought then return false, 0 end
+	local left = Monetization.StarterPack.WindowHours * 3600 - Monetization.PlaySeconds(data) - (extraSeconds or 0)
+	return left > 0, math.max(0, left)
+end
+-- The VIP deal is on: Starter Pack bought, VIPDeal has an id, inside VipDeal.Hours of play since. Second value: seconds left.
+function Monetization.VipDealOpen(data, extraSeconds: number?): (boolean, number)
+	local pass = Monetization.PassByKey and Monetization.PassByKey.VIPDeal
+	local pack = type(data) == "table" and data.starterPack
+	if not pass or not pass.id or type(pack) ~= "table" or not pack.bought then return false, 0 end
+	local since = Monetization.PlaySeconds(data) + (extraSeconds or 0) - (tonumber(pack.playAt) or Monetization.PlaySeconds(data))
+	local left = Monetization.VipDeal.Hours * 3600 - since
+	return left > 0, math.max(0, left)
+end
+-- "23:41:05" / "41:05"
+function Monetization.Clock(seconds: number): string
+	seconds = math.max(0, math.floor(seconds))
+	local h, m, s = seconds // 3600, (seconds // 60) % 60, seconds % 60
+	return if h > 0 then string.format("%d:%02d:%02d", h, m, s) else string.format("%d:%02d", m, s)
+end
 -- (prompt 61) A coin pack's coins for a player with `spurts` Growth Spurts (the server pays this, the Store shows it).
 function Monetization.PackCoins(product, spurts: number?): number
 	if not product or not product.coins then return 0 end

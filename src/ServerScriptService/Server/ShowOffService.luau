@@ -98,7 +98,7 @@ local function writeScores(player)
 	if not PlayerData.IsPersistent(player) then return end
 	-- a local reference: the player can leave (and their entry be cleared) while a SetAsync below is in flight
 	local mine = written[player] or {}
-	written[player] = mine
+	if player.Parent then written[player] = mine end -- (26 Oct, memory: a player who left mid-loop isn't put back)
 	local sum = 0
 	for _, group in ipairs(Muscles.Groups) do
 		local level = Muscles.GetGroupLevel(data.muscles, group.id)

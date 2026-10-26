@@ -41,6 +41,9 @@ local function applyPass(player, key)
 	elseif key == "VIP" then
 		BoostService.SetPlayer(player, "PassVIP", { coins = Effects.VIPCoins })
 	end
+	-- (26 Oct) a deal pass gives its pass's perks (VIPDeal = VIP at 30% off)
+	local pass = Monetization.PassByKey[key]
+	if pass and pass.grants and pass.grants ~= key then applyPass(player, pass.grants) end
 	-- AutoLift, GeneLock, ShakeFridge, AuraPack (AuraService) are read from the attribute where they're used
 end
 
@@ -103,7 +106,8 @@ local function grantStarterPack(player)
 		event(player, "StarterPack", { again = true, coins = value })
 		return true
 	end
-	PlayerData.SetTable(player, "starterPack", { bought = true, at = os.time() })
+	PlayerData.SetTable(player, "starterPack", { bought = true, at = os.time(), playAt = Monetization.PlaySeconds(data) })
+	MonetizationService.ApplyStarterRush(player) -- (26 Oct: +50% EXP and coins for RushHours)
 	PlayerData.AddCoins(player, coins)
 	PlayerData.AddItem(player, "Shake", pack.Shakes, true)
 	PlayerData.AddDnaTokens(player, pack.DnaTokens)
@@ -111,6 +115,19 @@ local function grantStarterPack(player)
 	require(script.Parent.TitleService).Check(player) -- (the STARTER title: condition "starterPack")
 	event(player, "StarterPack", { coins = coins, shakes = pack.Shakes, dnaTokens = pack.DnaTokens, boost = pack.BoostItem, title = pack.Title })
 	return true
+end
+
+-- (owner, 26 Oct) the Starter Pack buyer's boost: Monetization.StarterPack.Rush for the first RushHours (real time) after
+-- buying; put back on every join inside that time (BoostService source "StarterRush")
+function MonetizationService.ApplyStarterRush(player)
+	local data = PlayerData.Get(player)
+	local pack = data and data.starterPack
+	if type(pack) ~= "table" or not pack.bought or not tonumber(pack.at) then return end
+	local left = tonumber(pack.at) + Monetization.StarterPack.RushHours * 3600 - os.time()
+	if left <= 0 then return end
+	local rush = Monetization.StarterPack.Rush
+	BoostService.SetPlayer(player, "StarterRush", { gains = rush.gains, coins = rush.coins, untilTime = Workspace:GetServerTimeNow() + left })
+	player:SetAttribute("StarterRushEnds", Workspace:GetServerTimeNow() + left)
 end
 
 local function grantProduct(player, product)
@@ -198,6 +215,7 @@ function MonetizationService.Start()
 		task.spawn(function()
 			PlayerData.WaitFor(player)
 			checkPasses(player)
+			MonetizationService.ApplyStarterRush(player)
 		end)
 	end
 	Players.PlayerAdded:Connect(onJoin)

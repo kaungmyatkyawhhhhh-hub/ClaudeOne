@@ -26,6 +26,10 @@ Alters.BonusPer = 0.15  -- gains bonus per alter (x1.15, x1.30, x1.45 ...), the 
 -- 4: ~1 h 40, 5: ~1 h 55 = ~8 h (estimated from the EXP curve and the 21 Oct times; rerun tests/pacing alters to confirm).
 Alters.FirstGoal = 205  -- alter 1 (from 7'0" with the muscles you have when you get there)
 Alters.GoalPer = 25     -- each later alter's goal is this much higher
+-- (owner, 26 Oct: "make alters take about 25-30 minutes with trainers") each alter's own goal, tuned with trainers in the
+-- pacing sim (lune run tests/pacing tunealters 27.5: a player who rolls trainers with their coins, about 27.5 min of play
+-- each; a straight +GoalPer can't keep them even). Past the list: the last one + GoalPer per alter.
+Alters.Goals = { 237, 413, 494, 526, 553, 581, 623, 653, 674, 689, 709, 748, 774, 787, 801 }
 Alters.TargetMinutes = { 75, 115 } -- Tier 1 in about 8 hours
 
 Alters.Tiers = {
@@ -178,6 +182,11 @@ function Alters.LastAvailable(): number
 end
 
 function Alters.Goal(n: number): number
+	local goals = Alters.Goals
+	if goals and #goals > 0 then
+		if goals[n] then return goals[n] end
+		return goals[#goals] + Alters.GoalPer * (n - #goals)
+	end
 	return Alters.FirstGoal + Alters.GoalPer * (n - 1)
 end
 

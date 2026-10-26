@@ -100,7 +100,7 @@ local function writeScores(player: Player)
 	-- a Studio test (FreshPlayer) or failed-load session must never touch the real boards
 	if not data or not PlayerData.IsPersistent(player) then return end
 	local mine = written[player] or {}
-	written[player] = mine
+	if player.Parent then written[player] = mine end -- (26 Oct, memory: a player who left mid-loop isn't put back)
 	local day = today()
 	for _, board in ipairs(Leaderboards.Boards) do
 		local name = Leaderboards.StoreName(board.id, day)

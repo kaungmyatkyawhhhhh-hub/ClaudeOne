@@ -293,12 +293,8 @@ Remotes.PlayerEvent.OnClientEvent:Connect(function(kind, info)
 			waited += 1
 		end
 		if not free() then return end
-		-- (prompt 60) the first Growth Spurt: the STARTER PACK, once (it can only be bought once)
-		if spurt == 1 and starterOpen(data) then
-			show({ id = "StarterPack", art = Products.StarterPack.art, title = "STARTER PACK · ONE-TIME OFFER", text = starterText(data),
-				buy = { { key = "StarterPack" } } })
-			return
-		end
+		-- (26 Oct) the Starter Pack has its own LIMITED offer window now (StarterPackClient): no card here while it's on sale
+		if spurt == 1 and starterOpen(data) then return end
 		if not forSale("CoinsSmall") then return end
 		local buy = {}
 		for _, key in ipairs({ "CoinsSmall", "CoinsMedium", "CoinsLarge" }) do

@@ -57,20 +57,13 @@ end
 
 -- (prompt 21) a small "ALTER 3" pill over the title of anyone with a Body Alter (the player's AlterNumber attribute,
 -- BodyService); my own is smaller and faded like my title
--- (owner, 26 Oct: "should have style like the granite button") dressed like that alter's ALTER button in the BODY ALTER
--- READY popup (Shared/UI/AlterPopup): its accent with a darker bottom edge, a dark outline, the button's chunky font
--- (AlterFX.TitleFont, LuckiestGuy) in white with a dark stroke, and a faint copy of the alter's popup background art inside
--- like the button's (AlterThemes bg; every alter 1-15 has one). Colours from Config/AlterThemes.
+-- (owner, 26 Oct) the background of the NEXT alter card (ProgressClient setAlterLook): dark graphite, the alter's popup
+-- art (AlterThemes bg) under a dark shade from left to right (pillShade) with its colour wash (pillWash), the outline in the
+-- alter's colour; the words in the ALTER button's chunky font (LuckiestGuy), white with a dark stroke.
 local AlterThemes = require(ReplicatedStorage.Shared.Config.AlterThemes)
-local BADGE = { Width = 1.7, Height = 0.4, Offset = 3.4, MaxDistance = 60, Edge = 0.16 } -- Edge: the darker bottom edge (share of the height)
+local BADGE = { Width = 1.7, Height = 0.4, Offset = 3.4, MaxDistance = 60 }
 local BADGE_OUTLINE = Color3.fromHex("#120A0C")
-local function badgeGradient(accent: Color3): ColorSequence
-	local top, bottom = accent:Lerp(Color3.new(1, 1, 1), 0.2), accent:Lerp(Color3.new(0, 0, 0), 0.25)
-	local dark = bottom:Lerp(Color3.new(0, 0, 0), 0.45)
-	local edge = 1 - BADGE.Edge
-	return ColorSequence.new({ ColorSequenceKeypoint.new(0, top), ColorSequenceKeypoint.new(edge - 0.001, bottom),
-		ColorSequenceKeypoint.new(edge, dark), ColorSequenceKeypoint.new(1, dark) })
-end
+local BADGE_BASE = Color3.fromHex("#1A181C") -- (the HUD cards' graphite)
 local function updateBadge(other)
 	local head = other.Character and other.Character:FindFirstChild("Head")
 	if not head then return end
@@ -87,23 +80,37 @@ local function updateBadge(other)
 			StudsOffset = Vector3.new(0, BADGE.Offset, 0), MaxDistance = BADGE.MaxDistance, LightInfluence = 0, Enabled = not (mine and UIBus.MenuOpen),
 			Parent = head })
 		local fade = if mine then OWN.Transparency else 0
-		local pill = Theme.New("Frame", { Name = "Pill", BackgroundColor3 = Color3.new(1, 1, 1), BackgroundTransparency = fade,
-			Size = UDim2.fromScale(1, 1), Parent = badge }, { Theme.New("UICorner", { CornerRadius = UDim.new(0.35, 0) }),
-			Theme.New("UIGradient", { Name = "Face", Rotation = 90 }),
-			Theme.New("UIStroke", { Color = BADGE_OUTLINE, Thickness = 2, Transparency = fade, ApplyStrokeMode = Enum.ApplyStrokeMode.Border }) })
-		Theme.New("ImageLabel", { Name = "Art", BackgroundTransparency = 1, ScaleType = Enum.ScaleType.Crop, Size = UDim2.new(1, 0, 1 - BADGE.Edge, 0),
-			ImageTransparency = 1, Parent = pill }, { Theme.New("UICorner", { CornerRadius = UDim.new(0.35, 0) }) })
-		Theme.New("TextLabel", { Name = "Text", BackgroundTransparency = 1, Size = UDim2.new(1, 0, 1 - BADGE.Edge, 0), TextScaled = true,
-			FontFace = Font.fromEnum(Enum.Font.LuckiestGuy), TextColor3 = Color3.new(1, 1, 1), TextTransparency = fade, Text = "", ZIndex = 2, Parent = pill }, {
-			Theme.New("UIPadding", { PaddingTop = UDim.new(0.14, 0), PaddingBottom = UDim.new(0.04, 0) }),
+		local pill = Theme.New("CanvasGroup", { Name = "Pill", BackgroundColor3 = BADGE_BASE, GroupTransparency = fade,
+			Size = UDim2.fromScale(1, 1), Parent = badge }, { Theme.New("UICorner", { CornerRadius = UDim.new(0.3, 0) }) })
+		Theme.New("ImageLabel", { Name = "Art", BackgroundTransparency = 1, BackgroundColor3 = Color3.new(1, 1, 1), ScaleType = Enum.ScaleType.Crop,
+			Size = UDim2.fromScale(1, 1), Parent = pill })
+		Theme.New("Frame", { Name = "Wash", BackgroundColor3 = Color3.new(1, 1, 1), BackgroundTransparency = 1, BorderSizePixel = 0, Size = UDim2.fromScale(1, 1),
+			ZIndex = 2, Parent = pill })
+		Theme.New("Frame", { Name = "Shade", BackgroundColor3 = Color3.new(0, 0, 0), BorderSizePixel = 0, Size = UDim2.fromScale(1, 1), ZIndex = 3, Parent = pill },
+			{ Theme.New("UIGradient", { Name = "Gradient", Transparency = NumberSequence.new(0.45, 0.75) }) })
+		-- the outline (outside the CanvasGroup, so it isn't clipped)
+		Theme.New("Frame", { Name = "Edge", BackgroundTransparency = 1, Size = UDim2.fromScale(1, 1), Parent = badge }, {
+			Theme.New("UICorner", { CornerRadius = UDim.new(0.3, 0) }),
+			Theme.New("UIStroke", { Name = "Stroke", Thickness = 2, Transparency = fade, ApplyStrokeMode = Enum.ApplyStrokeMode.Border }),
+		})
+		Theme.New("TextLabel", { Name = "Text", BackgroundTransparency = 1, Size = UDim2.fromScale(1, 1), TextScaled = true,
+			FontFace = Font.fromEnum(Enum.Font.LuckiestGuy), TextColor3 = Color3.new(1, 1, 1), TextTransparency = fade, Text = "", ZIndex = 2, Parent = badge }, {
+			Theme.New("UIPadding", { PaddingTop = UDim.new(0.14, 0), PaddingBottom = UDim.new(0.1, 0) }),
 			Theme.New("UIStroke", { Color = BADGE_OUTLINE, Thickness = 2, Transparency = fade }),
 		})
 	end
 	local theme = AlterThemes.Get(n)
-	badge.Pill.Face.Color = badgeGradient(theme.accent)
-	badge.Pill.Art.Image = theme.bg or ""
-	badge.Pill.Art.ImageTransparency = if theme.bg then (if other == player then 0.75 else 0.55) else 1
-	badge.Pill.Text.Text = "ALTER " .. n
+	local pill = badge.Pill
+	if theme.bg then
+		pill.Art.Image, pill.Art.BackgroundTransparency = theme.bg, 1
+	else
+		pill.Art.Image, pill.Art.BackgroundTransparency, pill.Art.BackgroundColor3 = "", 0, theme.accent:Lerp(theme.base, 0.4)
+	end
+	pill.Wash.BackgroundColor3, pill.Wash.BackgroundTransparency = theme.accent, theme.pillWash or 1
+	local shade = theme.pillShade or { 0.45, 0.75 }
+	pill.Shade.Gradient.Transparency = NumberSequence.new(shade[1], shade[2])
+	badge.Edge.Stroke.Color = theme.accent
+	badge.Text.Text = "ALTER " .. n
 end
 
 -- (prompt 54, 23 Oct) The lines over a head never overlap: a stack with a fixed gap, from just above the head (so a big

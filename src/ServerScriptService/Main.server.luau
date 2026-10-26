@@ -37,6 +37,15 @@ for _, name in ipairs(OPTIONAL_SERVICES) do
 	end)
 end
 
+-- (26 Oct, server memory up 218%) a player who left: their character is destroyed once their save has had time to finish,
+-- so everything connected to it (the services' per-character connections hold the player) is freed
+Players.PlayerRemoving:Connect(function(player)
+	task.delay(15, function()
+		local character = player.Character
+		if character then character:Destroy() end -- (also when Roblox already took it out of the world: that doesn't free it)
+	end)
+end)
+
 -- Stamina refills on its own (faster on recovery stations and with boosts)
 local boostsOk, BoostService = pcall(require, script.Parent.Server.BoostService)
 local TICK = 0.25

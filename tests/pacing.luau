@@ -363,6 +363,9 @@ end
 --   lune run tests/pacing trainers [alters = all with textures]
 if process.args[1] == "trainers" then
 	local ALTERS = tonumber(process.args[2]) or Alters.LastAvailable()
+	-- (tuning) lune run tests/pacing trainers 15 <FirstGoal> <GoalPer>: try other alter goals without editing the config
+	Alters.FirstGoal = tonumber(process.args[3]) or Alters.FirstGoal
+	Alters.GoalPer = tonumber(process.args[4]) or Alters.GoalPer
 	local N = PLAYERS // 2
 	local steps = {}
 	for i = 1, SPURTS + ALTERS do steps[i] = { minutes = {}, gains = {}, progress = {}, rolls = {}, sets = {} } end
@@ -402,6 +405,60 @@ if process.args[1] == "trainers" then
 			math.floor(total / 60), math.floor(total % 60), (median(step.rolls)), math.floor(g * 100 + 0.5),
 			math.floor((median(step.progress)) * 100 + 0.5), step.sets[pick]))
 	end
+	return
+end
+
+-- (26 Oct, owner: "make alters take about 25-30 minutes with trainers") Tunes each alter's goal on its own (a straight
+-- +GoalPer can't keep them even: later levels cost more EXP than the alter bonus adds), for players with trainers as
+-- above. Prints Alters.Goals to paste into Config/Alters.   lune run tests/pacing tunealters [target = 27.5] [alters]
+local function deepCopy(value, seen)
+	if type(value) ~= "table" then return value end
+	seen = seen or {}
+	if seen[value] then return seen[value] end
+	local out = {}
+	seen[value] = out
+	for k, v in value do out[deepCopy(k, seen)] = deepCopy(v, seen) end
+	return out
+end
+if process.args[1] == "tunealters" then
+	local TARGET = tonumber(process.args[2]) or 27.5
+	local ALTERS = tonumber(process.args[3]) or Alters.LastAvailable()
+	-- (owner, 26 Oct: "after about 8 hours of gameplay, make it harder") own targets for late alters: "14=45,15=60"
+	local LATE = {}
+	for n, minutes in string.gmatch(process.args[4] or "", "(%d+)=([%d%.]+)") do LATE[tonumber(n)] = tonumber(minutes) end
+	local N = PLAYERS // 2
+	local states = {}
+	for seed = 1, N do
+		local data = newPlayer(seed)
+		data.tr = { copies = {}, equipped = {}, pity = 0, freeRolls = 0, rolls = 0, played = 0, hourGifts = 0, bonus = Trainers.Bonus({}) }
+		for i = 1, SPURTS do playOneSpurt(data, i == 1 and PLAY.Overhead or PLAY.SpurtOverhead) end
+		states[seed] = data
+	end
+	local goals = {}
+	for n = 1, ALTERS do
+		local function trial(goal)
+			local times = {}
+			for seed = 1, N do
+				local copy = deepCopy(states[seed])
+				math.randomseed(seed * 1000 + n)
+				table.insert(times, playOneSpurt(copy, 30, nil, goal))
+			end
+			return (median(times))
+		end
+		local lo, hi = (goals[n - 1] or 150), (goals[n - 1] or 150) + (if LATE[n] then 800 else 400)
+		while hi - lo > 1 do
+			local mid = (lo + hi) // 2
+			if trial(mid) < (LATE[n] or TARGET) then lo = mid else hi = mid end
+		end
+		goals[n] = hi
+		local minutes = trial(hi)
+		for seed = 1, N do
+			math.randomseed(seed * 1000 + n)
+			playOneSpurt(states[seed], 30, nil, hi)
+		end
+		print(string.format("  alter %d: goal %d -> median %.1f min", n, hi, minutes))
+	end
+	print("Alters.Goals = { " .. table.concat(goals, ", ") .. " }")
 	return
 end
 

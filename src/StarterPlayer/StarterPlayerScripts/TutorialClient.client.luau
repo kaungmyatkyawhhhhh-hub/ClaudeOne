@@ -342,6 +342,17 @@ function advance()
 		return
 	end
 	Audio.PlayUI("Click")
+	-- (owner, 26 Oct: "an instant strength reward on the first click") the first rep: a coin burst, a level-up sound and
+	-- "FIRST REP! YOU GOT STRONGER" with the step's coins
+	local reached = Onboarding.Steps[stepIndex]
+	if reached and reached.gift and reached.gift.coins then
+		Audio.PlayUI("LevelUp")
+		local burst = New("Frame", { BackgroundTransparency = 1, AnchorPoint = Vector2.new(0.5, 0.5), Position = UDim2.fromScale(0.5, 0.45),
+			Size = UDim2.fromOffset(60, 60), Parent = gui })
+		pcall(Kit.CoinBurst, burst)
+		task.delay(2, function() burst:Destroy() end)
+		Notify.Reward("FIRST REP! YOU GOT STRONGER", "+" .. reached.gift.coins .. " coins. Keep lifting!", "arrow-big-up", Colors.Gold, "QuestClaim", "firstrep")
+	end
 	refreshStep()
 	task.defer(check) -- e.g. already on the next target machine
 end

@@ -123,11 +123,10 @@ function TrainersPanel.Build(parent: Instance, header)
 	-- (prompt 52) best first: the stage, then the rarity, then the level
 	local function sorted(s)
 		local list = table.clone(s.copies)
+		-- (owner, 26 Oct) best stats first (all boosts added, after stage x level: Trainers.CopyValue), not by stage or rarity
 		table.sort(list, function(a, b)
-			if a.s ~= b.s then return a.s > b.s end
-			local ra, rb = Trainers.ById[a.id].index, Trainers.ById[b.id].index
-			if ra ~= rb then return ra > rb end
-			if a.l ~= b.l then return a.l > b.l end
+			local va, vb = Trainers.CopyValue(a), Trainers.CopyValue(b)
+			if math.abs(va - vb) > 1e-9 then return va > vb end
 			return a.u < b.u
 		end)
 		return list
@@ -173,6 +172,14 @@ function TrainersPanel.Build(parent: Instance, header)
 	local chartButton = Kit.Button("Dark", "Evolutions", { Name = "EvolutionsButton", LayoutOrder = 12, Parent = header.row or holder },
 		{ width = 104, height = 30, textSize = 12 })
 	table.insert(headerItems, chartButton)
+	-- (26 Oct, owner) BEST EQUIP: the server puts your strongest trainers in your slots
+	local bestButton = Kit.Button("Green", "Best equip", { Name = "BestEquip", LayoutOrder = 13, Parent = header.row or holder },
+		{ width = 104, height = 30, textSize = 12 })
+	table.insert(headerItems, bestButton)
+	bestButton.Activated:Connect(function()
+		Audio.PlayUI("Click")
+		if remote then remote:FireServer("BestEquip") end
+	end)
 	local function headerShown()
 		for _, item in ipairs(headerItems) do item.Visible = holder.Visible end
 	end

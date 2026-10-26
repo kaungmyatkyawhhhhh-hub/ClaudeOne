@@ -55,6 +55,9 @@ local function publish(player)
 end
 
 function BoostService.SetPlayer(player, name, source)
+	-- (26 Oct, memory) never for a player who already left: the entry would never be cleared again (a save can still be
+	-- running after PlayerRemoving, and late callers kept re-adding departed players)
+	if not player.Parent then return end
 	playerSources[player] = playerSources[player] or {}
 	playerSources[player][name] = source
 	publish(player)

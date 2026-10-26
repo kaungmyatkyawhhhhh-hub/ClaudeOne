@@ -21,11 +21,13 @@ local function today(): number
 	return Economy.Day(os.time())
 end
 
+-- (26 Oct) total = seconds played ever (kept across days): the Starter Pack's first-24-hours window (Monetization.StarterOpen)
 local function stateOf(data)
 	local p = type(data.playtime) == "table" and data.playtime or {}
 	local day = today()
-	if p.day ~= day then return { day = day, seconds = 0, claimed = 0 } end
-	return { day = day, seconds = math.max(0, tonumber(p.seconds) or 0), claimed = math.max(0, math.floor(tonumber(p.claimed) or 0)) }
+	local total = math.max(0, tonumber(p.total) or 0)
+	if p.day ~= day then return { day = day, seconds = 0, claimed = 0, total = total } end
+	return { day = day, seconds = math.max(0, tonumber(p.seconds) or 0), claimed = math.max(0, math.floor(tonumber(p.claimed) or 0)), total = total }
 end
 
 local function tutorialDone(data): boolean
@@ -76,6 +78,7 @@ local function tick(player, dt: number)
 	if not data then return end
 	local state = stateOf(data)
 	state.seconds += dt
+	state.total += dt
 	local nextGift = Playtime.Gifts[state.claimed + 1]
 	if nextGift and state.seconds >= nextGift.minutes * 60 and tutorialDone(data) then
 		pay(player, data, state, state.claimed + 1)
@@ -86,10 +89,25 @@ local function tick(player, dt: number)
 		lastSave[player] = os.clock()
 	else
 		data.playtime.seconds = state.seconds -- (kept in memory between saves; saved with the rest of the data)
+		data.playtime.total = state.total
 	end
 end
 
+-- (26 Oct) NEW PLAYER BOOST (Playtime.NewPlayer) for what's left of the first minutes of play
+local function newPlayerBoost(player)
+	local data = PlayerData.WaitFor(player)
+	if not data or not player.Parent then return end
+	local cfg = Playtime.NewPlayer
+	local left = cfg.minutes * 60 - stateOf(data).total
+	if left <= 5 then return end
+	local untilTime = workspace:GetServerTimeNow() + left
+	require(script.Parent.BoostService).SetPlayer(player, "NewPlayer", { gains = cfg.gains, coins = cfg.coins, untilTime = untilTime })
+	player:SetAttribute("NewPlayerBoostEnds", untilTime)
+end
+
 function PlaytimeService.Start()
+	Players.PlayerAdded:Connect(function(player) task.spawn(newPlayerBoost, player) end)
+	for _, player in ipairs(Players:GetPlayers()) do task.spawn(newPlayerBoost, player) end
 	remote = ReplicatedStorage.Remotes:FindFirstChild("Playtime") :: RemoteEvent
 	if not remote then
 		remote = Instance.new("RemoteEvent")

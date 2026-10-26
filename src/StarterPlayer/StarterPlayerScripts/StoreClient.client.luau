@@ -447,6 +447,7 @@ end
 function soldOut(entry): boolean
 	if not entry.item.once then return false end
 	local data = ClientData.Get()
+	if entry.item.key == "StarterPack" then return not Monetization.StarterOpen(data) end -- (26 Oct: bought, or past the first 24 hours of play)
 	return type(data.starterPack) == "table" and data.starterPack.bought == true
 end
 
@@ -472,18 +473,10 @@ function itemText(entry): string
 	if item.key == "StarterPack" then
 		local pack = Monetization.StarterPack
 		local coins = Monetization.StarterCoins(spurts)
-		local text = string.format("ONE-TIME OFFER. +%s coins, %d Protein Shakes, a DNA Token, 30 min 2x EXP and the STARTER title.", Kit.Format(coins), pack.Shakes)
-		local medium, shakes, token = cards.CoinsMedium, cards.ShakePack, cards.DnaToken
-		if medium and shakes and token then
-			local mediumPrice, shakePrice, tokenPrice = priceOf(medium.entry), priceOf(shakes.entry), priceOf(token.entry)
-			local mediumCoins = Monetization.PackCoins(medium.entry.item, spurts)
-			if mediumPrice and shakePrice and tokenPrice and mediumCoins > 0 then
-				local worth = coins * mediumPrice / mediumCoins + shakePrice * pack.Shakes / (Monetization.Effects.ShakePackSize or 3) + tokenPrice * pack.DnaTokens
-				worth = math.floor(worth / 5) * 5
-				local price = priceOf(entry)
-				if price and worth > price then text = "WORTH " .. worth .. " R$! " .. text end
-			end
-		end
+		-- (26 Oct) LIMITED: the time left of the first 24 hours of play, what it's worth (crossed-out price) and the 16 h boost
+		local _, left = Monetization.StarterOpen(data)
+		local text = string.format("LIMITED, ENDS IN %s. WAS %d R$. +%s coins, %d Protein Shakes, a DNA Token, 30 min 2x EXP, the STARTER title and +%d%% EXP and coins for %d hours.",
+			Monetization.Clock(left), pack.WasPrice, Kit.Format(coins), pack.Shakes, math.floor((pack.Rush.gains - 1) * 100 + 0.5), pack.RushHours)
 		return text
 	end
 	return item.text

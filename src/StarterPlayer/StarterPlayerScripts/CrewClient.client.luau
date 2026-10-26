@@ -138,10 +138,7 @@ local function inviteFriendsRow(parent)
 	local friendCfg = Social.Friends
 	local percent = math.floor(friendCfg.GainsPer * 100 + 0.5)
 	rowCard(parent, "users", Colors.Green, "Invite friends", "Every friend here: +" .. percent .. "% gains (up to +" .. percent * friendCfg.Max .. "%)", "Invite", "Green", function()
-		local SocialService = game:GetService("SocialService")
-		local me = game:GetService("Players").LocalPlayer
-		local ok, can = pcall(SocialService.CanSendGameInviteAsync, SocialService, me)
-		if ok and can then pcall(SocialService.PromptGameInvite, SocialService, me) end
+		UIBus.InviteFriends:Fire() -- (FriendClient: with the invite-boost launch data)
 	end)
 end
 

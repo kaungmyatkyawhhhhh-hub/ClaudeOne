@@ -147,6 +147,9 @@ handlers.TutorialStep = function(player, step)
 		if def and def.gift and def.gift.shakes and step == before + 1 then
 			PlayerData.AddShakes(player, def.gift.shakes)
 		end
+		if def and def.gift and def.gift.coins and step == before + 1 then -- (26 Oct: the first rep's coins)
+			PlayerData.AddCoins(player, def.gift.coins)
+		end
 		-- the whole tutorial done the normal way (from the last step, not skipped): the reward
 		if step == Onboarding.Done and before == #Onboarding.Steps and Onboarding.FinishCoins then
 			PlayerData.AddCoins(player, Onboarding.FinishCoins)
@@ -154,10 +157,11 @@ handlers.TutorialStep = function(player, step)
 	end
 end
 
--- SKIP TUTORIAL: straight to the end (no reward, no gifts)
+-- SKIP TUTORIAL: straight to the end (no step gifts; owner, 26 Oct: the starting coins too, FinishCoins)
 handlers.SkipTutorial = function(player)
 	if PlayerData.SetTutorialStep(player, Onboarding.Done) then
 		Analytics.TutorialStep(player, Onboarding.Done, true)
+		if Onboarding.FinishCoins then PlayerData.AddCoins(player, Onboarding.FinishCoins) end
 	end
 end
 

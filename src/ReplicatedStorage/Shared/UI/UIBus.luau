@@ -17,6 +17,7 @@ UIBus.GoPumpShop = signal()     -- (prompt 28) go to the PUMP SHOP (the Shop win
 UIBus.OpenAgency = signal()      -- (tab? "My") open the TRAINERS window (prompt 24; prompt 28: "My" = its MY TRAINERS tab)
 UIBus.StartAlter = signal()      -- (prompt 22) start the Body Alter transformation (the PUMP SHOP's ALTER NOW)
 UIBus.OpenNeeds = signal()       -- (prompt 54) open "what to train" for the next Growth Spurt / alter (Coach Dex's WHAT TO TRAIN)
+UIBus.InviteFriends = signal()   -- (26 Oct) Roblox's invite screen with the invite-boost launch data (FriendClient)
 UIBus.OpenInventory = signal()   -- (tab "Titles" / "Auras" / "Items", auraId?) open the Inventory window on a tab
 UIBus.OpenTitles = UIBus.OpenInventory -- (the old name: the Inventory window was the Titles window)
 UIBus.OpenSettings = signal()    -- the menu screen opens Settings

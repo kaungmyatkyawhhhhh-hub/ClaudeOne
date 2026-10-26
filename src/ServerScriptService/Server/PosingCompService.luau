@@ -324,6 +324,8 @@ local function results(division)
 	return ranked[1]
 end
 
+-- (26 Oct, memory) a division's Heartbeat watcher; cleanupShow disconnects it when a show fails half way (it ran forever)
+local liveWatcher: RBXScriptConnection? = nil
 local function runDivision(division)
 	-- line up: players first (in the order they stood closest to the middle), then the NPCs, spread along the marks
 	local spots = lineSpots(#division.contestants)
@@ -340,9 +342,11 @@ local function runDivision(division)
 			end
 		end
 	end
+	if liveWatcher then liveWatcher:Disconnect() end
 	local watcher = RunService.Heartbeat:Connect(function()
 		checkContestants(division)
 	end)
+	liveWatcher = watcher
 	broadcast("Division", { division = division.def.name, show = division.show and division.show.name or "", index = division.index,
 		count = division.count, contestants = contestantList(division), intro = PosingComp.Intro })
 	setBoard(division.def.name .. " division: take your marks", nil)
@@ -399,6 +403,10 @@ local function npcsFor(def, players: number)
 end
 
 local function cleanupShow()
+	if liveWatcher then
+		liveWatcher:Disconnect()
+		liveWatcher = nil
+	end
 	if not show then return end
 	for _, division in ipairs(show.divisions) do
 		for _, c in ipairs(division.contestants) do

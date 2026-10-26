@@ -123,14 +123,18 @@ local function ensure()
 	local geneticsUp = false
 	-- (prompt 53) and while the tutorial runs (only the tutorial on screen); it fades back in when the tutorial ends
 	local tutorialHid = false
+	-- (owner, 26 Oct: "show the first rebirth goal early") during the tutorial the column shows only its bottom part (the
+	-- GROWTH SPURT card); the idle cards (quest, daily, photo) fade in when it ends
 	local function refreshCovered()
 		local tutorial = UIBus.InTutorial()
-		local was = gui.Enabled
-		gui.Enabled = not geneticsUp and not UIBus.MenuOpen and not UIBus.CoverOpen(playerGui) and not tutorial
-		if tutorial then tutorialHid = true
-		elseif tutorialHid and gui.Enabled and not was then
+		gui.Enabled = not geneticsUp and not UIBus.MenuOpen and not UIBus.CoverOpen(playerGui)
+		if tutorial then
+			tutorialHid = true
+			idle.Visible = false
+		elseif tutorialHid then
 			tutorialHid = false
-			Theme.Fade(column, true, 0.4)
+			idle.Visible = true
+			Theme.Fade(idle, true, 0.4)
 		end
 	end
 	-- (hidden behind the main menu: MenuClient raises UIBus.MenuOpen when it starts, which can be after this runs)

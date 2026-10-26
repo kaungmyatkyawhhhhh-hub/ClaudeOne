@@ -238,7 +238,7 @@ end
 local function setup(player, character)
 	local humanoid = character:FindFirstChildOfClass("Humanoid")
 	local data = PlayerData.WaitFor(player)
-	if not humanoid or not data then return end
+	if not humanoid or not data or not player.Parent then return end -- (26 Oct, memory: left while loading)
 	local state = { character = character, busy = true }
 	states[player] = state
 	local ok, original = pcall(humanoid.GetAppliedDescription, humanoid)

@@ -303,8 +303,14 @@ local function sendView(player, crewId)
 	if not isTest(crewId) and (not record or not viewed[crewId] or os.clock() - viewed[crewId] > VIEW_CACHE) then
 		local ok, stored = pcall(crewStore.GetAsync, crewStore, crewId)
 		if ok then
-			cache[crewId] = stored
-			viewed[crewId] = os.clock()
+			-- (26 Oct, memory) only real crews are kept, and the view cache starts over past 300 crews
+			if stored ~= nil then
+				local count = 0
+				for _ in pairs(viewed) do count += 1 end
+				if count > 300 then table.clear(viewed) end
+				cache[crewId] = stored
+				viewed[crewId] = os.clock()
+			end
 			record = stored
 		end
 	end

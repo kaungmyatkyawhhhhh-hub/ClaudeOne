@@ -479,6 +479,29 @@ function Trainers.TotalLines(copies): { { kind: string, pct: number, capped: boo
 	return out
 end
 
+-- (26 Oct, owner: "add a best equip button", "according to the stats and not the evolution and rarity") A copy's stats:
+-- all its boosts added up as they show on its card (EXP + coins + progress + stamina, after its stage x level). BEST EQUIP
+-- and the MY TRAINERS order (best to worst) use it.
+function Trainers.CopyValue(copy): number
+	local trainer = Trainers.ById[copy.id]
+	if not trainer then return 0 end
+	local total = 0
+	for _, amount in pairs(trainer.perk) do total += amount end
+	return total * Trainers.CopyMultiplier(copy)
+end
+-- The uids of the best `slots` copies you own (BEST EQUIP), best first.
+function Trainers.BestSet(state, slots: number): { number }
+	local copies = table.clone(type(state) == "table" and state.copies or {})
+	table.sort(copies, function(a, b)
+		local va, vb = Trainers.CopyValue(a), Trainers.CopyValue(b)
+		if va ~= vb then return va > vb end
+		return (a.u or 0) < (b.u or 0)
+	end)
+	local uids = {}
+	for i = 1, math.min(slots, #copies) do uids[i] = copies[i].u end
+	return uids
+end
+
 -- The total boost of the equipped copies, each kind capped: { gains, coins, maxStamina, staminaRegen, progress } (0.25 = +25%)
 function Trainers.Bonus(copies)
 	local total = { gains = 0, coins = 0, maxStamina = 0, staminaRegen = 0, progress = 0 }

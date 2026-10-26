@@ -14,6 +14,10 @@ Social.Friends = {
 	GainsPer = 0.1,
 	Max = 3,
 	PromptAfterSpurt = 2,
+	-- (owner, 26 Oct) the invite boost: a friend joins through your invite (the INVITE button under the left menu, the Crew
+	-- window, the prompt after Spurt 2) -> you get InviteGains x EXP for InviteMinutes (once per friend per day; saved for
+	-- you if you're offline, up to InviteMaxMinutes), and a NEW player who joined that way gets the same as a welcome
+	InviteGains = 1.5, InviteMinutes = 30, InviteMaxMinutes = 120,
 }
 
 -- Arm wrestling (owner's feature run, task 3): a table in the starter gym and one in the pro gym (tag "ArmWrestleTable",

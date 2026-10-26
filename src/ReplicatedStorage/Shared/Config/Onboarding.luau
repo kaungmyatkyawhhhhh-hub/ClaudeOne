@@ -29,12 +29,15 @@ Onboarding.StartFacing = Vector3.new(-15, 0.2, -80)
 Onboarding.Steps = {
 	{ id = "GoBench", text = "Walk to the Flat Bench and tap Occupy.", onMachineText = "Tap STOP, then walk to the Flat Bench.",
 		target = "FlatBench", done = { type = "onMachine" },
-		coach = { "Welcome to the gym! Follow the glowing dots to the Flat Bench and tap Occupy.",
-			"Every machine trains real muscles. The bench builds your chest, shoulders and triceps." } },
+		-- (owner, 26 Oct) the NEW PLAYER BOOST and the first goal, from the first second
+		coach = { "Welcome to the gym! Here's a NEW PLAYER BOOST: 2x EXP and coins for your first 15 minutes!",
+			"Your goal: grow every muscle to your first GROWTH SPURT and get TALLER. Follow the glowing dots to the Flat Bench and tap Occupy." } },
 	{ id = "FirstLift", text = "Tap REP to lift faster. A full PUMP bar: tap it for x2.", done = { type = "reps", count = 1 },
 		coach = { "Reps go on their own. Tap REP to lift faster!", "Every tap fills the PUMP bar. When it's full, tap it for double gains." } },
 	-- (26 Oct, funnel: 12% left on this step; 20 reps -> 10)
-	{ id = "Stamina", text = "Every rep uses stamina. Do 10 more reps!", done = { type = "staminaLow", below = 0.4, count = 10 },
+	-- (owner, 26 Oct: "an instant strength reward on the first click") reaching this step = the first rep done: FirstRepCoins
+	-- and a big moment (TutorialClient)
+	{ id = "Stamina", text = "Every rep uses stamina. Do 10 more reps!", done = { type = "staminaLow", below = 0.4, count = 10 }, gift = { coins = 100 },
 		coach = { "Every rep uses stamina, the blue bar. Do 10 more reps!" } },
 	-- (prompt 20, 21 Oct: the button used to be off-screen on a machine; now an arrow points at it wherever it is, and after
 	-- `timeout` seconds the shake is drunk for the player so the tutorial never gets stuck)
@@ -70,6 +73,8 @@ Onboarding.Done = 100
 Onboarding.Version = 2
 
 Onboarding.FinishedText = "You're all set. Tap GO TRAIN for your first Growth Spurt!" -- (26 Oct: the GO TRAIN button, ProgressClient)
-Onboarding.FinishCoins = 50 -- paid once when the last step is done the normal way (not when skipped)
+-- (owner, 26 Oct: "after player do the tutorial he should get a lot of money to start, like 500-1000 coins") paid once when the
+-- tutorial ends, finished or skipped (ActionService)
+Onboarding.FinishCoins = 750
 
 return Onboarding

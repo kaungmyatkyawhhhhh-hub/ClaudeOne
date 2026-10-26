@@ -340,6 +340,13 @@ local function evolve(player, uid)
 	send(player, "Evolved", { results = { { id = made.id, stage = made.s, level = made.l, u = made.u } } })
 end
 
+-- (26 Oct) BEST EQUIP: the strongest copies you own in your slots (Trainers.BestSet)
+local function bestEquip(player)
+	local state = stateOf(player)
+	state.equipped = Trainers.BestSet(state, slotsOf(player))
+	apply(player, state)
+end
+
 -- every set there is, lowest stages first (so a fresh IRON-BORN set goes on to BEAST-MODE in the same go)
 local function evolveAll(player)
 	if os.clock() - (lastEvolve[player] or 0) < 0.4 then return end
@@ -855,6 +862,8 @@ function TrainerService.Start()
 			evolve(player, a)
 		elseif action == "EvolveAll" then
 			evolveAll(player)
+		elseif action == "BestEquip" then
+			bestEquip(player)
 		elseif action == "TeleportAgency" then
 			teleportAgency(player)
 		elseif action == "AutoDelete" then
@@ -877,6 +886,7 @@ function TrainerService.Start()
 	Players.PlayerRemoving:Connect(function(player)
 		pcall(flushXp, player)
 		lastRoll[player], lastEvolve[player], pendingXp[player], lastAgencyTeleport[player] = nil, nil, nil, nil
+		lastSnack[player] = nil -- (26 Oct, memory)
 	end)
 	-- (prompt 33) the waiting trainer EXP goes into the save every FlushSeconds
 	task.spawn(function()

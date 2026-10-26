@@ -259,9 +259,116 @@ Kit.OnTopbar(layoutMenu)
 root:GetPropertyChangedSignal("AbsoluteSize"):Connect(layoutMenu)
 Workspace:GetAttributeChangedSignal("TestPhoneSize"):Connect(function() task.defer(layoutMenu) end)
 
+------------------------------------------------------------------------
+-- (owner, 26 Oct: "the main menu doesn't look dramatic, make it look like a gym game's") The logo SLAMS in (big -> its
+-- size, a white flash, a deep boom, a short shake), its red glow then beats like a heart, embers drift up over the
+-- flyover, a red light breathes up from the bottom left, and the tagline punches through hype lines.
+------------------------------------------------------------------------
+local MENU_DRAMA = {
+	Beat = 1.25, Embers = 18, Shake = 7, ShakeTime = 0.35,
+	Lines = { "Everyone starts tiny.", "No days off.", "Get HUGE.", "Grow to 7 feet tall.", "Lift. Grow. Repeat." }, LineSeconds = 2.6,
+	Boom = { id = "rbxassetid://9125484526", volume = 0.45 }, -- PSE Deep Hits Big Reverberant Booms 1 (AlterThemes ImpactSub)
+}
+local menuFlash = New("Frame", { Name = "Flash", BackgroundColor3 = Color3.new(1, 1, 1), BackgroundTransparency = 1, BorderSizePixel = 0,
+	Size = UDim2.fromScale(1, 1), ZIndex = 8, Parent = back })
+local redLight = New("ImageLabel", { Name = "RedLight", BackgroundTransparency = 1, Image = UI.SoftGlow, ImageColor3 = Color3.fromRGB(255, 30, 30),
+	ImageTransparency = 0.85, AnchorPoint = Vector2.new(0.5, 0.5), Position = UDim2.fromScale(0.12, 1.05), Size = UDim2.fromScale(0.9, 1.1), ZIndex = 2, Parent = back })
+local menuRng = Random.new()
+local menuEmbers = {}
+local EMBER_COLORS = { Color3.fromHex("#FF5A3A"), Color3.fromHex("#FFB347"), Color3.fromHex("#FF2D2D") }
+local function resetEmber(ember, anywhere: boolean)
+	ember.x, ember.y = menuRng:NextNumber(0, 1), if anywhere then menuRng:NextNumber(0, 1.05) else 1.05
+	ember.speed, ember.drift, ember.phase = menuRng:NextNumber(0.04, 0.11), menuRng:NextNumber(-0.015, 0.015), menuRng:NextNumber(0, 6.28)
+	local size = menuRng:NextInteger(2, 4)
+	ember.frame.Size = UDim2.fromOffset(size, size)
+	ember.frame.BackgroundColor3 = EMBER_COLORS[menuRng:NextInteger(1, #EMBER_COLORS)]
+end
+for _ = 1, MENU_DRAMA.Embers do
+	local frame = New("Frame", { Name = "Ember", BorderSizePixel = 0, BackgroundTransparency = 1, AnchorPoint = Vector2.new(0.5, 0.5), ZIndex = 4, Parent = back }, {
+		New("UICorner", { CornerRadius = UDim.new(1, 0) }),
+	})
+	local ember = { frame = frame }
+	resetEmber(ember, true)
+	table.insert(menuEmbers, ember)
+end
+local menuShakeUntil = 0
+local dramaRunning = false
+local function menuDrama()
+	if dramaRunning then return end
+	dramaRunning = true
+	-- the logo slam: a copy of the logo over it (a UIScale on the real one would change the column's auto layout)
+	task.delay(0.15, function()
+		local size, pos = logo.AbsoluteSize, logo.AbsolutePosition - gui.AbsolutePosition
+		if size.X > 0 then
+			local copy = New("ImageLabel", { Name = "LogoSlam", BackgroundTransparency = 1, Image = logo.Image, ScaleType = Enum.ScaleType.Fit,
+				AnchorPoint = Vector2.new(0.5, 0.5), Position = UDim2.fromOffset(pos.X + size.X / 2, pos.Y + size.Y / 2), Size = UDim2.fromOffset(size.X, size.Y),
+				ZIndex = 20, Parent = gui })
+			local copyScale = New("UIScale", { Scale = 1.8, Parent = copy })
+			logo.ImageTransparency = 1
+			game:GetService("TweenService"):Create(copyScale, TweenInfo.new(0.28, Enum.EasingStyle.Back, Enum.EasingDirection.Out), { Scale = 1 }):Play()
+			task.delay(0.3, function()
+				logo.ImageTransparency = 0
+				copy:Destroy()
+			end)
+		end
+		task.wait(0.2)
+		menuFlash.BackgroundTransparency = 0.55
+		game:GetService("TweenService"):Create(menuFlash, TweenInfo.new(0.35), { BackgroundTransparency = 1 }):Play()
+		menuShakeUntil = os.clock() + MENU_DRAMA.ShakeTime
+		local boom = New("Sound", { SoundId = MENU_DRAMA.Boom.id, Volume = MENU_DRAMA.Boom.volume, Parent = game:GetService("SoundService") })
+		boom:Play()
+		game:GetService("Debris"):AddItem(boom, 4)
+	end)
+	-- the hype lines
+	task.spawn(function()
+		local tagline = column:FindFirstChild("Tagline")
+		local index = 1
+		while UIBus.MenuOpen and tagline and tagline.Parent do
+			task.wait(MENU_DRAMA.LineSeconds)
+			if not UIBus.MenuOpen then break end
+			index = index % #MENU_DRAMA.Lines + 1
+			tagline.Text = MENU_DRAMA.Lines[index]
+			local pop = tagline:FindFirstChild("Pop") or New("UIScale", { Name = "Pop", Parent = tagline })
+			pop.Scale = 1.25
+			game:GetService("TweenService"):Create(pop, TweenInfo.new(0.25, Enum.EasingStyle.Back, Enum.EasingDirection.Out), { Scale = 1 }):Play()
+		end
+	end)
+	-- every frame: the heartbeat glow, the red light, the embers, the shake
+	local glow = logo:FindFirstChild("Glow")
+	local started = os.clock()
+	local connection
+	connection = RunService.RenderStepped:Connect(function(dt)
+		if not UIBus.MenuOpen or not gui.Enabled then
+			connection:Disconnect()
+			dramaRunning = false
+			for _, ember in ipairs(menuEmbers) do ember.frame.BackgroundTransparency = 1 end
+			return
+		end
+		local t = os.clock() - started
+		local beat = (t % MENU_DRAMA.Beat) / MENU_DRAMA.Beat
+		local pulse = math.max(math.exp(-((beat - 0.08) / 0.05) ^ 2), 0.7 * math.exp(-((beat - 0.28) / 0.05) ^ 2))
+		if glow then glow.ImageTransparency = 0.45 - 0.25 * pulse end
+		redLight.ImageTransparency = 0.88 - 0.12 * pulse
+		for _, ember in ipairs(menuEmbers) do
+			ember.y -= ember.speed * dt
+			ember.x += ember.drift * dt + math.sin(t * 1.5 + ember.phase) * 0.0005
+			if ember.y < -0.05 then resetEmber(ember, false) end
+			ember.frame.Position = UDim2.fromScale(ember.x, ember.y)
+			ember.frame.BackgroundTransparency = math.clamp(1 - ember.y * 1.3, 0.2, 1)
+		end
+		local offset = Vector2.zero
+		if os.clock() < menuShakeUntil then
+			local k = (menuShakeUntil - os.clock()) / MENU_DRAMA.ShakeTime
+			offset = Vector2.new(menuRng:NextNumber(-1, 1), menuRng:NextNumber(-1, 1)) * MENU_DRAMA.Shake * k
+		end
+		back.Position = UDim2.fromOffset(offset.X, offset.Y) -- (the background: Kit.Root places the menu itself)
+	end)
+end
+
 -- The logo, the column and the card slide in from a little to the left, fading in (no CanvasGroup: text stays crisp)
 local function reveal()
 	layoutMenu()
+	task.spawn(menuDrama) -- (26 Oct)
 	for index, piece in ipairs({ column }) do
 		if piece.Visible then
 			local goal = piece.Position
