@@ -75,6 +75,9 @@ local Poses = {
 	-- (owner, 26 Oct) push-ups on the beach parallettes: placed like a dip (straight arms down onto the two bars, handleTop =
 	-- their top above the mat, 3 studs apart); MachineClient tips the body forward round the shoulders into a plank with the
 	-- feet on the floor and bends the elbows on each rep. Not a contract pose (it starts at the top).
+	-- (owner, 27 Oct) the L-sit muscle-up on the beach rings: placed at the top (in support on the rings, like a dip; the
+	-- rings 1.8 apart); MachineClient lowers the body through the transition to a dead hang and back, legs out in an L.
+	MuscleUp = { kind = "Support", position = Vector3.new(0, 0, 0), handleTop = 3.32, handleX = 0.9, yaw = FACE_FORWARD, exit = Vector3.new(0, 0, -3), follow = "None" },
 	PushUp = { kind = "Support", position = Vector3.new(0, 0, 0), handleTop = 0.81, handleX = 1.5, yaw = FACE_FORWARD, exit = Vector3.new(2.6, 0, 0), follow = "None" },
 }
 

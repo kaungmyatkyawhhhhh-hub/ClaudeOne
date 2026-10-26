@@ -682,6 +682,102 @@ POSE_ANIMS.Dip = function(character, d, jitter, model)
 	end
 end
 
+-- (owner, 27 Oct: "an L-sit muscle-up") On the beach rings: the legs held straight out in an L the whole time; a rep goes
+-- from the support on top of the rings (arms straight down) through the transition (the chest over the rings) to a dead
+-- hang under them, and back up. The hands stay in the rings (the model's "Handle" parts).
+-- (owner, 27 Oct: "make the rings move, not stationary") the rings swing on their straps: with the lifter's body through a
+-- muscle-up, and a gentle sway when nobody is on them. Only on this client (the decor parts are moved locally), only near
+-- the camera. Each ring = the "Ring" / "RingStrap" parts of the gym right above one of the station's "Handle" points.
+local RINGS = { Swing = rad(16), Idle = rad(2.5), Near = 80 }
+local ringRigs = {} -- [station model] = { entries = { { grip, anchor, parts = { [part] = rest CFrame }, now } }, driven, phase }
+local function ringRig(model)
+	local rig = ringRigs[model]
+	if rig then return rig end
+	local gym = model.Parent
+	if not gym then return nil end
+	local entries = {}
+	for _, h in ipairs(model:GetChildren()) do
+		if h.Name == "Handle" and h:IsA("BasePart") then
+			local entry = { grip = h.Position, parts = {} }
+			for _, p in ipairs(gym:GetChildren()) do
+				if p:IsA("BasePart") and (p.Name == "Ring" or p.Name == "RingStrap") and ((p.Position - h.Position) * Vector3.new(1, 0, 1)).Magnitude < 0.5 then
+					entry.parts[p] = p.CFrame
+					if p.Name == "RingStrap" then entry.anchor = p.Position + p.CFrame.UpVector * p.Size.Y / 2 end
+				end
+			end
+			if entry.anchor then table.insert(entries, entry) end
+		 end
+	end
+	if #entries == 0 then return nil end -- (not streamed in yet: tried again later)
+	rig = { entries = entries, driven = 0, phase = math.random() * 6 }
+	ringRigs[model] = rig
+	return rig
+end
+-- every ring turned by `rotation` round its strap's top; each entry's `now` = where its grip is this frame
+local function swingRings(rig, rotation: CFrame)
+	for _, entry in ipairs(rig.entries) do
+		local pivot = CFrame.new(entry.anchor) * rotation * CFrame.new(-entry.anchor)
+		for part, rest in pairs(entry.parts) do part.CFrame = pivot * rest end
+		entry.now = pivot * entry.grip
+	end
+end
+task.spawn(function()
+	local CollectionService = game:GetService("CollectionService")
+	while true do
+		task.wait()
+		local camera = workspace.CurrentCamera
+		local t = os.clock()
+		for _, model in ipairs(CollectionService:GetTagged("Machine")) do
+			if model:GetAttribute("MachineId") == "MuscleUp" and camera and (camera.CFrame.Position - model:GetPivot().Position).Magnitude < RINGS.Near then
+				local rig = ringRig(model)
+				if rig and t - rig.driven > 0.3 then
+					swingRings(rig, Angles(RINGS.Idle * math.sin(t * 1.3 + rig.phase), 0, RINGS.Idle * 0.6 * math.sin(t * 0.9 + rig.phase)))
+				end
+			end
+		end
+	end
+end)
+
+POSE_ANIMS.MuscleUp = function(character, d, jitter, model)
+	local arm = bars.arm(character, "R")
+	local reach = arm and (arm.a + arm.b) or 2
+	local e = (1 - math.cos(math.pi * d)) / 2 -- (smooth: slow at the top and the bottom)
+	local over = math.sin(math.pi * d) -- (1 in the middle: the transition)
+	bars.base(character, CFrame.new(0, -reach * 1.85 * e, -reach * 0.25 * over) * Angles(-rad(25) * over + jitter * 0.2, 0, 0))
+	bars.legs(character, rad(88), -rad(2), rad(10))
+	local _, frame = bars.frames(character)
+	if not (frame and model) then return end
+	-- the rings swing with the body: toward its front through the transition (round the axis across the body)
+	local rig = ringRig(model)
+	if rig then
+		rig.driven = os.clock()
+		swingRings(rig, CFrame.fromAxisAngle(frame.RightVector, RINGS.Swing * over + jitter * 0.1))
+	end
+	for _, side in ipairs(SIDES) do
+		local sideArm = bars.arm(character, side[1])
+		local best, bestScore = nil, -math.huge
+		for _, part in ipairs(model:GetChildren()) do
+			if part.Name == "Handle" and part:IsA("BasePart") then
+				local score = (part.Position - frame.Position):Dot(frame.RightVector) * side[2]
+				if score > bestScore then best, bestScore = part, score end
+			end
+		end
+		if best and sideArm then
+			-- the hand on its ring where the ring is now
+			local target = best.Position
+			if rig then
+				local near, nearDist = nil, math.huge
+				for _, entry in ipairs(rig.entries) do
+					local dist = (entry.grip - best.Position).Magnitude
+					if dist < nearDist then near, nearDist = entry, dist end
+				end
+				if near and near.now then target = near.now end
+			end
+			bars.armIK(character, side[1], frame, target, bars.bodyDir(frame, side[1], Vector3.new(0.7, 0, 0.7)))
+		end
+	end
+end
+
 -- (owner, 26 Oct) Push-ups on the beach parallettes: placed like a dip (straight arms down onto the bars), then the whole
 -- body tips forward round the shoulders into a plank until the feet reach the floor (any body size); a rep bends the elbows
 -- (the shoulders drop, the body tips a little more). The hands stay on the bars (the model's "Handle" parts).

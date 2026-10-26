@@ -306,6 +306,10 @@ end
 table.insert(Machines.List, { id = "PushUps", name = "Push-Ups", pose = "PushUp", gym = "Beach", layout = "Center",
 	tiers = Machines.TierSets.Bodyweight, staminaCost = 4,
 	muscles = { { id = "MidChest", share = 1 }, { id = "Triceps", share = 0.5 }, { id = "FrontDelts", share = 0.3 } } })
+-- (owner, 27 Oct: "on the rings, don't do dips: an L-sit muscle-up") the beach gym's rings (Workspace.Town.BeachGym.RingMuscleUp)
+table.insert(Machines.List, { id = "MuscleUp", name = "L-Sit Muscle-Up", pose = "MuscleUp", gym = "Beach", layout = "Center",
+	tiers = Machines.TierSets.Bodyweight, staminaCost = 6,
+	muscles = { { id = "Lats", share = 1 }, { id = "Triceps", share = 0.5 }, { id = "Abs", share = 0.4 } } })
 
 -- Dumbbells (prompt 16, 21 Oct): every gym's dumbbell rack has "Train" spots (small machine models with Dumbbell = true,
 -- tools/builders/DumbbellSpots); a tap opens the exercise picker and the spot becomes that exercise (its MachineId), so
