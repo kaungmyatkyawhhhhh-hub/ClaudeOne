@@ -12,6 +12,11 @@
 -- TIMING.Stages seconds). Between steps the bar creeps a little so it never looks stuck.
 -- This starts before ReplicatedStorage has replicated, so the kit's colors, fonts, the art / logo ids and a few tips are
 -- repeated here (Theme.Colors, UIFonts, UI.MenuArt / UI.Logo3D / UI.SoftGlow); the full tip list is read once it's in.
+-- (owner, 26 Oct: "make it look like a gym game's loading screen", more dramatic) The art slowly pushes in, a red light
+-- behind the character beats like a heart, embers drift up, and the bar is a barbell: at 25 / 50 / 75 / 100% a bumper
+-- plate slams onto its end (white flash, a short shake, a plate clank, the gold percent punches) and the big hype line
+-- over the tip changes (WARMING UP, CHALKING UP, LOADING PLATES, GETTING PUMPED, LET'S LIFT!). Sounds: the game's own
+-- licensed library picks (Config/AlterThemes MetalClang / ImpactSub).
 local Players = game:GetService("Players")
 local ReplicatedFirst = game:GetService("ReplicatedFirst")
 local RunService = game:GetService("RunService")
@@ -111,7 +116,11 @@ back.ClipsDescendants = true
 -- the art covering the whole screen by scale + Crop (owner, 15 Oct: never a pixel size worked out once, which left a gap
 -- on the right when a phone changed size); the dark gradient over the left 40%
 local art = new("ImageLabel", { Name = "Art", BackgroundTransparency = 1, Image = LOOK.Art, ScaleType = Enum.ScaleType.Crop,
-	ResampleMode = Enum.ResamplerMode.Default, Position = UDim2.fromScale(0, 0), Size = UDim2.fromScale(1, 1), Parent = back })
+	ResampleMode = Enum.ResamplerMode.Default, AnchorPoint = Vector2.new(0.7, 0.5), Position = UDim2.fromScale(0.7, 0.5), Size = UDim2.fromScale(1, 1),
+	Parent = back })
+-- (26 Oct) the red light behind the character, beating like a heart (DRAMA below)
+local heartGlow = new("ImageLabel", { Name = "HeartGlow", BackgroundTransparency = 1, Image = LOOK.Glow, ImageColor3 = Color3.fromRGB(255, 30, 30),
+	ImageTransparency = 0.7, AnchorPoint = Vector2.new(0.5, 0.5), Position = UDim2.fromScale(0.78, 0.48), Size = UDim2.fromScale(0.75, 1.25), Parent = back })
 new("Frame", { Name = "Shade", BackgroundColor3 = Color3.new(0, 0, 0), BorderSizePixel = 0, Size = UDim2.fromScale(0.4, 1), Parent = back }, {
 	new("UIGradient", { Transparency = NumberSequence.new({ NumberSequenceKeypoint.new(0, 0.25), NumberSequenceKeypoint.new(0.55, 0.55),
 		NumberSequenceKeypoint.new(1, 1) }) }),
@@ -163,7 +172,7 @@ placeTop = function(rootH: number, screenScale: number)
 	lastRootH, lastScale = rootH, screenScale
 	local top = (GuiService.TopbarInset.Max.Y + 8) / math.max(screenScale, 0.01)
 	local logoMax = math.max(60, rootH * 0.32) -- (the first frame can report a tiny screen: never an empty range)
-	local logoH = math.clamp(math.min(rootH * 0.32, rootH - 130 - 28 - top), 60, logoMax)
+	local logoH = math.clamp(math.min(rootH * 0.32, rootH - 196 - 28 - top), 60, logoMax) -- (26 Oct: 196 = the tip, bar and the hype line)
 	logo.Size = UDim2.fromOffset(logoH * 432 / 354, logoH)
 	logo.Position = UDim2.new(0, 18, 0, top)
 	tagline.Position = UDim2.new(0, 24, 0, top + logoH + 4)
@@ -197,10 +206,12 @@ local tip = text({ Name = "Tip", Text = "", FontFace = LOOK.Chunky, TextSize = 1
 -- (prompt 40, mockup real/loading) the words chunky, the bar the full width under them
 local status = text({ Name = "Status", Text = "LOADING THE GAME", FontFace = LOOK.Chunky, TextSize = 16, AnchorPoint = Vector2.new(0, 1), Position = UDim2.new(0, 24, 1, -52),
 	Size = UDim2.new(1, -140, 0, 18), TextXAlignment = Enum.TextXAlignment.Left, Parent = root })
-local percent = text({ Name = "Percent", Text = "0%", FontFace = LOOK.Chunky, TextSize = 20, AnchorPoint = Vector2.new(1, 1), Position = UDim2.new(1, -24, 1, -50),
-	Size = UDim2.fromOffset(70, 22), TextXAlignment = Enum.TextXAlignment.Right, Parent = root })
+local PLATE_AREA = 70 -- (26 Oct) room at the bar's right end for the sleeve and its plates
+local percent = text({ Name = "Percent", Text = "0%", FontFace = LOOK.Chunky, TextSize = 28, AnchorPoint = Vector2.new(1, 1), Position = UDim2.new(1, -24 - PLATE_AREA, 1, -48),
+	Size = UDim2.fromOffset(90, 30), TextXAlignment = Enum.TextXAlignment.Right, Parent = root })
+local percentScale = new("UIScale", { Parent = percent })
 new("UIGradient", { Rotation = 90, Color = GOLD, Parent = percent })
-local bar = new("Frame", { Name = "Bar", AnchorPoint = Vector2.new(0, 1), Position = UDim2.new(0, 24, 1, -30), Size = UDim2.new(1, -48, 0, 16),
+local bar = new("Frame", { Name = "Bar", AnchorPoint = Vector2.new(0, 1), Position = UDim2.new(0, 24, 1, -30), Size = UDim2.new(1, -48 - PLATE_AREA, 0, 16),
 	BackgroundColor3 = LOOK.Well, BorderSizePixel = 0, Parent = root }, {
 	new("UICorner", { CornerRadius = UDim.new(1, 0) }),
 	new("UIStroke", { Color = LOOK.Outline, Thickness = 2, ApplyStrokeMode = Enum.ApplyStrokeMode.Border }),
@@ -238,6 +249,145 @@ local skip = new("TextButton", { Name = "Skip", Text = "", AutoButtonColor = tru
 	Size = UDim2.fromOffset(64, 34), Visible = false, Parent = root })
 graphite(skip, LOOK.QuietTop, LOOK.QuietBottom, 9)
 text({ Name = "Label", Text = "SKIP", FontFace = LOOK.Chunky, TextSize = 16, Size = UDim2.fromScale(1, 1), Parent = skip })
+
+------------------------------------------------------------------------
+-- Drama (owner, 26 Oct): push-in, heartbeat light, embers, the barbell's plates, the hype line, flash + shake
+------------------------------------------------------------------------
+local DRAMA = {
+	Zoom = 0.1, ZoomTime = 24,            -- the art grows this much over ZoomTime seconds
+	Beat = 1.25,                          -- seconds per heartbeat (two pulses)
+	Embers = 22,
+	Shake = 6, ShakeTime = 0.28,          -- px (mockup) and seconds per plate slam
+	Milestones = { 0.25, 0.5, 0.75, 1 },
+	Hype = { "WARMING UP", "CHALKING UP", "LOADING PLATES", "GETTING PUMPED", "LET'S LIFT!" },
+	-- bumper plates, heaviest (tallest) inside: red 25, blue 20, yellow 15, green 10
+	Plates = { { "#D0222B", 40 }, { "#2752C9", 36 }, { "#F2C12E", 32 }, { "#2E9E4F", 28 } },
+	Clank = { id = "rbxassetid://9116750726", volume = 0.5 },   -- PSE Metal Plate Impact (AlterThemes MetalClang)
+	Boom = { id = "rbxassetid://9125484526", volume = 0.5 },    -- PSE Deep Hits Big Reverberant Booms 1 (AlterThemes ImpactSub)
+}
+local function sfx(spec)
+	local sound = new("Sound", { SoundId = spec.id, Volume = spec.volume, Parent = game:GetService("SoundService") })
+	sound:Play()
+	sound.Ended:Connect(function() sound:Destroy() end)
+	task.delay(4, function() if sound.Parent then sound:Destroy() end end)
+end
+
+-- the big hype line over the tip (heavy italic, white into red)
+local hype = text({ Name = "Hype", Text = DRAMA.Hype[1], FontFace = LOOK.Display, TextScaled = true, AnchorPoint = Vector2.new(0, 1),
+	Position = UDim2.new(0, 22, 1, -150), Size = UDim2.new(0.6, 0, 0, 44), TextXAlignment = Enum.TextXAlignment.Left, ZIndex = 3, Parent = root }, {})
+new("UITextSizeConstraint", { MaxTextSize = 40, Parent = hype })
+new("UIGradient", { Rotation = 90, Color = ColorSequence.new(Color3.fromHex("#FFFFFF"), Color3.fromHex("#FF4A4A")), Parent = hype })
+local hypeScale = new("UIScale", { Parent = hype })
+
+-- the barbell's end: a steel sleeve, the plates slide onto it, a collar at the end
+local sleeve = new("Frame", { Name = "Sleeve", AnchorPoint = Vector2.new(0, 0.5), Position = UDim2.new(1, 2, 0.5, 0), Size = UDim2.fromOffset(PLATE_AREA - 6, 8),
+	BackgroundColor3 = Color3.new(1, 1, 1), BorderSizePixel = 0, ZIndex = 2, Parent = bar }, {
+	new("UICorner", { CornerRadius = UDim.new(0, 3) }),
+	new("UIGradient", { Rotation = 90, Color = ColorSequence.new({ ColorSequenceKeypoint.new(0, Color3.fromHex("#E6E8EC")),
+		ColorSequenceKeypoint.new(0.5, Color3.fromHex("#9AA0A8")), ColorSequenceKeypoint.new(1, Color3.fromHex("#4A4E55")) }) }),
+	new("UIStroke", { Color = LOOK.Outline, Thickness = 1.5, ApplyStrokeMode = Enum.ApplyStrokeMode.Border }),
+})
+local plates = {}
+for index, spec in ipairs(DRAMA.Plates) do
+	local color = Color3.fromHex(spec[1])
+	local plate = new("Frame", { Name = "Plate" .. index, AnchorPoint = Vector2.new(0, 0.5), Position = UDim2.new(0, 4 + (index - 1) * 12, 0.5, -40),
+		Size = UDim2.fromOffset(10, spec[2]), BackgroundColor3 = Color3.new(1, 1, 1), BackgroundTransparency = 1, BorderSizePixel = 0, ZIndex = 3 + index,
+		Parent = sleeve }, {
+		new("UICorner", { CornerRadius = UDim.new(0, 3) }),
+		new("UIGradient", { Rotation = 0, Color = ColorSequence.new({ ColorSequenceKeypoint.new(0, color:Lerp(Color3.new(1, 1, 1), 0.35)),
+			ColorSequenceKeypoint.new(0.45, color), ColorSequenceKeypoint.new(1, color:Lerp(Color3.new(0, 0, 0), 0.45)) }) }),
+		new("UIStroke", { Color = LOOK.Outline, Thickness = 1.5, Transparency = 1, ApplyStrokeMode = Enum.ApplyStrokeMode.Border }),
+	})
+	plates[index] = plate
+end
+local collar = new("Frame", { Name = "Collar", AnchorPoint = Vector2.new(0, 0.5), Position = UDim2.new(0, 4 + #DRAMA.Plates * 12, 0.5, 0),
+	Size = UDim2.fromOffset(6, 16), BackgroundColor3 = Color3.fromHex("#C9CDD3"), BackgroundTransparency = 1, BorderSizePixel = 0, ZIndex = 8, Parent = sleeve }, {
+	new("UICorner", { CornerRadius = UDim.new(0, 2) }),
+})
+
+-- the flash (whole screen) and embers drifting up over the art
+local flash = new("Frame", { Name = "Flash", BackgroundColor3 = Color3.new(1, 1, 1), BackgroundTransparency = 1, BorderSizePixel = 0,
+	Size = UDim2.fromScale(1, 1), ZIndex = 50, Parent = gui })
+local rng = Random.new()
+local embers = {}
+local EMBER_COLORS = { Color3.fromHex("#FF5A3A"), Color3.fromHex("#FFB347"), Color3.fromHex("#FF2D2D") }
+local function resetEmber(ember, anywhere: boolean)
+	ember.x, ember.y = rng:NextNumber(0.3, 1), if anywhere then rng:NextNumber(0, 1.05) else 1.05
+	ember.speed, ember.drift, ember.phase = rng:NextNumber(0.05, 0.13), rng:NextNumber(-0.02, 0.02), rng:NextNumber(0, 6.28)
+	local size = rng:NextInteger(2, 5)
+	ember.frame.Size = UDim2.fromOffset(size, size)
+	ember.frame.BackgroundColor3 = EMBER_COLORS[rng:NextInteger(1, #EMBER_COLORS)]
+end
+for _ = 1, DRAMA.Embers do
+	local frame = new("Frame", { Name = "Ember", BorderSizePixel = 0, BackgroundTransparency = 0.3, AnchorPoint = Vector2.new(0.5, 0.5), Parent = back }, {
+		new("UICorner", { CornerRadius = UDim.new(1, 0) }),
+	})
+	local ember = { frame = frame }
+	resetEmber(ember, true)
+	table.insert(embers, ember)
+end
+
+local startedAt = os.clock()
+local shakeUntil = 0
+local reached = 0 -- milestones slammed so far
+local function slam(index: number)
+	local plate = plates[index]
+	if plate then
+		plate.BackgroundTransparency = 0
+		plate.UIStroke.Transparency = 0
+		TweenService:Create(plate, TweenInfo.new(0.16, Enum.EasingStyle.Back, Enum.EasingDirection.Out), { Position = UDim2.new(0, 4 + (index - 1) * 12, 0.5, 0) }):Play()
+	end
+	task.delay(0.12, function()
+		if not gui.Parent then return end
+		sfx(DRAMA.Clank)
+		if index == #DRAMA.Milestones then
+			sfx(DRAMA.Boom)
+			collar.BackgroundTransparency = 0
+		end
+		flash.BackgroundTransparency = if index == #DRAMA.Milestones then 0.35 else 0.7
+		TweenService:Create(flash, TweenInfo.new(0.3), { BackgroundTransparency = 1 }):Play()
+		shakeUntil = os.clock() + DRAMA.ShakeTime
+		percentScale.Scale = 1.35
+		TweenService:Create(percentScale, TweenInfo.new(0.25, Enum.EasingStyle.Back, Enum.EasingDirection.Out), { Scale = 1 }):Play()
+		hype.Text = DRAMA.Hype[index + 1] or hype.Text
+		hypeScale.Scale = 1.3
+		hype.TextTransparency = 0.6
+		TweenService:Create(hypeScale, TweenInfo.new(0.22, Enum.EasingStyle.Back, Enum.EasingDirection.Out), { Scale = 1 }):Play()
+		TweenService:Create(hype, TweenInfo.new(0.15), { TextTransparency = 0 }):Play()
+	end)
+end
+
+-- every frame (called from the progress loop below with the bar's shown value)
+local function drama(dt: number, value: number)
+	local t = os.clock() - startedAt
+	local zoom = 1 + DRAMA.Zoom * math.sin(math.min(t / DRAMA.ZoomTime, 1) * math.pi / 2)
+	art.Size = UDim2.fromScale(zoom, zoom)
+	-- the heartbeat: two quick pulses, then a rest
+	local beat = (t % DRAMA.Beat) / DRAMA.Beat
+	local pulse = math.max(math.exp(-((beat - 0.08) / 0.05) ^ 2), 0.7 * math.exp(-((beat - 0.28) / 0.05) ^ 2))
+	heartGlow.ImageTransparency = 0.78 - 0.33 * pulse
+	-- shake on a slam
+	local offset = Vector2.zero
+	if os.clock() < shakeUntil then
+		local k = (shakeUntil - os.clock()) / DRAMA.ShakeTime
+		offset = Vector2.new(rng:NextNumber(-1, 1), rng:NextNumber(-1, 1)) * DRAMA.Shake * k
+	end
+	root.Position = UDim2.fromOffset(offset.X, offset.Y)
+	art.Position = UDim2.new(0.7, offset.X * 1.5, 0.5, offset.Y * 1.5)
+	-- embers
+	for _, ember in ipairs(embers) do
+		ember.y -= ember.speed * dt
+		ember.x += ember.drift * dt + math.sin(t * 1.7 + ember.phase) * 0.0006
+		if ember.y < -0.05 then resetEmber(ember, false) end
+		ember.frame.Position = UDim2.fromScale(ember.x, ember.y)
+		ember.frame.BackgroundTransparency = math.clamp(1 - ember.y * 1.4, 0.15, 1)
+	end
+	-- the plates: one per milestone passed
+	while reached < #DRAMA.Milestones and value >= DRAMA.Milestones[reached + 1] - 0.001 do
+		reached += 1
+		slam(reached)
+	end
+end
 
 ------------------------------------------------------------------------
 -- Progress
@@ -367,7 +517,7 @@ local function finish()
 	while RunService:IsStudio() and Workspace:GetAttribute("TestHoldLoading") == true and not done do task.wait(0.2) end
 	if done then return end
 	label = "Let's lift"
-	task.wait(0.35)
+	task.wait(0.9) -- (26 Oct: time for the last plate's slam and LET'S LIFT!)
 	fadeOut()
 end
 
@@ -397,4 +547,5 @@ connection = RunService.RenderStepped:Connect(function(dt)
 	fill.Size = UDim2.fromScale(math.max(shown, 0.02), 1)
 	status.Text = string.upper(label)
 	percent.Text = math.floor(shown * 100) .. "%"
+	drama(dt, shown)
 end)
