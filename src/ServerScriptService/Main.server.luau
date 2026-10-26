@@ -27,6 +27,28 @@ do
 	end
 end
 
+-- (owner, 26 Oct: "put all the alter skins on a max body somewhere so I can see them") Studio only: with the Workspace
+-- attribute TestAlterShowcase checked, ServerStorage.AlterShowcase (16 max bodies, Natural + every alter skin, far outside
+-- the map) comes into the world and you're taken there a few seconds after you spawn. Never on live servers.
+if game:GetService("RunService"):IsStudio() and workspace:GetAttribute("TestAlterShowcase") == true then
+	local show = game:GetService("ServerStorage"):FindFirstChild("AlterShowcase")
+	local npcs = workspace:FindFirstChild("NPCs")
+	if show and npcs then
+		local area = Instance.new("Folder")
+		area.Name = "AlterShowcaseArea"
+		area.Parent = workspace
+		local floor = show:FindFirstChild("ShowcaseFloor")
+		-- (the bodies go straight into Workspace.NPCs: MuscleClient draws the muscles of the models there)
+		for _, child in ipairs(show:GetChildren()) do child.Parent = if child:IsA("Model") then npcs else area end
+		game:GetService("Players").PlayerAdded:Connect(function(player)
+			player.CharacterAdded:Connect(function(character)
+				task.wait(6)
+				if floor and character.Parent then character:PivotTo(CFrame.new(floor.Position + Vector3.new(0, 5, 14), floor.Position)) end
+			end)
+		end)
+	end
+end
+
 local PlayerData = require(script.Parent.Server.PlayerData)
 local MachineService = require(script.Parent.Server.MachineService)
 local BodyService = require(script.Parent.Server.BodyService)

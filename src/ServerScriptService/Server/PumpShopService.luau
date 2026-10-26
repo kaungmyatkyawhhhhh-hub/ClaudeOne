@@ -368,8 +368,14 @@ function PumpShopService.Start()
 	for _, part in ipairs(CollectionService:GetTagged("CoconutStand")) do stand(part) end
 	CollectionService:GetInstanceAddedSignal("PumpShopCounter"):Connect(counter)
 	CollectionService:GetInstanceAddedSignal("CoconutStand"):Connect(stand)
-	-- the clerk on the counter's ClerkSpot
+	-- the clerk on the counter's ClerkSpot (owner, 26 Oct: "put him in Studio too": a Mo placed in Studio under the PumpShop
+	-- is used as he is, only the tag is made sure of; otherwise he's built here)
 	local shop = Workspace:FindFirstChild("Town") and Workspace.Town:FindFirstChild("PumpShop")
+	local placed = shop and shop:FindFirstChild(CLERK.name)
+	if placed and placed:IsA("Model") and placed:FindFirstChildOfClass("Humanoid") then
+		CollectionService:AddTag(placed, "PumpShopClerk")
+		shop = nil
+	end
 	if shop then
 		local NpcService = require(script.Parent.NpcService)
 		for _, spot in ipairs(shop:GetDescendants()) do

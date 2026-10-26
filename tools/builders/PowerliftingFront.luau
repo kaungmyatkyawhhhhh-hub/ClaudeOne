@@ -275,7 +275,11 @@ local function restyleDoor(gym: Model, unlockAt: number)
 		Parent = shutter })
 	if door:FindFirstChild("DoorLip") then door.DoorLip.Material, door.DoorLip.Color = Enum.Material.Metal, STEEL end
 	-- the plate: black, white words, a padlock (hidden with the shutter once you've unlocked the gym)
-	local gui = new("SurfaceGui", { Name = "LockSign", Face = face, SizingMode = Enum.SurfaceGuiSizingMode.PixelsPerStud, PixelsPerStud = 40, Parent = shutter })
+	-- (owner, 26 Oct: the slats cut through the words) the sign is on its own invisible board just in front of the slats
+	local board = part({ Name = "SignBoard", Size = Vector3.new(shutter.Size.X, shutter.Size.Y, 0.05),
+		CFrame = shutter.CFrame * CFrame.new(0, 0, shutter.Size.Z / 2 + 0.35), Transparency = 1, Parent = shutter })
+	board.CanCollide, board.CanQuery, board.CanTouch = false, false, false
+	local gui = new("SurfaceGui", { Name = "LockSign", Face = face, SizingMode = Enum.SurfaceGuiSizingMode.PixelsPerStud, PixelsPerStud = 40, Parent = board })
 	local plate = new("Frame", { Name = "Plate", BackgroundColor3 = Color3.fromHex("#0D0D0F"), BorderSizePixel = 0, AnchorPoint = Vector2.new(0.5, 0.5),
 		Position = UDim2.fromScale(0.5, 0.42), Size = UDim2.fromScale(0.94, 0.32), Parent = gui }, {
 		new("UICorner", { CornerRadius = UDim.new(0.08, 0) }),
