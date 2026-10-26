@@ -57,12 +57,10 @@ end
 
 -- (prompt 21) a small "ALTER 3" pill over the title of anyone with a Body Alter (the player's AlterNumber attribute,
 -- BodyService); my own is smaller and faded like my title
--- (owner, 26 Oct: "should have style like the granite button") dressed like that alter's ALTER button in the BODY ALTER
--- READY popup (Shared/UI/AlterPopup): its accent with a darker bottom edge, a dark outline, chunky white letters with a
--- dark stroke, and a faint copy of its popup art (Tier 1) or of its own skin texture (granite speckles, gold shine: the
--- tiers without popup art). Colours from Config/AlterThemes.
+-- (owner, 26 Oct: "should have style like the granite button") dressed like that alter's button: its accent with a darker
+-- bottom edge, a dark outline, white letters with a dark stroke in the NEXT alter card's heavy italic font (Theme.Fonts.Display),
+-- no texture (owner: "the alter button background don't have texture"). Colours from Config/AlterThemes.
 local AlterThemes = require(ReplicatedStorage.Shared.Config.AlterThemes)
-local Alters = require(ReplicatedStorage.Shared.Config.Alters)
 local BADGE = { Width = 1.7, Height = 0.4, Offset = 3.4, MaxDistance = 60, Edge = 0.16 } -- Edge: the darker bottom edge (share of the height)
 local BADGE_OUTLINE = Color3.fromHex("#120A0C")
 local function badgeGradient(accent: Color3): ColorSequence
@@ -92,21 +90,14 @@ local function updateBadge(other)
 			Size = UDim2.fromScale(1, 1), Parent = badge }, { Theme.New("UICorner", { CornerRadius = UDim.new(0.35, 0) }),
 			Theme.New("UIGradient", { Name = "Face", Rotation = 90 }),
 			Theme.New("UIStroke", { Color = BADGE_OUTLINE, Thickness = 2, Transparency = fade, ApplyStrokeMode = Enum.ApplyStrokeMode.Border }) })
-		Theme.New("ImageLabel", { Name = "Art", BackgroundTransparency = 1, ScaleType = Enum.ScaleType.Crop, Size = UDim2.new(1, 0, 1 - BADGE.Edge, 0),
-			ImageTransparency = 1, Parent = pill }, { Theme.New("UICorner", { CornerRadius = UDim.new(0.35, 0) }) })
 		Theme.New("TextLabel", { Name = "Text", BackgroundTransparency = 1, Size = UDim2.new(1, 0, 1 - BADGE.Edge, 0), TextScaled = true,
-			FontFace = Font.fromEnum(Enum.Font.LuckiestGuy), TextColor3 = Color3.new(1, 1, 1), TextTransparency = fade, Text = "", ZIndex = 2, Parent = pill }, {
+			FontFace = Theme.Fonts.Display, TextColor3 = Color3.new(1, 1, 1), TextTransparency = fade, Text = "", ZIndex = 2, Parent = pill }, {
 			Theme.New("UIPadding", { PaddingTop = UDim.new(0.14, 0), PaddingBottom = UDim.new(0.04, 0) }),
 			Theme.New("UIStroke", { Color = BADGE_OUTLINE, Thickness = 2, Transparency = fade }),
 		})
 	end
 	local theme = AlterThemes.Get(n)
 	badge.Pill.Face.Color = badgeGradient(theme.accent)
-	local alter = Alters.Get(n)
-	local skin = alter and alter.textures and alter.textures.color
-	local mine = other == player
-	badge.Pill.Art.Image = theme.bg or skin or ""
-	badge.Pill.Art.ImageTransparency = if theme.bg then (if mine then 0.9 else 0.8) elseif skin then (if mine then 0.75 else 0.5) else 1
 	badge.Pill.Text.Text = "ALTER " .. n
 end
 
