@@ -747,6 +747,7 @@ end
 ------------------------------------------------------------------------
 -- Server messages and data
 ------------------------------------------------------------------------
+local askedNotify = false -- (26 Oct) the notifications opt-in prompt, once a session
 remote.OnClientEvent:Connect(function(kind, info)
 	info = type(info) == "table" and info or {}
 	if kind == "QuestDone" then
@@ -777,6 +778,16 @@ remote.OnClientEvent:Connect(function(kind, info)
 		for id, amount in pairs(type(info.items) == "table" and info.items or {}) do
 			local item = Boosts.ById[id]
 			if item then Notify.Toast("+" .. tostring(amount) .. " " .. item.name, "Added to your inventory (Boosts)", item.icon, Color3.fromHex(item.color), "dailyitem") end
+		end
+		-- (26 Oct, Config/Notifications) Roblox's "turn on notifications?" prompt, so tomorrow's reward can remind you; once
+		-- a session, a few seconds after the claim, only when Roblox allows it
+		if not askedNotify then
+			askedNotify = true
+			task.delay(4, function()
+				local service = game:GetService("ExperienceNotificationService")
+				local ok, can = pcall(service.CanPromptOptInAsync, service)
+				if ok and can then pcall(service.PromptOptIn, service) end
+			end)
 		end
 	end
 end)
