@@ -48,7 +48,8 @@ local DRAMA = {
 	Fov = { 80, 62 },          -- the field of view from the start of a shot to its end
 	Roll = 4,                  -- degrees of lean, alternating each shot
 	Cut = 0.16, CutDark = 0,   -- the cut through black: this long out and back in, fully dark
-	Statue = { every = 3, seconds = 5, radius = 8, camHeight = 1.6, lookHeight = 7, sweep = math.rad(60) },
+	-- (owner, 26 Oct: "a bit lower, it faces above the statue") camera 1 stud up, aimed at the statue's chest
+	Statue = { every = 3, seconds = 5, radius = 8, camHeight = 1, lookHeight = 4.5, sweep = math.rad(60) },
 }
 -- (the statue orbit) its arc, picked when the shot starts: the longest run of angles (every 10 degrees) with no wall
 -- between the camera and the statue and nobody standing in the way (your own character spawns there, gym regulars walk by;
@@ -90,9 +91,10 @@ local function pickOrbit(center: Vector3, look: Vector3, pedestal: BasePart?): n
 	end
 	return a0
 end
-local function punch(t: number): number
-	t = math.clamp(t, 0, 1)
-	return 1 - (1 - t) ^ 4
+-- (owner, 26 Oct: "at the end of each clip it slows down and stops") the camera moves at a steady speed the whole shot and
+-- the cut comes while it is still moving (it used to ease out to a dead stop)
+local function glide(t: number): number
+	return math.clamp(t, 0, 1)
 end
 
 -- the shots in name order: { start = CFrame, finish = CFrame, seconds }
@@ -144,6 +146,50 @@ local function removeDof()
 	if dof then dof:Destroy() dof = nil end
 end
 
+-- (owner, 26 Oct: "make the lighting different in the menu camera") a cinematic grade only while the menu flies: more
+-- contrast and colour, a warm golden tint, a stronger glow on bright things and stronger sun rays. Added on top of the
+-- game's own Lighting effects (never changed), faded out on PLAY. Never touches Lighting.Technology.
+local GRADE = {
+	Color = { Brightness = 0.03, Contrast = 0.22, Saturation = 0.22, TintColor = Color3.fromRGB(255, 236, 214) },
+	Bloom = { Intensity = 0.55, Size = 28, Threshold = 1.15 },
+	Rays = { Intensity = 0.12, Spread = 0.8 },
+}
+local grade = nil -- { color, bloom, rays }
+local function addGrade()
+	if grade then return end
+	for _, old in ipairs(Lighting:GetChildren()) do
+		if old.Name == "MenuGrade" or old.Name == "MenuBloom" or old.Name == "MenuRays" then old:Destroy() end
+	end
+	local color = Instance.new("ColorCorrectionEffect")
+	color.Name = "MenuGrade"
+	for k, v in pairs(GRADE.Color) do (color :: any)[k] = v end
+	color.Parent = Lighting
+	local bloom = Instance.new("BloomEffect")
+	bloom.Name = "MenuBloom"
+	for k, v in pairs(GRADE.Bloom) do (bloom :: any)[k] = v end
+	bloom.Parent = Lighting
+	local rays = Instance.new("SunRaysEffect")
+	rays.Name = "MenuRays"
+	for k, v in pairs(GRADE.Rays) do (rays :: any)[k] = v end
+	rays.Parent = Lighting
+	grade = { color = color, bloom = bloom, rays = rays }
+end
+local function removeGrade(fade: number?)
+	local g = grade
+	grade = nil
+	if not g then return end
+	local time = fade or 0
+	if time > 0 then
+		local info = TweenInfo.new(time, Enum.EasingStyle.Sine, Enum.EasingDirection.Out)
+		TweenService:Create(g.color, info, { Brightness = 0, Contrast = 0, Saturation = 0, TintColor = Color3.new(1, 1, 1) }):Play()
+		TweenService:Create(g.bloom, info, { Intensity = 0 }):Play()
+		TweenService:Create(g.rays, info, { Intensity = 0 }):Play()
+	end
+	task.delay(time, function()
+		g.color:Destroy() g.bloom:Destroy() g.rays:Destroy()
+	end)
+end
+
 function MenuFlyover.Prepare(): boolean
 	shots = readShots()
 	if #shots == 0 then return false end
@@ -164,6 +210,7 @@ function MenuFlyover.Start(darkLayer: GuiObject?)
 	for _, old in ipairs(Lighting:GetChildren()) do
 		if old.Name == "MenuDOF" then old:Destroy() end
 	end
+	addGrade()
 	if not lowGraphics() then
 		dof = Instance.new("DepthOfFieldEffect")
 		dof.Name = "MenuDOF"
@@ -188,16 +235,16 @@ function MenuFlyover.Start(darkLayer: GuiObject?)
 		elseif shot.orbit then
 			-- round the statue on an arc (a straight lerp would cut through it), looking up at it
 			local s, o = DRAMA.Statue, shot.orbit
-			local a = o.a0 + s.sweep * ease(t)
+			local a = o.a0 + s.sweep * glide(t)
 			local pos = o.center + Vector3.new(math.cos(a) * s.radius, s.camHeight, math.sin(a) * s.radius)
 			pose = CFrame.lookAt(pos, o.look)
 		else
-			pose = shot.start:Lerp(shot.finish, punch(t))
+			pose = shot.start:Lerp(shot.finish, glide(t))
 		end
 		if not reduced then
-			local lean = DRAMA.Roll * (if index % 2 == 0 then 1 else -1) * (1 - 0.4 * punch(t))
+			local lean = DRAMA.Roll * (if index % 2 == 0 then 1 else -1) * (1 - 0.4 * glide(t))
 			pose = pose * CFrame.Angles(0, 0, math.rad(lean))
-			cam.FieldOfView = DRAMA.Fov[1] + (DRAMA.Fov[2] - DRAMA.Fov[1]) * punch(t)
+			cam.FieldOfView = DRAMA.Fov[1] + (DRAMA.Fov[2] - DRAMA.Fov[1]) * glide(t)
 		end
 		cam.CameraType = Enum.CameraType.Scriptable
 		cam.CFrame = pose
@@ -250,6 +297,7 @@ function MenuFlyover.FlyTo(target: CFrame, time: number, done: (() -> ())?)
 	local mine = token
 	pcall(function() RunService:UnbindFromRenderStep(BIND) end)
 	removeDof()
+	removeGrade(time)
 	local camera = Workspace.CurrentCamera
 	local from = camera.CFrame
 	local fromFov = camera.FieldOfView
@@ -273,6 +321,7 @@ function MenuFlyover.Stop()
 	token += 1
 	pcall(function() RunService:UnbindFromRenderStep(BIND) end)
 	removeDof()
+	removeGrade(0.6)
 	if Workspace.CurrentCamera then Workspace.CurrentCamera.FieldOfView = 70 end
 end
 

@@ -30,7 +30,8 @@ Alters.GoalPer = 25     -- each later alter's goal is this much higher
 -- pacing sim (lune run tests/pacing tunealters 27.5: a player who rolls trainers with their coins, about 27.5 min of play
 -- each; a straight +GoalPer can't keep them even). Past the list: the last one + GoalPer per alter.
 -- (owner: "after about 8 hours of gameplay, make it harder": alters 14-15 about 45 / 60 min; tunealters 27.5 15 "14=45,15=60")
-Alters.Goals = { 237, 413, 494, 526, 553, 581, 623, 653, 674, 689, 709, 748, 774, 937, 1072 }
+-- (26 Oct, re-tuned after the faster Growth Spurts: players reach Alter 1 with less muscle; was 237 / 413 / ... / 1072)
+Alters.Goals = { 218, 389, 464, 519, 547, 577, 621, 651, 667, 688, 708, 745, 769, 932, 1070 }
 Alters.TargetMinutes = { 75, 115 } -- Tier 1 in about 8 hours
 
 Alters.Tiers = {

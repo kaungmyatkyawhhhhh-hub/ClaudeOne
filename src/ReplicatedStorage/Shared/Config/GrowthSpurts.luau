@@ -19,11 +19,11 @@ GrowthSpurts.Stages = {
 	{ height = 52, requiredLevel = 9, bonus = 1.25 }, -- (prompt 20, 21 Oct: 15 -> 9, first Growth Spurt in ~5 min)
 	-- (26 Oct, retention: Targets 5/15/25/35/45 -> 5/10/18/28/38, retuned with tests/pacing tune: 52/92/132/191/238 ->
 	-- 35/68/113/163/197; the old 1 -> 2 jump was 3x longer and the middle spurts took 3-4 sessions each)
-	{ height = 56, requiredLevel = 35, bonus = 1.5 }, -- (prompt 20: 58 -> 56; prompt 16: 52; 26 Oct: 35, 9.8 min)
-	{ height = 60, requiredLevel = 68, bonus = 1.75 }, -- (26 Oct: 92 -> 68, 17.8 min)
-	{ height = 64, requiredLevel = 113, bonus = 2 }, -- (26 Oct: 132 -> 113, 27.8 min)
-	{ height = 68, requiredLevel = 163, bonus = 2.5 }, -- (prompt 36, 22 Oct: 164 -> 191; 26 Oct: 163, 37.9 min)
-	{ height = 72, requiredLevel = 197, bonus = 3 }, -- (prompt 58: 216 -> 238; 26 Oct: 197, 37.7 min)
+	{ height = 56, requiredLevel = 30, bonus = 1.5 }, -- (prompt 20: 58 -> 56; prompt 16: 52; 26 Oct: 35, 9.8 min)
+	{ height = 60, requiredLevel = 53, bonus = 1.75 }, -- (26 Oct: 92 -> 68, 17.8 min)
+	{ height = 64, requiredLevel = 68, bonus = 2 }, -- (26 Oct: 132 -> 113, 27.8 min)
+	{ height = 68, requiredLevel = 90, bonus = 2.5 }, -- (prompt 36, 22 Oct: 164 -> 191; 26 Oct: 163, 37.9 min)
+	{ height = 72, requiredLevel = 119, bonus = 3 }, -- (prompt 58: 216 -> 238; 26 Oct: 197, 37.7 min)
 }
 
 -- Beyond the table: keep growing until MaxHeight, and keep adding level + bonus. (From here the bonus mostly runs
@@ -34,7 +34,10 @@ GrowthSpurts.ExtraPerStage = { height = 4, requiredLevel = 18, bonus = 0.5 }
 -- one ("normal play with some tapping": half the sets tapped, see tests/pacing).
 -- The requiredLevel values above are tuned to these with tests/pacing, which plays simulated players through the
 -- spurts with the real gains formula. If gains, tiers, stamina or bonuses change, rerun it and retune the levels.
-GrowthSpurts.Targets = { 5, 10, 18, 28, 38 } -- (26 Oct: was 5, 15, 25, 35, 45)
+-- (owner, 26 Oct: "growth spurts fast to hook players, alters are the real progression"; about 1 hour for all six WITH the
+-- 2x new player boost and trainers: tests/pacing tunespurts) 4 / 5 / 8 / 12 / 15 / 17 min; goals 9 / 30 / 53 / 68 / 90 / 119
+-- (were 35 / 68 / 113 / 163 / 197 for 5 / 10 / 18 / 28 / 38 min without boosts)
+GrowthSpurts.Targets = { 4, 5, 8, 12, 15, 17 }
 
 function GrowthSpurts.TargetMinutes(n)
 	local targets = GrowthSpurts.Targets

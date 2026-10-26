@@ -377,9 +377,11 @@ local function sync(player)
 	synced[player] = true
 end
 
+-- (26 Oct) listen first, then sync: sync can wait for the trainer models, and a Trainers change during that wait used to be
+-- missed (no trainer at all that session)
 local function watch(player)
-	sync(player)
 	player:GetAttributeChangedSignal("Trainers"):Connect(function() sync(player) end)
+	sync(player)
 end
 for _, p in ipairs(Players:GetPlayers()) do task.spawn(watch, p) end
 Players.PlayerAdded:Connect(watch)
@@ -839,6 +841,46 @@ RunService.Heartbeat:Connect(function(dt)
 			elseif state.model.Parent then
 				state.model.Parent = nil
 				state.playing = nil
+			end
+		end
+	end
+end)
+
+-- (owner, 26 Oct: "you can see through your own trainer, he blocks the camera") your own trainer fades to SEE_THROUGH
+-- while he stands between the camera and you (or right in front of the camera), and comes back when he's out of the way.
+-- Not while the main menu hides him (MenuClient sets his parts to 1 there).
+local SEE_THROUGH = 0.75
+local UIBusOk, UIBus = pcall(require, game:GetService("ReplicatedStorage"):WaitForChild("Shared"):WaitForChild("UI"):WaitForChild("UIBus"))
+RunService.RenderStepped:Connect(function(dt)
+	if UIBusOk and UIBus.MenuOpen then return end
+	local list = followers[localPlayer]
+	local camera = Workspace.CurrentCamera
+	local character = localPlayer.Character
+	local head = character and (character:FindFirstChild("Head") or character:FindFirstChild("HumanoidRootPart")) :: BasePart?
+	if not list or not camera or not head then return end
+	local eye, target = camera.CFrame.Position, head.Position
+	local seg = target - eye
+	local len2 = math.max(seg:Dot(seg), 1e-3)
+	local now = os.clock()
+	for _, state in pairs(list) do
+		if state.model.Parent and state.root then
+			local p = state.root.Position
+			local t = (p - eye):Dot(seg) / len2
+			local off = (p - (eye + seg * math.clamp(t, 0, 1))).Magnitude
+			local size = state.scale or 1
+			local blocking = (t > 0 and t < 1 and off < 2.2 * size + 0.8) or (p - eye).Magnitude < 4 * size
+			local want = if blocking then SEE_THROUGH else 0
+			state.fade = (state.fade or 0) + (want - (state.fade or 0)) * math.min(1, dt * 10)
+			if not state.fadeParts or now - (state.fadePartsAt or 0) > 2 then -- (his muscle pieces come and go)
+				state.fadeParts, state.fadePartsAt = {}, now
+				for _, item in ipairs(state.model:GetDescendants()) do
+					if item:IsA("BasePart") or item:IsA("Decal") then table.insert(state.fadeParts, item) end
+				end
+				state.fadeShown = nil
+			end
+			if not state.fadeShown or math.abs(state.fade - state.fadeShown) > 0.02 then
+				state.fadeShown = state.fade
+				for _, item in ipairs(state.fadeParts) do item.LocalTransparencyModifier = state.fade end
 			end
 		end
 	end

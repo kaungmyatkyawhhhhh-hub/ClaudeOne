@@ -9,6 +9,24 @@ if ShutdownService.IsHoldingServer() then
 end
 ShutdownService.Start()
 
+-- (owner, 26 Oct: "put the builds from scripts like the city into Studio") The Pro Gym city lives in Workspace.Backdrops in
+-- Studio, so it can be seen and edited there. At game start it moves into ReplicatedStorage.Backdrops, where
+-- BackdropClient takes it from and draws it only while the camera is near the Pro Gym (phones elsewhere never draw it).
+do
+	local ReplicatedStorage = game:GetService("ReplicatedStorage")
+	local shown = workspace:FindFirstChild("Backdrops")
+	if shown then
+		local store = ReplicatedStorage:FindFirstChild("Backdrops")
+		if not store then
+			store = Instance.new("Folder")
+			store.Name = "Backdrops"
+			store.Parent = ReplicatedStorage
+		end
+		for _, child in ipairs(shown:GetChildren()) do child.Parent = store end
+		shown:Destroy()
+	end
+end
+
 local PlayerData = require(script.Parent.Server.PlayerData)
 local MachineService = require(script.Parent.Server.MachineService)
 local BodyService = require(script.Parent.Server.BodyService)

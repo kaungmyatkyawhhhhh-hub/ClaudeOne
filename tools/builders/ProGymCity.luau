@@ -106,10 +106,11 @@ local function building(x: number, z: number, w: number, d: number, h: number)
 end
 
 function ProGymCity.Run()
-	local RS = game:GetService("ReplicatedStorage")
-	local folder = RS:FindFirstChild("Backdrops") or Instance.new("Folder")
+	-- (26 Oct) built into Workspace.Backdrops so it can be seen and edited in Studio; Main moves it into
+	-- ReplicatedStorage.Backdrops at game start (BackdropClient draws it near the Pro Gym only)
+	local folder = workspace:FindFirstChild("Backdrops") or Instance.new("Folder")
 	folder.Name = "Backdrops"
-	folder.Parent = RS
+	folder.Parent = workspace
 	local old = folder:FindFirstChild("ProGymCity")
 	if old then old:Destroy() end
 	root = Instance.new("Model")

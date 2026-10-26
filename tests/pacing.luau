@@ -16,6 +16,7 @@ local MuscleOfTheDay = H.module("ReplicatedStorage/Shared/Config/MuscleOfTheDay"
 local Alters = H.module("ReplicatedStorage/Shared/Config/Alters")
 local Trainers = H.module("ReplicatedStorage/Shared/Config/Trainers")
 local PumpShop = H.module("ReplicatedStorage/Shared/Config/PumpShop")
+local Playtime = H.module("ReplicatedStorage/Shared/Config/Playtime")
 
 -- Muscle of the Day depends on the date; each simulated player gets their own 2x group for each spurt (a typical
 -- day), so results don't change from day to day.
@@ -170,6 +171,12 @@ local function playOneSpurt(data, overhead, limitSeconds, alterGoal)
 	local pump = { meter = 0, left = 0 }
 	local stamina = Stamina.Max -- (carried from set to set: a player who switches machines keeps what's left)
 	local function bonus(kind) return data.tr and data.tr.bonus and data.tr.bonus[kind] or 0 end
+	-- (26 Oct) the NEW PLAYER BOOST (Config/Playtime.NewPlayer) for the first minutes of play (sim players with trainers)
+	local function newPlayer(kind)
+		if not data.tr then return 1 end
+		local np = Playtime.NewPlayer
+		return if data.tr.played + time < np.minutes * 60 then np[kind] else 1
+	end
 
 	local function progress()
 		if alterGoal then
@@ -239,8 +246,8 @@ local function playOneSpurt(data, overhead, limitSeconds, alterGoal)
 			local pumped = pump.left > 0
 			local quality = (pumped and Gains.Pump.Multiplier or 1)
 				* (math.random() < Gains.BigRep.Chance and Gains.BigRep.Multiplier or 1)
-			for id, amount in Gains.PerRep(data, machine, tier, 1 + bonus("gains"), quality) do addXp(data, id, amount, cap) end
-			data.coins += machine.tiers[tier].coins * (1 + bonus("coins"))
+			for id, amount in Gains.PerRep(data, machine, tier, (1 + bonus("gains")) * newPlayer("gains"), quality) do addXp(data, id, amount, cap) end
+			data.coins += machine.tiers[tier].coins * (1 + bonus("coins")) * newPlayer("coins")
 			local rep = PLAY.Rep * (pumped and Gains.Pump.Speed or 1) + (tapping and 0 or Gains.AutoRepGap)
 			stepPump(pump, rep, tapping)
 			time += rep
@@ -299,6 +306,8 @@ local function simulate(spurts)
 	for n = 1, spurts do perSpurt[n] = {} end
 	for seed = 1, PLAYERS do
 		local data = newPlayer(seed)
+		-- (26 Oct) like a real player: rolls trainers with their coins and has the new player boost (the targets count both)
+		data.tr = { copies = {}, equipped = {}, pity = 0, freeRolls = 0, rolls = 0, played = 0, hourGifts = 0, bonus = Trainers.Bonus({}) }
 		local grade = Genetics.GetOverallGrade(data.genetics.grades)
 		for n = 1, spurts do
 			local minutes = playOneSpurt(data, n == 1 and PLAY.Overhead or PLAY.SpurtOverhead)
@@ -459,6 +468,43 @@ if process.args[1] == "tunealters" then
 		print(string.format("  alter %d: goal %d -> median %.1f min", n, hi, minutes))
 	end
 	print("Alters.Goals = { " .. table.concat(goals, ", ") .. " }")
+	return
+end
+
+-- (26 Oct, owner: "growth spurts fast to hook players, alters are the real progression"; about 1 hour for all six with the
+-- new player boost and trainers) Tunes each stage's requiredLevel for players who roll trainers and have the new player
+-- boost.   lune run tests/pacing tunespurts 3,5,8,12,15,17
+if process.args[1] == "tunespurts" then
+	local targets = {}
+	for m in string.gmatch(process.args[2] or "3,5,8,12,15,17", "[%d%.]+") do table.insert(targets, tonumber(m)) end
+	local stages = GrowthSpurts.Stages
+	local N = PLAYERS // 2
+	local function newTr() return { copies = {}, equipped = {}, pity = 0, freeRolls = 0, rolls = 0, played = 0, hourGifts = 0, bonus = Trainers.Bonus({}) } end
+	for n = 1, #stages do
+		local function trial(level)
+			stages[n].requiredLevel = level
+			local times = {}
+			for seed = 1, N do
+				local data = newPlayer(seed)
+				data.tr = newTr()
+				local minutes
+				for i = 1, n do minutes = playOneSpurt(data, i == 1 and PLAY.Overhead or PLAY.SpurtOverhead) end
+				table.insert(times, minutes)
+			end
+			return (median(times))
+		end
+		local lo, hi = (n > 1 and stages[n - 1].requiredLevel or 1), 400
+		while hi - lo > 1 do
+			local mid = (lo + hi) // 2
+			if trial(mid) < targets[n] then lo = mid else hi = mid end
+		end
+		local best = if math.abs(trial(lo) - targets[n]) <= math.abs(trial(hi) - targets[n]) then lo else hi
+		local minutes = trial(best)
+		print(string.format("stage %d: requiredLevel = %d -> median %.1f min (target %g)", n, best, minutes, targets[n]))
+	end
+	local list = {}
+	for _, st in stages do table.insert(list, st.requiredLevel) end
+	print("requiredLevel = " .. table.concat(list, " / "))
 	return
 end
 

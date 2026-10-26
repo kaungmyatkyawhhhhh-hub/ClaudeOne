@@ -55,8 +55,10 @@ end
 function ProGymFarCity.Run()
 	local RS = game:GetService("ReplicatedStorage")
 	local folder = RS:FindFirstChild("Backdrops")
-	local city = folder and folder:FindFirstChild("ProGymCity")
-	assert(city, "run ProGymCity first")
+	-- (26 Oct) the detailed city is in Workspace.Backdrops in Studio; the far city stays in ReplicatedStorage.Backdrops
+	local shown = workspace:FindFirstChild("Backdrops")
+	local city = (shown and shown:FindFirstChild("ProGymCity")) or (folder and folder:FindFirstChild("ProGymCity"))
+	assert(city and folder, "run ProGymCity first")
 	local old = folder:FindFirstChild("ProGymFarCity")
 	if old then old:Destroy() end
 	root = Instance.new("Model")

@@ -60,7 +60,7 @@ for i = 2, #T.List do
 	H.check(T.List[i].heightInches > T.List[i - 1].heightInches and T.List[i].heightInches <= T.MaxHeightInches, T.List[i].id .. " is taller than the one below (" .. T.List[i].heightInches .. " in)")
 	H.check(T.List[i].idle ~= nil and (T.List[i].line ~= nil) and T.List[i].pose ~= nil, T.List[i].id .. " has an idle, a line and a pose")
 end
-H.check(T.List[8].heightInches == 90 and T.List[7].heightInches == 86, "The Shadow 7'2\", Atlas 7'6\"")
+H.check(T.List[8].heightInches == 84 and T.List[7].heightInches == 80, "The Shadow 6'8\", Atlas 7'0\" (26 Oct: shrunk with the 4-inch spurts)")
 H.check(T.Materials[T.ById.AeonCoach.look.marble.variant] ~= nil, "Atlas's marble material has its maps")
 
 print("Rolls")

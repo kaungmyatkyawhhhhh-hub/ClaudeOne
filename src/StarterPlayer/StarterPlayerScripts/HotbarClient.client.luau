@@ -31,8 +31,13 @@ local Audio = require(Shared.Audio)
 local New, Colors = Theme.New, Theme.Colors
 local player = Players.LocalPlayer
 
-local SLOT = 50
-local GAP = 6
+-- (owner, 26 Oct: "make the itembar smaller, it's the same as the left buttons; thinner outlines"; then "on phone they're
+-- super small and the gaps big") a slot is SLOT mockup px with a 1 px outline and a small gap; on screen never under MIN_PX
+-- (a phone's smaller UI scale is made up for in `fit`)
+local SLOT = 42
+local FACE = SLOT
+local GAP = 3
+local MIN_PX = 44
 local BOTTOM = 10                    -- above the bottom safe area (prompt 28: was above the stamina bar, mid-screen)
 local LIFT = 4                       -- the slot in your hand sits this much higher
 local KEYS = { Enum.KeyCode.One, Enum.KeyCode.Two, Enum.KeyCode.Three, Enum.KeyCode.Four, Enum.KeyCode.Five,
@@ -63,9 +68,9 @@ local function fitRow()
 	end
 	local natural = count * SLOT + math.max(0, count - 1) * GAP
 	local room = root.AbsoluteSize.X / math.max(Kit.Scale(), 0.01) - CORNERS
-	-- (never under ~44 px a slot: a thumb still hits it)
-	local minScale = math.min(1, 44 / (SLOT * math.max(Kit.Scale(), 0.01)))
-	fit.Scale = if natural > room and natural > 0 then math.max(minScale, room / natural) else 1
+	-- (never under MIN_PX a slot on screen: a thumb still hits it; on a phone, whose UI scale is smaller, this grows it back)
+	local minScale = MIN_PX / (SLOT * math.max(Kit.Scale(), 0.01))
+	fit.Scale = math.max(minScale, if natural > room and natural > 0 then room / natural else 1)
 end
 
 local order = {} -- Tools: the shake first, then in the order they arrived
@@ -153,21 +158,28 @@ local function render()
 			local frame = New("Frame", { Name = if type(boostId) == "string" then "Slot_" .. boostId else "Slot", BackgroundTransparency = 1, Size = UDim2.fromOffset(SLOT, SLOT + LIFT), Parent = bar })
 			-- (owner, 23 Oct, chrome reset: the hotbar keeps its look)
 			local face = Theme.Panel({ Name = "Face", Piece = "hud_box_gold", Clickable = true, AnchorPoint = Vector2.new(0.5, 1),
-				Position = UDim2.new(0.5, 0, 1, 0), Size = UDim2.fromOffset(SLOT, SLOT), Parent = frame })
-			local stroke = New("UIStroke", { Name = "Held", Color = Colors.Gold, Thickness = 2, Enabled = false,
+				Position = UDim2.new(0.5, 0, 1, -(SLOT - FACE) / 2), Size = UDim2.fromOffset(FACE, FACE), Parent = frame })
+			for _, edge in ipairs(face:GetDescendants()) do
+				if edge:IsA("UIStroke") then edge.Thickness = math.min(edge.Thickness, 1) end -- (thin outline)
+			end
+			local stroke = New("UIStroke", { Name = "Held", Color = Colors.Gold, Thickness = 1.5, Enabled = false,
 				ApplyStrokeMode = Enum.ApplyStrokeMode.Border, Parent = face })
+			-- the full SLOT tap area round the smaller face
+			local hit = New("TextButton", { Name = "Hit", Text = "", BackgroundTransparency = 1, AnchorPoint = Vector2.new(0.5, 1),
+				Position = UDim2.new(0.5, 0, 1, 0), Size = UDim2.fromOffset(SLOT, SLOT), ZIndex = 10, Parent = frame })
+			hit.Activated:Connect(function() toggle(tool) end)
 			local item = Boosts.ById[tool:GetAttribute("BoostItem") or ""]
 			if item then
-				Kit.IconTile(item.icon, Color3.fromHex(item.color), 30, { Name = "Icon", AnchorPoint = Vector2.new(0.5, 0.5),
+				Kit.IconTile(item.icon, Color3.fromHex(item.color), 24, { Name = "Icon", AnchorPoint = Vector2.new(0.5, 0.5),
 					Position = UDim2.fromScale(0.5, 0.5), Parent = face })
 			else
 				Kit.Text({ Name = "Name", Text = tool.Name, Font = "Strong", TextSize = 10, TextWrapped = true, Size = UDim2.new(1, -6, 1, -14),
 					Position = UDim2.fromOffset(3, 12), Parent = face })
 			end
-			local number = Kit.Text({ Name = "Key", Text = "", Font = "Number", TextSize = 11, TextColor3 = Colors.Muted,
-				Position = UDim2.fromOffset(5, 2), Size = UDim2.fromOffset(12, 12), TextXAlignment = Enum.TextXAlignment.Left, ZIndex = 3, Parent = face })
-			local count = Kit.Text({ Name = "Count", Text = "", Font = "Number", TextSize = 11, AnchorPoint = Vector2.new(1, 1),
-				Position = UDim2.new(1, -4, 1, -2), Size = UDim2.fromOffset(30, 12), TextXAlignment = Enum.TextXAlignment.Right, ZIndex = 3, Parent = face })
+			local number = Kit.Text({ Name = "Key", Text = "", Font = "Number", TextSize = 9, TextColor3 = Colors.Muted,
+				Position = UDim2.fromOffset(4, 1), Size = UDim2.fromOffset(10, 10), TextXAlignment = Enum.TextXAlignment.Left, ZIndex = 3, Parent = face })
+			local count = Kit.Text({ Name = "Count", Text = "", Font = "Number", TextSize = 10, AnchorPoint = Vector2.new(1, 1),
+				Position = UDim2.new(1, -3, 1, -1), Size = UDim2.fromOffset(28, 11), TextXAlignment = Enum.TextXAlignment.Right, ZIndex = 3, Parent = face })
 			face.Activated:Connect(function() toggle(tool) end)
 			slot = { frame = frame, face = face, stroke = stroke, number = number, count = count, sweep = makeSweep(face) }
 			slots[tool] = slot
@@ -178,7 +190,7 @@ local function render()
 		slot.count.Text = if n then "x" .. n else ""
 		local inHand = held(tool)
 		slot.stroke.Enabled = inHand
-		slot.face.Position = UDim2.new(0.5, 0, 1, if inHand then -LIFT else 0)
+		slot.face.Position = UDim2.new(0.5, 0, 1, -(SLOT - FACE) / 2 - (if inHand then LIFT else 0))
 	end
 end
 

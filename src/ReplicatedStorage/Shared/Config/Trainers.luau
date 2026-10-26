@@ -70,7 +70,7 @@ end
 -- every trainer showed as his live 3D rig. (prompt 47, 22 Oct) The owner uploaded the planner's portraits himself, to
 -- the Myanmar Builders Club group (Downloads\gym_arc_trainer_portraits): they're used again, set below by Portraits.
 -- Never upload trainer pictures from here; the old ones to archive are in the vault note "GYM ARC - Uploaded images 21-22 Oct".
-Trainers.MaxHeightInches = 90
+Trainers.MaxHeightInches = 84 -- (owner, 26 Oct: players' spurts are 4 in now; every trainer x84/90, Atlas 7'0" was 7'6")
 Trainers.SilhouetteIcon = nil -- (owner, 22 Oct: no picture; the 3D rig in black instead)
 
 -- (owner, 22 Oct) A chance as the players see it: always a percentage, never "1 in 1000", without trailing zeros: up to 2
@@ -93,23 +93,23 @@ Trainers.Materials = {
 }
 ------------------------------------------------------------------------
 Trainers.List = {
-	{ id = "RookieCoach", rarity = "Common", chance = 42, name = "Coach Sam", heightInches = 60, perk = { gains = 0.05 }, perkText = "+5% EXP",
+	{ id = "RookieCoach", rarity = "Common", chance = 42, name = "Coach Sam", heightInches = 56, perk = { gains = 0.05 }, perkText = "+5% EXP",
 		picture = "trainer_exp", idle = "crossed", pose = "FrontDoubleBiceps", line = "Let's warm up!",
 		look = { skin = "#F1C9A5", hairIds = { 376548738 }, faceTexture = "rbxassetid://26424652", -- Brown Charmer Hair, Know-It-All Grin
 			outfit = { shirt = "rbxassetid://139862937769412", pants = "rbxassetid://110347260992708", sleeves = "long", legs = "long", shirtColor = "#C8262C", pantsColor = "#1E1E22" },
 			muscle = 0.9, extras = {}, gear = { { kind = "Whistle", color = "#C8262C" } }, extraColor = "#C8262C", tint = "#C8262C" } },
 	-- (owner, prompt 25: stamina regen on top of the coins, the old Cardio Coach's refill)
-	{ id = "CardioCoach", rarity = "Uncommon", chance = 30, name = "Coach Nia", heightInches = 65, perk = { coins = 0.08, staminaRegen = 0.12 },
+	{ id = "CardioCoach", rarity = "Uncommon", chance = 30, name = "Coach Nia", heightInches = 61, perk = { coins = 0.08, staminaRegen = 0.12 },
 		perkText = "+8% coins, +12% stamina regen", picture = "trainer_stamina", idle = "hips", pose = "AbsAndThigh", line = "Drink water, then go!",
 		look = { skin = "#8D5A3C", hairIds = { 451220849 }, faceTexture = "rbxassetid://7074749", -- Lavender Updo, Chill
 			outfit = { shirt = "rbxassetid://122244133593957", pants = "rbxassetid://122244133593957", sleeves = "none", legs = "shorts", shirtColor = "#2FAE55", pantsColor = "#2FAE55" },
 			muscle = 0.7, extras = { "headband", "bottle" }, gear = { { kind = "Whistle", color = "#2FAE55" } }, extraColor = "#F4F1EA", tint = "#2FAE55" } },
-	{ id = "MoneyCoach", rarity = "Rare", chance = 18, name = "Coach Lou", heightInches = 72, frame = "Wide", perk = { gains = 0.12, maxStamina = 0.08 },
+	{ id = "MoneyCoach", rarity = "Rare", chance = 18, name = "Coach Lou", heightInches = 67, frame = "Wide", perk = { gains = 0.12, maxStamina = 0.08 },
 		perkText = "+12% EXP, +8% max stamina", picture = "trainer_coins", idle = "clipboard", pose = "SideChest", line = "Form first, then weight.",
 		look = { skin = "#E0AC7E", faceTexture = "rbxassetid://144080495", -- Smile (a buzz cut under the cap)
 			outfit = { shirt = "rbxassetid://71165572097233", pants = "rbxassetid://110347260992708", sleeves = "short", legs = "long", shirtColor = "#E8C21C", pantsColor = "#1E1E22" },
 			muscle = 0.8, extras = { "cap", "clipboard" }, gear = { { kind = "Whistle", color = "#16161A" } }, extraColor = "#16161A", tint = "#E0B23A" } },
-	{ id = "PumpCoach", rarity = "Epic", chance = 7, name = "Coach Rex", heightInches = 78, frame = "VTaper", shoulderBonus = 1.1, perk = { gains = 0.20, coins = 0.20 },
+	{ id = "PumpCoach", rarity = "Epic", chance = 7, name = "Coach Rex", heightInches = 73, frame = "VTaper", shoulderBonus = 1.1, perk = { gains = 0.20, coins = 0.20 },
 		perkText = "+20% EXP and coins", picture = "trainer_pump", idle = "crossed", pose = "FrontLatSpread", line = "Time to grow!",
 		look = { skin = "#5C3A21", faceTexture = "rbxassetid://83017053", -- bald, Man Face
 			outfit = { shirt = "rbxassetid://106691440081103", pants = "rbxassetid://110347260992708", sleeves = "none", legs = "shorts", shirtColor = "#7A3FC8", pantsColor = "#1E1E22" },
@@ -117,7 +117,7 @@ Trainers.List = {
 			extraColor = "#7A3FC8", tint = "#7A3FC8" } },
 	-- 5) LEGENDARY: a veteran powerlifting coach, 6'9", very wide and thick (huge traps, thick waist, big forearms), a grey
 	-- short beard and buzz cut; a black sleeveless hoodie with gold trim, a thick leather belt, chalk on his hands, wrist wraps
-	{ id = "AtlasCoach", rarity = "Legendary", chance = 2.2, name = "Duke Ironside", heightInches = 81, frame = "Wide", shoulderBonus = 1.12,
+	{ id = "AtlasCoach", rarity = "Legendary", chance = 2.2, name = "Duke Ironside", heightInches = 76, frame = "Wide", shoulderBonus = 1.12,
 		widths = { hips = 1.2, arms = 1.16, legs = 1.1, depth = 1.12 },
 		perk = { gains = 0.35, coins = 0.35, progress = 0.09 }, perkText = "+35% EXP and coins, +9% progress",
 		idle = "chalk", pose = "MostMuscular", line = "Lock in. No excuses.",
@@ -130,7 +130,7 @@ Trainers.List = {
 	-- 6) MYTHIC: an energetic strongwoman coach, 6'10", athletic and very muscular, a long high ponytail; a red and purple
 	-- tracksuit top tied at the waist over a black training top, red knee sleeves, lightning bolts on the sleeves
 	-- (owner, 23 Oct: Legendary, was Mythic; the Legendary boost)
-	{ id = "BlazeCoach", rarity = "Legendary", chance = 0.6, name = "Volta", heightInches = 82, frame = "VTaper", shoulderBonus = 1.12,
+	{ id = "BlazeCoach", rarity = "Legendary", chance = 0.6, name = "Volta", heightInches = 77, frame = "VTaper", shoulderBonus = 1.12,
 		widths = { hips = 1.04, arms = 1.05, legs = 1.14, depth = 1.04 },
 		perk = { gains = 0.35, coins = 0.35, progress = 0.09 }, perkText = "+35% EXP and coins, +9% progress",
 		idle = "boxer", pose = "Guard", line = "Faster! Stronger! Again!",
@@ -143,7 +143,7 @@ Trainers.List = {
 	-- 7) SECRET: a mysterious mass monster, 7'2", a deep black hood hiding the face in shadow with two calm glowing white eyes;
 	-- a black outfit with faint purple seams. "???" (a black silhouette) on the odds lists until you own him
 	-- (owner, 23 Oct: Mythic, was Secret; the Mythic boost; his name shows, like the other trainers you don't have)
-	{ id = "ShadeCoach", rarity = "Mythic", chance = 0.16, name = "The Shadow", heightInches = 86, frame = "VTaper", shoulderBonus = 1.25,
+	{ id = "ShadeCoach", rarity = "Mythic", chance = 0.16, name = "The Shadow", heightInches = 80, frame = "VTaper", shoulderBonus = 1.25,
 		widths = { hips = 1.1, arms = 1.12, legs = 1.12, depth = 1.12 },
 		perk = { gains = 0.50, coins = 0.50, progress = 0.14 }, perkText = "+50% EXP and coins, +14% progress",
 		idle = "watch", pose = "Crossed", line = "...", lines = { "...", "Train." },
@@ -155,7 +155,7 @@ Trainers.List = {
 	-- white marble skin with gold veins (marble: the statue's marble with our MaterialVariant), a gold laurel wreath, white and gold training shorts,
 	-- gold wrist cuffs, bare feet
 	-- (owner, 23 Oct: the Secret, was Eternal; the Secret boost; "???" until owned)
-	{ id = "AeonCoach", rarity = "Secret", chance = 0.04, name = "Atlas", heightInches = 90, frame = "VTaper", shoulderBonus = 1.3,
+	{ id = "AeonCoach", rarity = "Secret", chance = 0.04, name = "Atlas", heightInches = 84, frame = "VTaper", shoulderBonus = 1.3,
 		widths = { hips = 1.06, arms = 1.12, legs = 1.12, depth = 1.12 },
 		perk = { gains = 0.65, coins = 0.65, progress = 0.18 }, perkText = "+65% EXP and coins, +18% progress",
 		idle = "flex", pose = "FrontDoubleBiceps", line = "Strength is forever.",

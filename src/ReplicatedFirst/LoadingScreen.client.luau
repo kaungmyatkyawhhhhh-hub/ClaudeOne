@@ -260,8 +260,8 @@ local DRAMA = {
 	Shake = 6, ShakeTime = 0.28,          -- px (mockup) and seconds per plate slam
 	Milestones = { 0.25, 0.5, 0.75, 1 },
 	Hype = { "WARMING UP", "CHALKING UP", "LOADING PLATES", "GETTING PUMPED", "LET'S LIFT!" },
-	-- bumper plates, heaviest (tallest) inside: red 25, blue 20, yellow 15, green 10
-	Plates = { { "#D0222B", 40 }, { "#2752C9", 36 }, { "#F2C12E", 32 }, { "#2E9E4F", 28 } },
+	-- bumper plates, heaviest (tallest) inside; (owner, 26 Oct) all red, a shade apart so each plate still reads
+	Plates = { { "#D0222B", 40 }, { "#B81E26", 36 }, { "#E0333B", 32 }, { "#A8171F", 28 } },
 	Clank = { id = "rbxassetid://9116750726", volume = 0.5 },   -- PSE Metal Plate Impact (AlterThemes MetalClang)
 	Boom = { id = "rbxassetid://9125484526", volume = 0.5 },    -- PSE Deep Hits Big Reverberant Booms 1 (AlterThemes ImpactSub)
 }
